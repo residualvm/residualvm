@@ -179,20 +179,19 @@ public:
 	static Object *restoreObject(SaveGame *state);
 	static Object *newObject(const char *typeName);
 
-	template<class T> static bool registerType() {
+	template<class T>
+	static void registerType() {
 		T obj;
-		Common::String type = obj.typeName();
-		if (_creators.contains(type)) {
-			warning("Type name %s already registered", type.c_str());
-			return false;
-		}
-		_creators.setVal(type, &createObj<T>);
+		_creators.setVal(obj.typeName(), &createObj<T>);
+	}
 
-		return true;
+	static void clearTypes() {
+		_creators.clear();
 	}
 
 private:
-	template<class T> static Object *createObj() {
+	template<class T>
+	static Object *createObj() {
 		return new T();
 	}
 
