@@ -261,7 +261,7 @@ GrimEngine::GrimEngine(OSystem *syst, int gameFlags) :
 	g_imuse = NULL;
 
 	_showFps = (tolower(g_registry->get("show_fps", "false")[0]) == 't');
-	_softRenderer = (tolower(g_registry->get("soft_renderer", "false")[0]) == 't');
+	_softRenderer = (tolower(g_registry->get("soft_renderer", "false")[0]) == 'f');
 
 	_mixer->setVolumeForSoundType(Audio::Mixer::kPlainSoundType, 127);
 	_mixer->setVolumeForSoundType(Audio::Mixer::kSFXSoundType, ConfMan.getInt("sfx_volume"));
