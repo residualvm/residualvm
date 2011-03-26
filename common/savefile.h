@@ -29,7 +29,7 @@
 #include "common/noncopyable.h"
 #include "common/sys.h"
 #include "common/stream.h"
-#include "common/str.h"
+#include "common/str-array.h"
 #include "common/error.h"
 
 namespace Common {
@@ -142,7 +142,7 @@ public:
 	 * @return list of strings for all present file names.
 	 * @see Common::matchString()
 	 */
-	virtual StringList listSavefiles(const String &pattern) = 0;
+	virtual StringArray listSavefiles(const String &pattern) = 0;
 };
 
 } // End of namespace Common

@@ -237,7 +237,7 @@ GrimEngine *g_grim = NULL;
 GfxBase *g_driver = NULL;
 int g_imuseState = -1;
 
-extern Common::StringList::const_iterator g_filesiter;
+extern Common::Array<Common::String>::const_iterator g_filesiter;
 
 // hack for access current upated actor to allow access position of actor to sound costume component
 Actor *g_currentUpdatedActor = NULL;

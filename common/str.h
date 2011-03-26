@@ -26,7 +26,6 @@
 #define COMMON_STRING_H
 
 #include "common/sys.h"
-#include "common/array.h"
 
 namespace Common {
 
@@ -318,8 +317,6 @@ Common::String normalizePath(const Common::String &path, const char sep);
  */
 bool matchString(const char *str, const char *pat, bool ignoreCase = false, bool pathMode = false);
 
-
-typedef Array<String> StringList;
 
 }	// End of namespace Common
 
