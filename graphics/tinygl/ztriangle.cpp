@@ -146,8 +146,8 @@ void ZB_fillTriangleMappingPerspective(ZBuffer *zb, ZBufferPoint *p0, ZBufferPoi
 	int g1 = 0, dgdx, dgdy, dgdl_min = 0, dgdl_max = 0;
 	int b1 = 0, dbdx, dbdy, dbdl_min = 0, dbdl_max = 0;
 
-	float sz1 = 0.0, dszdx, dszdy, dszdl_min = 0.0, dszdl_max = 0.0;
-	float tz1 = 0.0, dtzdx, dtzdy, dtzdl_min = 0.0, dtzdl_max = 0.0;
+	float sz1 = 0.0f, dszdx, dszdy, dszdl_min = 0.0f, dszdl_max = 0.0f;
+	float tz1 = 0.0f, dtzdx, dtzdy, dtzdl_min = 0.0f, dtzdl_max = 0.0f;
 
 	// we sort the vertex with increasing y
 	if (p1->y < p0->y) {

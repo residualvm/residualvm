@@ -437,7 +437,7 @@ Sector *Scene::findPointSector(Graphics::Vector3d p, Sector::SectorType type) {
 void Scene::findClosestSector(Graphics::Vector3d p, Sector **sect, Graphics::Vector3d *closestPoint) {
 	Sector *resultSect = NULL;
 	Graphics::Vector3d resultPt = p;
-	float minDist = 0.0;
+	float minDist = 0.0f;
 
 	for (int i = 0; i < _numSectors; i++) {
 		Sector *sector = _sectors[i];

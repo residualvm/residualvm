@@ -954,14 +954,14 @@ static void SetVideoDevices() {
 }
 
 static void GetVideoDevices() {
-	lua_pushnumber(0.0);
-	lua_pushnumber(-1.0);
+	lua_pushnumber(0.0f);
+	lua_pushnumber(-1.0f);
 }
 
 static void EnumerateVideoDevices() {
 	lua_Object result = lua_createtable();
 	lua_pushobject(result);
-	lua_pushnumber(0.0); // id of device
+	lua_pushnumber(0.0f); // id of device
 	lua_pushstring(g_driver->getVideoDeviceName()); // name of device
 	lua_settable();
 	lua_pushobject(result);
@@ -974,7 +974,7 @@ static void Enumerate3DDevices() {
 		return;
 /*	int num = (int)lua_getnumber(numObj);*/
 	lua_pushobject(result);
-	lua_pushnumber(-1.0);
+	lua_pushnumber(-1.0f);
 	if (g_driver->isHardwareAccelerated()) {
 		lua_pushstring("OpenGL"); // type of 3d renderer
 	} else {
@@ -2500,7 +2500,7 @@ static void ImSetParam() {
 	if (lua_isnumber(nameObj))
 		error("ImSetParam: getting name from number is not supported");
 	if (!lua_isstring(nameObj)) {
-		lua_pushnumber(-1.0);
+		lua_pushnumber(-1.0f);
 		return;
 	}
 
@@ -2528,7 +2528,7 @@ void ImGetParam() {
 	if (lua_isnumber(nameObj))
 		error("ImGetParam: getting name from number is not supported");
 	if (!lua_isstring(nameObj)) {
-		lua_pushnumber(-1.0);
+		lua_pushnumber(-1.0f);
 		return;
 	}
 
@@ -2662,7 +2662,7 @@ static void SetSoundPosition() {
 	if (lua_isnumber(paramObj)) {
 		someParam = (int)lua_getnumber(paramObj);
 		if (someParam < 0.0)
-			someParam = 0.0;
+			someParam = 0.0f;
 	}
 
 	if (g_grim->currScene()) {

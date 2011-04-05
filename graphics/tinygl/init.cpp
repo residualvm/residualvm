@@ -99,18 +99,18 @@ void glInit(void *zbuffer1) {
 	glInitTextures(c);
 
 	// default state
-	c->current_color.X = 1.0;
-	c->current_color.Y = 1.0;
-	c->current_color.Z = 1.0;
-	c->current_color.W = 1.0;
+	c->current_color.X = 1.0f;
+	c->current_color.Y = 1.0f;
+	c->current_color.Z = 1.0f;
+	c->current_color.W = 1.0f;
 	c->longcurrent_color[0] = 65535;
 	c->longcurrent_color[1] = 65535;
 	c->longcurrent_color[2] = 65535;
 
-	c->current_normal.X = 1.0;
-	c->current_normal.Y = 0.0;
-	c->current_normal.Z = 0.0;
-	c->current_normal.W = 0.0;
+	c->current_normal.X = 1.0f;
+	c->current_normal.Y = 0.0f;
+	c->current_normal.Z = 0.0f;
+	c->current_normal.W = 0.0f;
 
 	c->current_edge_flag = 1;
 

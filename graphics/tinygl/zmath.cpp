@@ -10,9 +10,9 @@ void gl_M4_Id(M4 *a) {
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			if (i == j)
-				a->m[i][j] = 1.0;
+				a->m[i][j] = 1.0f;
 			else
-				a->m[i][j] = 0.0;
+				a->m[i][j] = 0.0f;
 		}
 	}
 }
@@ -36,7 +36,7 @@ void gl_M4_Mul(M4 *c, M4 *a, M4 *b) {
 	float s;
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
-			s = 0.0;
+			s = 0.0f;
 			for (k = 0; k < 4; k++)
 				s += a->m[i][k] * b->m[k][j];
 			c->m[i][j]=s;
@@ -55,7 +55,7 @@ void gl_M4_MulLeft(M4 *c, M4 *b) {
 
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
-			s = 0.0;
+			s = 0.0f;
 			for (k = 0; k < 4; k++)
 				s += a.m[i][k] * b->m[k][j];
 			c->m[i][j]=s;
@@ -120,10 +120,10 @@ void gl_M4_InvOrtho(M4 *a, M4 b) {
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < 3; j++)
 			a->m[i][j] = b.m[j][i];
-		a->m[3][0] = 0.0;
-		a->m[3][1] = 0.0;
-		a->m[3][2] = 0.0;
-		a->m[3][3] = 1.0;
+		a->m[3][0] = 0.0f;
+		a->m[3][1] = 0.0f;
+		a->m[3][2] = 0.0f;
+		a->m[3][3] = 1.0f;
 		for (i = 0; i < 3; i++) {
 			s = 0;
 			for (j = 0; j < 3; j++)
