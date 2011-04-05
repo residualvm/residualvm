@@ -30,6 +30,7 @@
 #include "common/savefile.h"
 #include "common/str.h"
 #include "common/fs.h"
+#include "common/str-array.h"
 
 /**
  * Provides a default savefile manager implementation for common platforms.
@@ -39,7 +40,7 @@ public:
 	DefaultSaveFileManager();
 	DefaultSaveFileManager(const Common::String &defaultSavepath);
 
-	virtual Common::StringList listSavefiles(const Common::String &pattern);
+	virtual Common::StringArray listSavefiles(const Common::String &pattern);
 	virtual Common::InSaveFile *openForLoading(const Common::String &filename);
 	virtual Common::OutSaveFile *openForSaving(const Common::String &filename);
 	virtual bool removeSavefile(const Common::String &filename);
