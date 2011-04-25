@@ -42,7 +42,7 @@ Also beware that since Residual is currently in an alpha-state, there is
 no guarantee that your saves will continue to work with newer builds.
 
 For more information, see the page on Residual at the wiki page:
-https://apps.sourceforge.net/mediawiki/residual
+http://apps.sourceforge.net/mediawiki/residual
 
 Which datafiles are needed?
 ---------------------------
@@ -121,10 +121,10 @@ By default, the configuration file is saved in, and loaded from:
 How do I report bugs?
 ---------------------
 You can report bugs at our github-issue-tracker:
-https://www.github.com/residual/residual/issues
+http://www.github.com/residual/residual/issues
 
 Please read the Wiki regarding how to report bugs properly first though:
-https://sourceforge.net/apps/mediawiki/residual/index.php?title=Reporting_Bugs
+http://sourceforge.net/apps/mediawiki/residual/index.php?title=Reporting_Bugs
 
 Remember to always have the following information in your bug reports:
 * Bug details, including instructions on reproducing it
