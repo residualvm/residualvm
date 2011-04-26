@@ -158,6 +158,36 @@ static const GrimGameDescription gameDescriptions[] = {
 		GType_MONKEY4
 	},
 	{
+		// Escape from Monkey Island English Windows
+		{
+			"monkey4",
+			"",
+			AD_ENTRY1s("local.m4b", "2692acceed003c8b067bcaf3405238d0", 3684319),
+			Common::EN_ANY,
+			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUIO_NONE
+		},
+		0,
+		GType_MONKEY4
+	}, // local.m4b doesn't differ between the English and French-versions, 
+	   // should perhaps check on some other file?
+	   // For now both these entries are correct.
+/*	{
+		// Escape from Monkey Island French Windows
+		{
+			"monkey4",
+			"",
+			AD_ENTRY1s("local.m4b", "2692acceed003c8b067bcaf3405238d0", 3684319),
+			Common::FR_FRA,
+			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUIO_NONE
+		},
+		0,
+		GType_MONKEY4
+	},*/
+	{
 		// Escape from Monkey Island demo
 		{
 			"monkey4",
