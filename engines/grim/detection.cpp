@@ -144,11 +144,67 @@ static const GrimGameDescription gameDescriptions[] = {
 		GType_GRIM
 	},
 	{
+		// Escape from Monkey Island English
+		{
+			"monkey4",
+			"",
+			AD_ENTRY1s("voiceAll.m4b", "c66cc6b656a2b1abae373b61d3115342", 17325629),
+			Common::EN_ANY,
+			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUIO_NONE
+		},
+		0,
+		GType_MONKEY4
+	},
+	{
+		// Escape from Monkey Island Italian
+		{
+			"monkey4",
+			"",
+			AD_ENTRY1s("voiceAll.m4b", "d4b9659a0853e707fdb7c7a68c7604d2", 21206992),
+			Common::IT_ITA,
+			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUIO_NONE
+		},
+		0,
+		GType_MONKEY4
+	},
+	{
+		// Escape from Monkey Island Spanish
+		{
+			"monkey4",
+			"",
+			AD_ENTRY1s("voiceAll.m4b", "0b48fba32e47f372712ed06365678c2b", 18486773),
+			Common::ES_ESP,
+			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUIO_NONE
+		},
+		0,
+		GType_MONKEY4
+	},
+	{
+		// Escape from Monkey Island French
+		{
+			"monkey4",
+			"",
+			AD_ENTRY1s("voiceAll.m4b", "e75ca3a03515e009dc2e4426010d8ebb", 20044753),
+			Common::FR_FRA,
+			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUIO_NONE
+		},
+		0,
+		GType_MONKEY4
+	},
+	{
 		// Escape from Monkey Island English PS2
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("local.m4b", "00c4eb73f6b6607ba3d4e8d3f956b37b", 3804862),
+			AD_ENTRY1s("voiceAll.m4b", "c03391279486f0158c75398f5117ad73", 15095808),
 			Common::EN_ANY,
 			Common::kPlatformPS2,
 			ADGF_NO_FLAGS,
