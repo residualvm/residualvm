@@ -1522,6 +1522,13 @@ void GrimEngine::setSceneLock(const char *name, bool lockStatus) {
 }
 
 void GrimEngine::setScene(const char *name) {
+	char *nameb = (char *)name;
+	//EMI uses binary set files, so append b
+	if (getGameType() == GType_MONKEY4) {
+		nameb = new char[strlen(name) + 2];
+		sprintf(nameb, "%sb", name);
+	}
+
 	Scene *scene = findScene(name);
 	Scene *lastScene = _currScene;
 
@@ -1530,7 +1537,7 @@ void GrimEngine::setScene(const char *name) {
 		setScene(scene);
 		return;
 	}
-	Block *b = g_resourceloader->getFileBlock(name);
+	Block *b = g_resourceloader->getFileBlock(nameb);
 	if (!b)
 		warning("Could not find scene file %s", name);
 	_currScene = new Scene(name, b->data(), b->len());
@@ -1541,6 +1548,9 @@ void GrimEngine::setScene(const char *name) {
 		removeScene(lastScene);
 		delete lastScene;
 	}
+
+	if (getGameType() == GType_MONKEY4)
+		delete[] nameb;
 	delete b;
 }
 
