@@ -31,6 +31,10 @@
 #include "graphics/vector3d.h"
 #include "graphics/line3d.h"
 
+namespace Common {
+	class MemoryReadStream;
+}
+
 namespace Grim {
 
 class SaveGame;
@@ -55,6 +59,7 @@ public:
 	bool restoreState(SaveGame *savedState);
 
 	void load(TextSplitter &ts);
+	void loadBinary(Common::MemoryReadStream *ms);
 
 	void setVisible(bool visible);
 
