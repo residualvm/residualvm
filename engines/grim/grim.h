@@ -52,14 +52,13 @@ enum GrimGameType {
 };
 
 enum GrimGameFeatures {
-	GF_DEMO =   1 << 0
+	GF_DEMO  =   1 << 0,
+	EMI_DEMO =   1 << 1
 };
 
 struct GrimGameDescription;
 
 typedef Common::HashMap<Common::String, const char *> StringPtrHashMap;
-
-#define GF_DEMO		1
 
 struct ControlDescriptor {
 	const char *name;
@@ -266,8 +265,6 @@ public:
 	TextObjectDefaults _sayLineDefaults;
 	TextObjectDefaults _printLineDefaults;
 	TextObjectDefaults _blastTextDefaults;
-
-	Common::HashMap<int32, LuaFile *> _files;
 
 private:
 
