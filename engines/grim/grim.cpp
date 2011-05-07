@@ -331,6 +331,7 @@ GrimEngine::GrimEngine(OSystem *syst, int gameFlags, GrimGameType gameType) :
 
 	Color *c = new Color(0, 0, 0);
 	registerColor(c);
+	registerColor(new Color(255, 255, 255)); // Default color for actors. Id == 2
 
 	_printLineDefaults.x = 0;
 	_printLineDefaults.y = 100;
@@ -374,6 +375,7 @@ GrimEngine::~GrimEngine() {
 	for (ActorListType::const_iterator i = _actors.begin(); i != _actors.end(); ++i)
 		delete i->_value;
 
+	killActors();
 	killPrimitiveObjects();
 	killTextObjects();
 	killBitmaps();
@@ -587,7 +589,7 @@ void GrimEngine::handleChars(int operation, int key, int /*keyModifier*/, uint16
 
 void GrimEngine::handleControls(int operation, int key, int /*keyModifier*/, uint16 ascii) {
 	lua_Object buttonFunc, joyFunc;
-	bool buttonFuncIsTable, joyFuncIsTable;
+	bool buttonFuncIsTable;
 
 	// If we're not supposed to handle the key then don't
 	if (!_controlsEnabled[key])
@@ -626,10 +628,8 @@ void GrimEngine::handleControls(int operation, int key, int /*keyModifier*/, uin
 			error("handleControls: joystick handler not a function");
 			return;
 		}
-		joyFuncIsTable = true;
 	} else if (lua_isfunction(joyHandler)) {
 		joyFunc = joyHandler;
-		joyFuncIsTable = false;
 	} else {
 		error("handleControls: invalid joystick handler");
 		return;
@@ -766,7 +766,7 @@ void GrimEngine::luaUpdate() {
 	// Run asynchronous tasks
 	lua_runtasks();
 
-	if (_mode != ENGINE_MODE_PAUSE) {
+	if (_mode == ENGINE_MODE_NORMAL) {
 		// Update the actors. Do it here so that we are sure to react asap to any change
 		// in the actors state caused by lua.
 		for (ActorListType::iterator i = _actors.begin(); i != _actors.end(); ++i) {
@@ -777,7 +777,7 @@ void GrimEngine::luaUpdate() {
 			// Note that the actor need not be visible to update chores, for example:
 			// when Manny has just brought Meche back he is offscreen several times
 			// when he needs to perform certain chores
-			if (a->inSet(_currScene->name()))
+			if (a->isInSet(_currScene->getName()))
 				a->update();
 		}
 		g_currentUpdatedActor = NULL;
@@ -812,7 +812,7 @@ void GrimEngine::updateDisplayScene() {
 		if (!_currScene)
 			return;
 
-		cameraPostChangeHandle(_currScene->setup());
+		cameraPostChangeHandle(_currScene->getSetup());
 
 		g_driver->clearScreen();
 
@@ -859,9 +859,9 @@ void GrimEngine::updateDisplayScene() {
 		// Draw actors
 		for (ActorListType::iterator i = _actors.begin(); i != _actors.end(); ++i) {
 			Actor *a = i->_value;
-			if (a->inSet(_currScene->name()) && a->visible())
+			if (a->isInSet(_currScene->getName()) && a->isVisible())
 				a->draw();
-			a->undraw(a->inSet(_currScene->name()) && a->visible());
+			a->undraw(a->isInSet(_currScene->getName()) && a->isVisible());
 		}
 		flagRefreshShadowMask(false);
 
@@ -1063,8 +1063,11 @@ void GrimEngine::savegameRestore() {
 	//  unlock resources
 	delete _savedState;
 
-	if (bundle_dofile("patch05.bin") == 2)
-		single_dofile("patch05.bin");
+	// Apply the patch, only if it wasn't applied already.
+	if (lua_isnil(lua_getglobal("  service_release.lua"))) {
+		if (bundle_dofile("patch05.bin") == 2)
+			single_dofile("patch05.bin");
+	}
 
 	g_imuse->pause(false);
 	g_smush->pause(false);
@@ -1077,7 +1080,7 @@ void GrimEngine::restoreActors(SaveGame *state) {
 	int32 size = state->readLEUint32();
 	for (int32 i = 0; i < size; ++i) {
 		int32 id = state->readLEUint32();
-		Actor *a = actor(id);
+		Actor *a = getActor(id);
 		if (!a) {
 			a = new Actor();
 			a->_id = id;
@@ -1102,7 +1105,7 @@ void GrimEngine::restoreTextObjects(SaveGame *state) {
 	state->beginSection('TEXT');
 
 	_sayLineDefaults.disabled = state->readLESint32();
-	_sayLineDefaults.fgColor = color(state->readLEUint32());
+	_sayLineDefaults.fgColor = getColor(state->readLEUint32());
 	_sayLineDefaults.font = getFont(state->readLEUint32());
 	_sayLineDefaults.height = state->readLESint32();
 	_sayLineDefaults.justify = state->readLESint32();
@@ -1115,7 +1118,7 @@ void GrimEngine::restoreTextObjects(SaveGame *state) {
 	int32 size = state->readLESint32();
 	for (int32 i = 0; i < size; ++i) {
 		int32 id = state->readLEUint32();
-		TextObject *t = textObject(id);
+		TextObject *t = getTextObject(id);
 		if (!t) {
 			t = new TextObject();
 			t->_id = id;
@@ -1161,7 +1164,7 @@ void GrimEngine::restorePrimitives(SaveGame *state) {
 	int32 size = state->readLESint32();
 	for (int32 i = 0; i < size; ++i) {
 		int32 id = state->readLEUint32();
-		PrimitiveObject *p = primitiveObject(id);
+		PrimitiveObject *p = getPrimitiveObject(id);
 		if (!p) {
 			p = new PrimitiveObject();
 			p->_id = id;
@@ -1183,7 +1186,7 @@ void GrimEngine::restoreObjectStates(SaveGame *state) {
 	int32 size = state->readLESint32();
 	for (int32 i = 0; i < size; ++i) {
 		int32 id = state->readLEUint32();
-		ObjectState *o = objectState(id);
+		ObjectState *o = getObjectState(id);
 		if (!o) {
 			o = new ObjectState();
 			o->_id = id;
@@ -1259,9 +1262,9 @@ void GrimEngine::restoreColors(SaveGame *state) {
 		if (id > Object::s_id) {
 			Object::s_id = id;
 		}
-		c->red() = state->readByte();
-		c->green() = state->readByte();
-		c->blue() = state->readByte();
+		c->getRed() = state->readByte();
+		c->getGreen() = state->readByte();
+		c->getBlue() = state->readByte();
 		registerColor(c);
 	}
 
@@ -1281,7 +1284,7 @@ void GrimEngine::storeSaveGameImage(SaveGame *state) {
 	g_grim->setMode(mode);
 	state->beginSection('SIMG');
 	if (screenshot) {
-		int size = screenshot->width() * screenshot->height() * sizeof(uint16);
+		int size = screenshot->getWidth() * screenshot->getHeight() * sizeof(uint16);
 		screenshot->setNumber(0);
 		char *data = screenshot->getData();
 		state->write(data, size);
@@ -1435,11 +1438,11 @@ void GrimEngine::saveBitmaps(SaveGame *state) {
 	for (BitmapListType::iterator i = _bitmaps.begin(); i != _bitmaps.end(); ++i) {
 		state->writeLEUint32(i->_key);
 		Bitmap *b = i->_value;
-		state->writeCharString(b->filename());
+		state->writeCharString(b->getFilename());
 
-		state->writeLESint32(b->currentImage());
-		state->writeLESint32(b->x());
-		state->writeLESint32(b->y());
+		state->writeLESint32(b->getCurrentImage());
+		state->writeLESint32(b->getX());
+		state->writeLESint32(b->getY());
 	}
 
 	state->endSection();
@@ -1464,9 +1467,9 @@ void GrimEngine::saveColors(SaveGame *state) {
 	for (ColorListType::iterator i = _colors.begin(); i != _colors.end(); ++i) {
 		state->writeLEUint32(i->_key);
 		Color *c = i->_value;
-		state->writeByte(c->red());
-		state->writeByte(c->green());
-		state->writeByte(c->blue());
+		state->writeByte(c->getRed());
+		state->writeByte(c->getGreen());
+		state->writeByte(c->getBlue());
 	}
 
 	state->endSection();
@@ -1503,7 +1506,7 @@ void GrimEngine::savegameCallback() {
 Scene *GrimEngine::findScene(const char *name) {
 	// Find scene object
 	for (SceneListType::const_iterator i = scenesBegin(); i != scenesEnd(); ++i) {
-		if (!strcmp(i->_value->name(), name))
+		if (!strcmp(i->_value->getName(), name))
 			return i->_value;
 	}
 	return NULL;
@@ -1533,7 +1536,7 @@ void GrimEngine::setScene(const char *name) {
 	Block *b = g_resourceloader->getFileBlock(name);
 	if (!b)
 		warning("Could not find scene file %s", name);
-	_currScene = new Scene(name, b->data(), b->len());
+	_currScene = new Scene(name, b->getData(), b->getLen());
 	registerScene(_currScene);
 	_currScene->setSoundParameters(20, 127);
 	// should delete the old scene after creating the new one
@@ -1556,10 +1559,10 @@ void GrimEngine::setScene(Scene *scene) {
 }
 
 void GrimEngine::makeCurrentSetup(int num) {
-	int prevSetup = g_grim->currScene()->setup();
+	int prevSetup = g_grim->getCurrScene()->getSetup();
 	if (prevSetup != num) {
-		currScene()->setSetup(num);
-		currScene()->setSoundParameters(20, 127);
+		getCurrScene()->setSetup(num);
+		getCurrScene()->setSoundParameters(20, 127);
 		cameraChangeHandle(prevSetup, num);
 		// here should be set sound position
 	}
@@ -1581,7 +1584,7 @@ bool GrimEngine::getControlState(int num) {
 	return _controlsState[num];
 }
 
-float GrimEngine::perSecond(float rate) const {
+float GrimEngine::getPerSecond(float rate) const {
 	return rate * _frameTime / 1000;
 }
 
@@ -1600,7 +1603,7 @@ void GrimEngine::killTextObjects() {
 	}
 }
 
-TextObject *GrimEngine::textObject(int id) const {
+TextObject *GrimEngine::getTextObject(int id) const {
 	return _textObjects[id];
 }
 
@@ -1613,19 +1616,29 @@ void GrimEngine::killActor(Actor *a) {
 }
 
 void GrimEngine::killActors() {
-// 	_actors.clear();
-// 	while (!_actors.empty()) {
-// 		delete _actors.back();
-// 		_actors.pop_back();
-// 	}
+	while (!_actors.empty()) {
+		delete _actors.begin()->_value;
+	}
 }
 
-Actor *GrimEngine::actor(int id) const {
+Actor *GrimEngine::getActor(int id) const {
 	if (_actors.contains(id)) {
 		return _actors[id];
 	}
 
 	return NULL;
+}
+
+Bitmap *GrimEngine::registerBitmap(const char *filename, const char *data, int len) {
+	Bitmap *b = new Bitmap(filename, data, len);
+	registerBitmap(b);
+	return b;
+}
+
+Bitmap *GrimEngine::registerBitmap(const char *data, int width, int height, const char *filename) {
+	Bitmap *b = new Bitmap(data, width, height, 16, filename);
+	registerBitmap(b);
+	return b;
 }
 
 void GrimEngine::registerBitmap(Bitmap *bitmap) {
@@ -1689,7 +1702,7 @@ void GrimEngine::killColors() {
 	}
 }
 
-Color *GrimEngine::color(int32 id) const {
+Color *GrimEngine::getColor(int32 id) const {
 	if (_colors.contains(id)) {
 		return _colors[id];
 	}
@@ -1709,7 +1722,7 @@ void GrimEngine::killObjectStates() {
 
 }
 
-ObjectState *GrimEngine::objectState(int id) const {
+ObjectState *GrimEngine::getObjectState(int id) const {
 	return _objectStates[id];
 }
 
@@ -1729,7 +1742,7 @@ void GrimEngine::killPrimitiveObjects() {
 	}
 }
 
-PrimitiveObject *GrimEngine::primitiveObject(int id) const {
+PrimitiveObject *GrimEngine::getPrimitiveObject(int id) const {
 	return _primitiveObjects[id];
 }
 

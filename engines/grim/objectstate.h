@@ -49,12 +49,12 @@ public:
 	void saveState(SaveGame *savedState) const;
 	bool restoreState(SaveGame *savedState);
 
-	int setupID() const { return _setupID; }
-	Position pos() const { return _pos; }
+	int getSetupID() const { return _setupID; }
+	Position getPos() const { return _pos; }
 	void setPos(Position position) { _pos = position; }
 
-	const char *bitmapFilename() const {
-		return _bitmap->filename();
+	const char *getBitmapFilename() const {
+		return _bitmap->getFilename();
 	}
 
 	void setNumber(int val) {
@@ -81,7 +81,7 @@ private:
 	bool _visibility;
 	int _setupID;
 	Position _pos;
-	BitmapPtr _bitmap, _zbitmap;
+	Bitmap *_bitmap, *_zbitmap;
 
 	friend class GrimEngine;
 };

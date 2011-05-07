@@ -61,16 +61,15 @@ public:
 	int isChoring(int num, bool excludeLooping);
 	int isChoring(bool excludeLooping);
 
-	void setLookAt(const Graphics::Vector3d &vec, float rate);
 	void setHead(int joint1, int joint2, int joint3, float maxRoll, float maxPitch, float maxYaw);
-	void moveHead();
+	void moveHead(bool lookingMode, const Graphics::Vector3d &lookAt, float rate);
 
 	void update();
 	void setupTextures();
 	void draw();
 	void setPosRotate(Graphics::Vector3d pos, float pitch, float yaw, float roll);
 
-	Costume *previousCostume() const;
+	Costume *getPreviousCostume() const;
 
 	void saveState(SaveGame *state) const;
 	bool restoreState(SaveGame *state);
@@ -79,11 +78,11 @@ public:
 	public:
 		Component(Component *parent, int parentID, tag32 tag);
 
-		tag32 tag() { return _tag; }
-		CMap *cmap();
+		tag32 getTag() { return _tag; }
+		CMap *getCMap();
 		void setColormap(CMap *c);
-		bool visible();
-		Component *parent() { return _parent; }
+		bool isVisible();
+		Component *getParent() { return _parent; }
 		virtual void setMatrix(Graphics::Matrix4) { };
 		virtual void init() { }
 		virtual void setKey(int) { }
@@ -93,6 +92,8 @@ public:
 		virtual void setupTexture() { }
 		virtual void draw() { }
 		virtual void reset() { }
+		virtual void saveState(SaveGame *) { }
+		virtual void restoreState(SaveGame *) { }
 		virtual ~Component() { }
 
 	protected:
@@ -184,8 +185,6 @@ private:
 	Model::HierNode *_joint1Node;
 	Model::HierNode *_joint2Node;
 	Model::HierNode *_joint3Node;
-	Graphics::Vector3d _lookAt;
-	float _lookAtRate;
 
 	float _headPitch;
 	float _headYaw;

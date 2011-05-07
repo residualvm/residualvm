@@ -41,8 +41,8 @@ class LuaFile;
 class Block {
 public:
 	Block(const char *dataPtr, int length) : _data(dataPtr), _len(length) {}
-	const char *data() const { return _data; }
-	int len() const { return _len; }
+	const char *getData() const { return _data; }
+	int getLen() const { return _len; }
 
 	~Block() { delete[] _data; }
 
@@ -59,11 +59,11 @@ public:
 	bool open(const Common::String &filename);
 	bool isOpen() const;
 	void close();
-	bool fileExists(const Common::String &filename) const;
+	bool getFileExists(const Common::String &filename) const;
 	Block *getFileBlock(const Common::String &filename) const;
 	Common::File *openNewStreamFile(const Common::String &filename) const;
 	LuaFile *openNewStreamLua(const Common::String &filename) const;
-	int fileLength(const Common::String &filename) const;
+	int getFileLength(const Common::String &filename) const;
 
 	~Lab() { close(); }
 

@@ -79,7 +79,7 @@ Scene::Scene(const char *sceneName, const char *buf, int len) :
 	_maxVolume = 0;
 
 	// Lights are optional
-	if (ts.eof())
+	if (ts.isEof())
 		return;
 
 	ts.expectString("section: lights");
@@ -90,7 +90,7 @@ Scene::Scene(const char *sceneName, const char *buf, int len) :
 
 	// Calculate the number of sectors
 	ts.expectString("section: sectors");
-	if (ts.eof())	// Sectors are optional, but section: doesn't seem to be
+	if (ts.isEof())	// Sectors are optional, but section: doesn't seem to be
 		return;
 
 	int sectorStart = ts.getLineNumber();
@@ -98,7 +98,7 @@ Scene::Scene(const char *sceneName, const char *buf, int len) :
 	// Find the number of sectors (while the sectors usually
 	// count down from the highest number there are a few
 	// cases where they count up, see hh.set for example)
-	while (!ts.eof()) {
+	while (!ts.isEof()) {
 		ts.scanString(" %s", 1, tempBuf);
 		if (!scumm_stricmp(tempBuf, "sector"))
 			_numSectors++;
@@ -135,7 +135,7 @@ void Scene::saveState(SaveGame *savedState) const {
 	savedState->writeString(_name);
 	savedState->writeLESint32(_numCmaps);
 	for (int i = 0; i < _numCmaps; ++i) {
-		savedState->writeCharString(_cmaps[i]->filename());
+		savedState->writeCharString(_cmaps[i]->getFilename());
 	}
 	savedState->writeLEUint32(_currSetup - _setups); // current setup id
 	savedState->writeLEUint32(_locked);
@@ -159,7 +159,7 @@ void Scene::saveState(SaveGame *savedState) const {
 		//bkgndBm
 		if (set._bkgndBm) {
 			savedState->writeLEUint32(1);
-			savedState->writeCharString(set._bkgndBm->filename());
+			savedState->writeCharString(set._bkgndBm->getFilename());
 		} else {
 			savedState->writeLEUint32(0);
 		}
@@ -167,7 +167,7 @@ void Scene::saveState(SaveGame *savedState) const {
 		//bkgndZBm
 		if (set._bkgndZBm) {
 			savedState->writeLEUint32(1);
-			savedState->writeCharString(set._bkgndZBm->filename());
+			savedState->writeCharString(set._bkgndZBm->getFilename());
 		} else {
 			savedState->writeLEUint32(0);
 		}
@@ -228,7 +228,7 @@ bool Scene::restoreState(SaveGame *savedState) {
 	_states.clear();
 	for (int i = 0; i < _numObjectStates; ++i) {
 		int32 id = savedState->readLEUint32();
-		ObjectState *o = g_grim->objectState(id);
+		ObjectState *o = g_grim->getObjectState(id);
 		_states.push_back(o);
 	}
 
@@ -345,7 +345,7 @@ void Scene::Light::load(TextSplitter &ts) {
 	char buf[256];
 
 	// Light names can be null, but ts doesn't seem flexible enough to allow this
-	if (strlen(ts.currentLine()) > strlen(" light"))
+	if (strlen(ts.getCurrentLine()) > strlen(" light"))
 		ts.scanString(" light %256s", 1, buf);
 	else {
 		ts.nextLine();
@@ -364,9 +364,9 @@ void Scene::Light::load(TextSplitter &ts) {
 
 	int r, g, b;
 	ts.scanString(" color %d %d %d", 3, &r, &g, &b);
-	_color.red() = r;
-	_color.green() = g;
-	_color.blue() = b;
+	_color.getRed() = r;
+	_color.getGreen() = g;
+	_color.getBlue() = b;
 }
 
 void Scene::Setup::setupCamera() const {
@@ -419,7 +419,7 @@ void Scene::drawBackground() const {
 
 void Scene::drawBitmaps(ObjectState::Position stage) {
 	for (StateList::iterator i = _states.begin(); i != _states.end(); ++i) {
-		if ((*i)->pos() == stage && _currSetup == _setups + (*i)->setupID())
+		if ((*i)->getPos() == stage && _currSetup == _setups + (*i)->getSetupID())
 			(*i)->draw();
 	}
 }
@@ -427,7 +427,7 @@ void Scene::drawBitmaps(ObjectState::Position stage) {
 Sector *Scene::findPointSector(Graphics::Vector3d p, Sector::SectorType type) {
 	for (int i = 0; i < _numSectors; i++) {
 		Sector *sector = _sectors[i];
-		if (sector && (sector->type() & type) && sector->visible() && sector->isPointInSector(p))
+		if (sector && (sector->getType() & type) && sector->isVisible() && sector->isPointInSector(p))
 			return sector;
 	}
 	return NULL;
@@ -440,9 +440,9 @@ void Scene::findClosestSector(Graphics::Vector3d p, Sector **sect, Graphics::Vec
 
 	for (int i = 0; i < _numSectors; i++) {
 		Sector *sector = _sectors[i];
-		if ((sector->type() & Sector::WalkType) == 0 || !sector->visible())
+		if ((sector->getType() & Sector::WalkType) == 0 || !sector->isVisible())
 			continue;
-		Graphics::Vector3d closestPt = sector->closestPoint(p);
+		Graphics::Vector3d closestPt = sector->getClosestPoint(p);
 		float thisDist = (closestPt - p).magnitude();
 		if (!resultSect || thisDist < minDist) {
 			resultSect = sector;
@@ -461,7 +461,7 @@ void Scene::findClosestSector(Graphics::Vector3d p, Sector **sect, Graphics::Vec
 ObjectState *Scene::findState(const char *filename) {
 	// Check the different state objects for the bitmap
 	for (StateList::iterator i = _states.begin(); i != _states.end(); ++i) {
-		const char *file = (*i)->bitmapFilename();
+		const char *file = (*i)->getBitmapFilename();
 
 		if (strcmp(file, filename) == 0)
 			return *i;
@@ -489,7 +489,6 @@ void Scene::setLightIntensity(int light, float intensity) {
 }
 
 void Scene::setLightPosition(const char *light, Graphics::Vector3d pos) {
-	printf("%s\n",light);
 	for (int i = 0; i < _numLights; ++i) {
 		Light &l = _lights[i];
 		if (l._name == light) {

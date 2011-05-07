@@ -86,14 +86,34 @@ ResourceLoader::ResourceLoader() {
 	}
 }
 
+template<typename T>
+void clearList(Common::List<T> &list) {
+	while (!list.empty()) {
+		T p = list.front();
+		list.erase(list.begin());
+		delete p;
+	}
+}
+
 ResourceLoader::~ResourceLoader() {
-	for (LabList::const_iterator i = _labs.begin(); i != _labs.end(); ++i)
-		delete *i;
+	for (Common::Array<ResourceCache>::iterator i = _cache.begin(); i != _cache.end(); ++i) {
+		ResourceCache &r = *i;
+		delete[] r.fname;
+		delete r.resPtr;
+	}
+	clearList(_labs);
+	clearList(_materials);
+	clearList(_bitmaps);
+	clearList(_models);
+	clearList(_colormaps);
+	clearList(_keyframeAnims);
+	clearList(_fonts);
+	clearList(_lipsyncs);
 }
 
 const Lab *ResourceLoader::getLab(const char *filename) const {
 	for (LabList::const_iterator i = _labs.begin(); i != _labs.end(); ++i)
-		if ((*i)->fileExists(filename))
+		if ((*i)->getFileExists(filename))
 			return *i;
 
 	return NULL;
@@ -126,7 +146,7 @@ ResourceLoader::ResourceCache *ResourceLoader::getEntryFromCache(const char *fil
 	return (ResourceLoader::ResourceCache *)bsearch(&key, _cache.begin(), _cache.size(), sizeof(ResourceCache), sortCallback);
 }
 
-bool ResourceLoader::fileExists(const char *filename) const {
+bool ResourceLoader::getFileExists(const char *filename) const {
 	return getLab(filename) != NULL;
 }
 
@@ -170,10 +190,10 @@ Common::File *ResourceLoader::openNewStreamFile(const char *filename) const {
 		return l->openNewStreamFile(filename);
 }
 
-int ResourceLoader::fileLength(const char *filename) const {
+int ResourceLoader::getFileLength(const char *filename) const {
 	const Lab *l = getLab(filename);
 	if (l)
-		return l->fileLength(filename);
+		return l->getFileLength(filename);
 	else
 		return 0;
 }
@@ -183,7 +203,7 @@ void ResourceLoader::putIntoCache(Common::String fname, Block *res) {
 	entry.resPtr = res;
 	entry.fname = new char[fname.size() + 1];
 	strcpy(entry.fname, fname.c_str());
-	_cacheMemorySize += res->len();
+	_cacheMemorySize += res->getLen();
 	_cache.push_back(entry);
 	_cacheDirty = true;
 }
@@ -201,7 +221,7 @@ Bitmap *ResourceLoader::loadBitmap(const char *filename) {
 		putIntoCache(fname, b);
 	}
 
-	Bitmap *result = new Bitmap(filename, b->data(), b->len());
+	Bitmap *result = new Bitmap(filename, b->getData(), b->getLen());
 
 	return result;
 }
@@ -218,7 +238,7 @@ CMap *ResourceLoader::loadColormap(const char *filename) {
 		putIntoCache(fname, b);
 	}
 
-	CMap *result = new CMap(filename, b->data(), b->len());
+	CMap *result = new CMap(filename, b->getData(), b->getLen());
 	_colormaps.push_back(result);
 
 	return result;
@@ -234,7 +254,7 @@ Costume *ResourceLoader::loadCostume(const char *filename, Costume *prevCost) {
 			error("Could not find costume \"%s\"", filename);
 		putIntoCache(fname, b);
 	}
-	Costume *result = new Costume(filename, b->data(), b->len(), prevCost);
+	Costume *result = new Costume(filename, b->getData(), b->getLen(), prevCost);
 
 	return result;
 }
@@ -250,7 +270,7 @@ Font *ResourceLoader::loadFont(const char *filename) {
 		putIntoCache(fname, b);
 	}
 
-	Font *result = new Font(filename, b->data(), b->len());
+	Font *result = new Font(filename, b->getData(), b->getLen());
 
 	return result;
 }
@@ -266,7 +286,7 @@ KeyframeAnim *ResourceLoader::loadKeyframe(const char *filename) {
 		putIntoCache(fname, b);
 	}
 
-	KeyframeAnim *result = new KeyframeAnim(filename, b->data(), b->len());
+	KeyframeAnim *result = new KeyframeAnim(filename, b->getData(), b->getLen());
 	_keyframeAnims.push_back(result);
 
 	return result;
@@ -283,7 +303,7 @@ LipSync *ResourceLoader::loadLipSync(const char *filename) {
 			return NULL;
 	}
 
-	result = new LipSync(filename, b->data(), b->len());
+	result = new LipSync(filename, b->getData(), b->getLen());
 
 	// Some lipsync files have no data
 	if (result->isValid()) {
@@ -309,7 +329,7 @@ Material *ResourceLoader::loadMaterial(const char *filename, CMap *c) {
 		putIntoCache(fname, b);
 	}
 
-	Material *result = new Material(fname.c_str(), b->data(), b->len(), c);
+	Material *result = new Material(fname.c_str(), b->getData(), b->getLen(), c);
 	_materials.push_back(result);
 
 	return result;
@@ -326,7 +346,7 @@ Model *ResourceLoader::loadModel(const char *filename, CMap *c) {
 		putIntoCache(fname, b);
 	}
 
-	Model *result = new Model(filename, b->data(), b->len(), c);
+	Model *result = new Model(filename, b->getData(), b->getLen(), c);
 	_models.push_back(result);
 
 	return result;
@@ -344,7 +364,7 @@ void ResourceLoader::uncache(const char *filename) {
 	for (unsigned int i = 0; i < _cache.size(); i++) {
 		if (fname.compareTo(_cache[i].fname) == 0) {
 			delete[] _cache[i].fname;
-			_cacheMemorySize -= _cache[i].resPtr->len();
+			_cacheMemorySize -= _cache[i].resPtr->getLen();
 			delete _cache[i].resPtr;
 			_cache.remove_at(i);
 			_cacheDirty = true;
@@ -394,7 +414,7 @@ MaterialPtr ResourceLoader::getMaterial(const char *fname, CMap *c) {
 BitmapPtr ResourceLoader::getBitmap(const char *fname) {
 	for (Common::List<Bitmap *>::const_iterator i = _bitmaps.begin(); i != _bitmaps.end(); ++i) {
 		Bitmap *b = *i;
-		if (strcmp(fname, b->filename()) == 0) {
+		if (strcmp(fname, b->getFilename()) == 0) {
 			return b;
 		}
 	}
@@ -430,7 +450,7 @@ CMapPtr ResourceLoader::getColormap(const char *fname) {
 KeyframeAnimPtr ResourceLoader::getKeyframe(const char *fname) {
 	for (Common::List<KeyframeAnim *>::const_iterator i = _keyframeAnims.begin(); i != _keyframeAnims.end(); ++i) {
 		KeyframeAnim *k = *i;
-		if (strcmp(fname, k->filename()) == 0) {
+		if (strcmp(fname, k->getFilename()) == 0) {
 			return k;
 		}
 	}

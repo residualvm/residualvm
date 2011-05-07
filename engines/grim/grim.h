@@ -76,6 +76,11 @@ public:
 	typedef Common::HashMap<int32, Bitmap *> BitmapListType;
 	typedef Common::HashMap<int32, Font *> FontListType;
 	typedef Common::HashMap<int32, Color *> ColorListType;
+	typedef Common::HashMap<int32, ObjectState *> StateListType;
+	typedef Common::HashMap<int, Scene *> SceneListType;
+	typedef Common::HashMap<int, Actor *> ActorListType;
+	typedef Common::HashMap<int32, TextObject *> TextListType;
+	typedef Common::HashMap<int, PrimitiveObject *> PrimitiveListType;
 
 	GrimEngine(OSystem *syst, int gameFlags, GrimGameType gameType);
 	virtual ~GrimEngine();
@@ -106,13 +111,13 @@ public:
 	void drawPrimitives();
 
 	void mainLoop();
-	unsigned frameStart() const { return _frameStart; }
-	unsigned frameTime() const { return _frameTime; }
+	unsigned getFrameStart() const { return _frameStart; }
+	unsigned getFrameTime() const { return _frameTime; }
 
 	// perSecond should allow rates of zero, some actors will accelerate
 	// up to their normal speed (such as the bone wagon) so handling
 	// a walking rate of zero should happen in the default actor creation
-	float perSecond(float rate) const;
+	float getPerSecond(float rate) const;
 
 	int getTextSpeed() { return _textSpeed; }
 	void setTextSpeed(int speed);
@@ -126,93 +131,59 @@ public:
 	void setSceneLock(const char *name, bool lockStatus);
 	void setScene(const char *name);
 	void setScene(Scene *scene);
-	Scene *currScene() { return _currScene; }
-	const char *sceneName() const { return _currScene->name(); }
+	Scene *getCurrScene() { return _currScene; }
+	const char *getSceneName() const { return _currScene->getName(); }
 	void makeCurrentSetup(int num);
 
 	// Scene registration
-	typedef Common::HashMap<int, Scene *> SceneListType;
-	SceneListType::const_iterator scenesBegin() const {
-		return _scenes.begin();
-	}
-	SceneListType::const_iterator scenesEnd() const {
-		return _scenes.end();
-	}
+	SceneListType::const_iterator scenesBegin() const { return _scenes.begin(); }
+	SceneListType::const_iterator scenesEnd() const { return _scenes.end(); }
 	void registerScene(Scene *a);
 	void removeScene(Scene *a);
 	void killScenes();
 	int sceneId(Scene *s) const;
 
-	void flagRefreshShadowMask(bool flag) {
-		_refreshShadowMask = flag;
-	}
-	bool getFlagRefreshShadowMask() {
-		return _refreshShadowMask;
-	}
+	void flagRefreshShadowMask(bool flag) { _refreshShadowMask = flag; }
+	bool getFlagRefreshShadowMask() { return _refreshShadowMask; }
 
-	Bitmap *registerBitmap(const char *filename, const char *data, int len) {
-		Bitmap *b = new Bitmap(filename, data, len);
-		registerBitmap(b);
-		return b;
-	}
-	Bitmap *registerBitmap(const char *data, int width, int height, const char *filename) {
-		Bitmap *b = new Bitmap(data, width, height, 16, filename);
-		registerBitmap(b);
-		return b;
-	}
+	Bitmap *registerBitmap(const char *filename, const char *data, int len);
+	Bitmap *registerBitmap(const char *data, int width, int height, const char *filename);
 	void registerBitmap(Bitmap *bitmap);
 	void killBitmap(Bitmap *b);
 	void killBitmaps();
 	Bitmap *getBitmap(int32 id) const;
 
 	// Actor registration
-	typedef Common::HashMap<int, Actor *> ActorListType;
-	ActorListType::const_iterator actorsBegin() const {
-		return _actors.begin();
-	}
-	ActorListType::const_iterator actorsEnd() const {
-		return _actors.end();
-	}
+	ActorListType::const_iterator actorsBegin() const { return _actors.begin(); }
+	ActorListType::const_iterator actorsEnd() const { return _actors.end(); }
 	void registerActor(Actor *a);
 	void killActor(Actor *a);
-	Actor *actor(int id) const;
+	Actor *getActor(int id) const;
 
 	void setSelectedActor(Actor *a) { _selectedActor = a; }
-	Actor *selectedActor() { return _selectedActor; }
+	Actor *getSelectedActor() { return _selectedActor; }
 	void killActors();
 
 	// Text Object Registration
-	typedef Common::HashMap<int32, TextObject *> TextListType;
-	TextListType::const_iterator textsBegin() const {
-		return _textObjects.begin();
-	}
-	TextListType::const_iterator textsEnd() const {
-		return _textObjects.end();
-	}
+	TextListType::const_iterator textsBegin() const { return _textObjects.begin(); }
+	TextListType::const_iterator textsEnd() const { return _textObjects.end(); }
 	void registerTextObject(TextObject *a);
 	void killTextObject(TextObject *a);
 	void killTextObjects();
-	TextObject *textObject(int id) const;
+	TextObject *getTextObject(int id) const;
 
 	// Primitives Object Registration
-	typedef Common::HashMap<int, PrimitiveObject *> PrimitiveListType;
-	PrimitiveListType::const_iterator primitivesBegin() const {
-		return _primitiveObjects.begin();
-	}
-	PrimitiveListType::const_iterator primitivesEnd() const {
-		return _primitiveObjects.end();
-	}
-
+	PrimitiveListType::const_iterator primitivesBegin() const { return _primitiveObjects.begin(); }
+	PrimitiveListType::const_iterator primitivesEnd() const { return _primitiveObjects.end(); }
 	void registerPrimitiveObject(PrimitiveObject *a);
 	void killPrimitiveObject(PrimitiveObject *a);
 	void killPrimitiveObjects();
-	PrimitiveObject *primitiveObject(int id) const;
+	PrimitiveObject *getPrimitiveObject(int id) const;
 
-	typedef Common::HashMap<int32, ObjectState *> StateListType;
 	void registerObjectState(ObjectState *o);
 	void killObjectState(ObjectState *o);
 	void killObjectStates();
-	ObjectState *objectState(int id) const;
+	ObjectState *getObjectState(int id) const;
 
 	void registerFont(Font *f);
 	void killFont(Font *f);
@@ -222,7 +193,7 @@ public:
 	void registerColor(Color *c);
 	void killColor(Color *c);
 	void killColors();
-	Color *color(int32 id) const;
+	Color *getColor(int32 id) const;
 
 	void savegameSave();
 	void saveActors(SaveGame *savedState);

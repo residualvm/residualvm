@@ -39,7 +39,7 @@ namespace Grim {
 int g_winX1, g_winY1, g_winX2, g_winY2;
 
 Actor::Actor(const char *actorName) :
-		Object(), _name(actorName), _setName(""), _talkColor(NULL), _pos(0, 0, 0),
+		Object(), _name(actorName), _setName(""), _talkColor(g_grim->getColor(2)), _pos(0, 0, 0),
 		// Some actors don't set walk and turn rates, so we default the
 		// _turnRate so Doug at the cat races can turn and we set the
 		// _walkRate so Glottis at the demon beaver entrance can walk and
@@ -107,6 +107,12 @@ Actor::~Actor() {
 		clearShadowPlanes();
 		delete[] _shadowArray;
 	}
+	while (!_costumeStack.empty()) {
+		delete _costumeStack.back();
+		_costumeStack.pop_back();
+	}
+
+	g_grim->killActor(this);
 }
 
 void Actor::saveState(SaveGame *savedState) const {
@@ -146,17 +152,17 @@ void Actor::saveState(SaveGame *savedState) const {
 	for (Common::List<Costume *>::const_iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
 		Costume *c = *i;
 		savedState->writeCharString(c->getFilename());
-		Costume *pc = c->previousCostume();
+		Costume *pc = c->getPreviousCostume();
 		int depth = 0;
 		while (pc) {
 			++depth;
-			pc = pc->previousCostume();
+			pc = pc->getPreviousCostume();
 		}
 		savedState->writeLEUint32(depth);
-		pc = c->previousCostume();
+		pc = c->getPreviousCostume();
 		for (int j = 0; j < depth; ++j) { //save the previousCostume hierarchy
 			savedState->writeCharString(pc->getFilename());
-			pc = pc->previousCostume();
+			pc = pc->getPreviousCostume();
 		}
 		c->saveState(savedState);
 	}
@@ -222,7 +228,7 @@ void Actor::saveState(SaveGame *savedState) const {
 		savedState->writeVector3d(shadow.pos);
 
 		savedState->writeLESint32(shadow.planeList.size());
-		// Cannot use g_grim->currScene() here because an actor can have walk planes
+		// Cannot use g_grim->getCurrScene() here because an actor can have walk planes
 		// from other scenes. It happens e.g. when Membrillo calls Velasco to tell him
 		// Naranja is dead.
 		if (_setName != "") {
@@ -277,7 +283,7 @@ bool Actor::restoreState(SaveGame *savedState) {
 	_name = savedState->readString();
 	_setName = savedState->readString();
 
-	_talkColor = g_grim->color(savedState->readLEUint32());
+	_talkColor = g_grim->getColor(savedState->readLEUint32());
 
 	_pos                = savedState->readVector3d();
 	_pitch              = savedState->readFloat();
@@ -418,7 +424,7 @@ bool Actor::restoreState(SaveGame *savedState) {
 	}
 	_activeShadowSlot = savedState->readLESint32();
 
-	_sayLineText = g_grim->textObject(savedState->readLEUint32());
+	_sayLineText = g_grim->getTextObject(savedState->readLEUint32());
 
 	_lookAtVector = savedState->readVector3d();
 	_lookAtRate = savedState->readFloat();
@@ -463,7 +469,7 @@ void Actor::setPos(Graphics::Vector3d position) {
 // When the actor is walking report where the actor is going to and
 // not the actual current position, this fixes some scene change
 // change issues with the Bone Wagon (along with other fixes)
-Graphics::Vector3d Actor::pos() const {
+Graphics::Vector3d Actor::getPos() const {
 	// NOTE: These commented out lines break the "su" set, like explained
 	// at https://github.com/residual/residual/issues/11 . According to the
 	// above comment they however fix some issues. Since i don't know what
@@ -502,7 +508,7 @@ void Actor::walkTo(Graphics::Vector3d p) {
 		_path.clear();
 
 		if (_constrain) {
-			g_grim->currScene()->findClosestSector(p, NULL, &_destPos);
+			g_grim->getCurrScene()->findClosestSector(p, NULL, &_destPos);
 
 			Common::List<PathNode *> openList;
 			Common::List<PathNode *> closedList;
@@ -513,19 +519,18 @@ void Actor::walkTo(Graphics::Vector3d p) {
 			start->dist = 0.f;
 			start->cost = 0.f;
 			openList.push_back(start);
-			g_grim->currScene()->findClosestSector(_pos, &start->sect, NULL);
+			g_grim->getCurrScene()->findClosestSector(_pos, &start->sect, NULL);
 
-			Graphics::Vector3d currPos = _pos;
 			Common::List<Sector *> sectors;
-			for (int i = 0; i < g_grim->currScene()->getSectorCount(); ++i) {
-				Sector *s = g_grim->currScene()->getSectorBase(i);
-				if (s->type() >= Sector::WalkType && s->visible()) {
+			for (int i = 0; i < g_grim->getCurrScene()->getSectorCount(); ++i) {
+				Sector *s = g_grim->getCurrScene()->getSectorBase(i);
+				if (s->getType() >= Sector::WalkType && s->isVisible()) {
 					sectors.push_back(s);
 				}
 			}
 
 			Sector *endSec = NULL;
-			g_grim->currScene()->findClosestSector(_destPos, &endSec, NULL);
+			g_grim->getCurrScene()->findClosestSector(_destPos, &endSec, NULL);
 
 			do {
 				PathNode *node = NULL;
@@ -580,7 +585,7 @@ void Actor::walkTo(Graphics::Vector3d p) {
 							n = new PathNode;
 							n->parent = node;
 							n->sect = s;
-							n->pos = s->closestPoint(_destPos);
+							n->pos = s->getClosestPoint(_destPos);
 							Graphics::Line3d l(node->pos, n->pos);
 							if (!line.intersectLine2d(l, &n->pos)) {
 								n->pos = line.middle();
@@ -620,7 +625,7 @@ bool Actor::isTurning() const {
 }
 
 void Actor::walkForward() {
-	float dist = g_grim->perSecond(_walkRate);
+	float dist = g_grim->getPerSecond(_walkRate);
 
 	// HACK: Limit the speed of the movement. Find a better way??
 	// When the game starts or the scene changes the value of g_grim->frameRate() can
@@ -637,7 +642,6 @@ void Actor::walkForward() {
 	//float yaw;
 	Graphics::Vector3d forwardVec(-sin(yaw_rad) * cos(pitch_rad),
 		cos(yaw_rad) * cos(pitch_rad), sin(pitch_rad));
-	Graphics::Vector3d destPos = _pos + forwardVec * dist;
 
 	if (_lastWasLeft)
 		if (_running)
@@ -664,7 +668,7 @@ void Actor::walkForward() {
 	Sector *currSector = NULL, *prevSector = NULL;
 	Sector::ExitInfo ei;
 
-	g_grim->currScene()->findClosestSector(_pos, &currSector, &_pos);
+	g_grim->getCurrScene()->findClosestSector(_pos, &currSector, &_pos);
 	if (!currSector) { // Shouldn't happen...
 		_pos += forwardVec * dist;
 		_walkedCur = true;
@@ -673,7 +677,7 @@ void Actor::walkForward() {
 
 	while (currSector) {
 		prevSector = currSector;
-		Graphics::Vector3d puckVec = currSector->projectToPuckVector(forwardVec);
+		Graphics::Vector3d puckVec = currSector->getProjectionToPuckVector(forwardVec);
 		puckVec /= puckVec.magnitude();
 		currSector->getExitInfo(_pos, puckVec, &ei);
 		float exitDist = (ei.exitPoint - _pos).magnitude();
@@ -689,7 +693,7 @@ void Actor::walkForward() {
 
 		// Check for an adjacent sector which can continue
 		// the path
-		currSector = g_grim->currScene()->findPointSector(ei.exitPoint + (float)0.0001 * puckVec, Sector::WalkType);
+		currSector = g_grim->getCurrScene()->findPointSector(ei.exitPoint + (float)0.0001 * puckVec, Sector::WalkType);
 		if (currSector == prevSector)
 			break;
 	}
@@ -705,7 +709,7 @@ void Actor::walkForward() {
 		return;
 
 	ei.angleWithEdge += (float)0.1;
-	float turnAmt = g_grim->perSecond(_turnRate) * 5.;
+	float turnAmt = g_grim->getPerSecond(_turnRate) * 5.;
 	if (turnAmt > ei.angleWithEdge)
 		turnAmt = ei.angleWithEdge;
 	setYaw(_yaw + turnAmt * turnDir);
@@ -715,15 +719,15 @@ void Actor::setRunning(bool running) {
 	_running = running;
 }
 
-Graphics::Vector3d Actor::puckVector() const {
+Graphics::Vector3d Actor::getPuckVector() const {
 	float yaw_rad = _yaw * (LOCAL_PI / 180.f);
 	Graphics::Vector3d forwardVec(-sin(yaw_rad), cos(yaw_rad), 0);
 
-	Sector *sector = g_grim->currScene()->findPointSector(_pos, Sector::WalkType);
+	Sector *sector = g_grim->getCurrScene()->findPointSector(_pos, Sector::WalkType);
 	if (!sector)
 		return forwardVec;
 	else
-		return sector->projectToPuckVector(forwardVec);
+		return sector->getProjectionToPuckVector(forwardVec);
 }
 
 void Actor::setRestChore(int chore, Costume *cost) {
@@ -794,7 +798,7 @@ void Actor::setMumbleChore(int chore, Costume *cost) {
 }
 
 void Actor::turn(int dir) {
-	float delta = g_grim->perSecond(_turnRate) * dir;
+	float delta = g_grim->getPerSecond(_turnRate) * dir;
 	setYaw(_yaw + delta);
 	_currTurnDir = dir;
 
@@ -804,16 +808,16 @@ void Actor::turn(int dir) {
 		costumeMarkerCallback(LeftTurn);
 }
 
-float Actor::angleTo(const Actor &a) const {
+float Actor::getAngleTo(const Actor &a) const {
 	float yaw_rad = _yaw * (LOCAL_PI / 180.f);
 	Graphics::Vector3d forwardVec(-sin(yaw_rad), cos(yaw_rad), 0);
-	Graphics::Vector3d delta = a.pos() - _pos;
+	Graphics::Vector3d delta = a.getPos() - _pos;
 	delta.z() = 0;
 
 	return angle(forwardVec, delta) * (180.f / LOCAL_PI);
 }
 
-float Actor::yawTo(Graphics::Vector3d p) const {
+float Actor::getYawTo(Graphics::Vector3d p) const {
 	Graphics::Vector3d dpos = p - _pos;
 
 	if (dpos.x() == 0 && dpos.y() == 0)
@@ -852,12 +856,12 @@ void Actor::sayLine(const char *msg, const char *msgId) {
 
 		_talkSoundName = soundName;
 		g_imuse->startVoice(_talkSoundName.c_str());
-		if (g_grim->currScene()) {
-			g_grim->currScene()->setSoundPosition(_talkSoundName.c_str(), pos());
+		if (g_grim->getCurrScene()) {
+			g_grim->getCurrScene()->setSoundPosition(_talkSoundName.c_str(), _pos);
 		}
 
 		// If the actor is clearly not visible then don't try to play the lip sync
-		if (visible()) {
+		if (_visible) {
 			// Sometimes actors speak offscreen before they, including their
 			// talk chores are initialized.
 			// For example, when reading the work order (a LIP file exists for no reason).
@@ -901,7 +905,7 @@ void Actor::sayLine(const char *msg, const char *msgId) {
 	g_grim->registerTextObject(_sayLineText);
 }
 
-bool Actor::talking() {
+bool Actor::isTalking() {
 	// If there's no sound file then we're obviously not talking
 	if (strlen(_talkSoundName.c_str()) == 0 || !g_imuse->getSoundStatus(_talkSoundName.c_str())) {
 		// If we're not talking and _sayLinetext exists delete it.
@@ -941,7 +945,7 @@ void Actor::shutUp() {
 }
 
 void Actor::pushCostume(const char *n) {
-	Costume *newCost = g_resourceloader->loadCostume(n, currentCostume());
+	Costume *newCost = g_resourceloader->loadCostume(n, getCurrentCostume());
 
 	newCost->setColormap(NULL);
 	_costumeStack.push_back(newCost);
@@ -1025,7 +1029,7 @@ void Actor::updateWalk() {
 	}
 
 	Graphics::Vector3d destPos = _path.back();
-	float y = yawTo(destPos);
+	float y = getYawTo(destPos);
 	if (y < 0.f) {
 		y += 360.f;
 	}
@@ -1053,7 +1057,7 @@ void Actor::updateWalk() {
 	if (dist > 0)
 		dir /= dist;
 
-	float walkAmt = g_grim->perSecond(_walkRate);
+	float walkAmt = g_grim->getPerSecond(_walkRate);
 
 	if (walkAmt >= dist) {
 		_pos = destPos;
@@ -1087,11 +1091,11 @@ void Actor::update() {
 	// necessary for example after activating/deactivating
 	// walkboxes, etc.
 	if (_constrain && !_walking) {
-		g_grim->currScene()->findClosestSector(_pos, NULL, &_pos);
+		g_grim->getCurrScene()->findClosestSector(_pos, NULL, &_pos);
 	}
 
 	if (_turning) {
-		float turnAmt = g_grim->perSecond(_turnRate) * 5.f;
+		float turnAmt = g_grim->getPerSecond(_turnRate) * 5.f;
 		float dyaw = _destYaw - _yaw;
 		while (dyaw > 180)
 			dyaw -= 360;
@@ -1181,17 +1185,12 @@ void Actor::update() {
 	for (Common::List<Costume *>::iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
 		Costume *c = *i;
 		c->setPosRotate(_pos, _pitch, _yaw, _roll);
-		if (_lookingMode) {
-			c->setLookAt(_lookAtVector, _lookAtRate);
-		}
 		c->update();
 	}
 
 	for (Common::List<Costume *>::iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
 		Costume *c = *i;
-		if (_lookingMode) {
-			c->moveHead();
-		}
+		c->moveHead(_lookingMode, _lookAtVector, _lookAtRate);
 	}
 }
 
@@ -1260,7 +1259,7 @@ void Actor::draw() {
 
 // "Undraw objects" (handle objects for actors that may not be on screen)
 void Actor::undraw(bool /*visible*/) {
-	if (!talking() || !g_imuse->isVoicePlaying())
+	if (!isTalking() || !g_imuse->isVoicePlaying())
 		shutUp();
 }
 
@@ -1275,15 +1274,15 @@ void Actor::setShadowPlane(const char *n) {
 void Actor::addShadowPlane(const char *n) {
 	assert(_activeShadowSlot != -1);
 
-	int numSectors = g_grim->currScene()->getSectorCount();
+	int numSectors = g_grim->getCurrScene()->getSectorCount();
 
 	for (int i = 0; i < numSectors; i++) {
 		// Create a copy so we are sure it will not be deleted by the Scene destructor
 		// behind our back. This is important when Membrillo phones Velasco to tell him
 		// Naranja is dead, because the scene changes back and forth few times and so
 		// the scenes' sectors are deleted while they are still keeped by the actors.
-		Sector *sector = new Sector(*g_grim->currScene()->getSectorBase(i));
-		if (strmatch(sector->name(), n)) {
+		Sector *sector = new Sector(*g_grim->getCurrScene()->getSectorBase(i));
+		if (strmatch(sector->getName(), n)) {
 			_shadowArray[_activeShadowSlot].planeList.push_back(sector);
 			g_grim->flagRefreshShadowMask(true);
 			return;
@@ -1336,7 +1335,7 @@ void Actor::putInSet(const char *setName) {
 	_setName = setName;
 }
 
-bool Actor::inSet(const char *setName) const {
+bool Actor::isInSet(const char *setName) const {
 	return _setName == setName;
 }
 
@@ -1374,12 +1373,12 @@ void Actor::costumeMarkerCallback(Footstep step)
 		lua_Object func = lua_gettable();
 		if (lua_isfunction(func)) {
 			lua_pushobject(func);
-			lua_pushusertag(this, MKTAG('A','C','T','R'));
+			lua_pushusertag(getId(), MKTAG('A','C','T','R'));
 			lua_pushnumber(step);
 			lua_callfunction(func);
 		}
 	} else if (lua_isfunction(table)) {
-		lua_pushusertag(this, MKTAG('A','C','T','R'));
+		lua_pushusertag(getId(), MKTAG('A','C','T','R'));
 		lua_pushnumber(step);
 		lua_callfunction(table);
 	}

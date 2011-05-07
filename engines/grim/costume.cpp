@@ -106,11 +106,26 @@ private:
 	Common::String _filename;
 };
 
+class SpriteComponent : public Costume::Component {
+public:
+	SpriteComponent(Costume::Component *parent, int parentID, const char *filename, tag32 tag);
+	~SpriteComponent();
+
+	void init();
+	void setKey(int val);
+
+private:
+	Common::String _filename;
+	Material *_material;
+};
+
 class ColormapComponent : public Costume::Component {
 public:
 	ColormapComponent(Costume::Component *parent, int parentID, const char *filename, tag32 tag);
 	ColormapComponent *copy(Costume::Component *newParent);
 	~ColormapComponent();
+
+	void init();
 };
 
 class ModelComponent : public Costume::Component {
@@ -122,10 +137,11 @@ public:
 	void reset();
 	void resetColormap();
 	void setMatrix(Graphics::Matrix4 matrix) { _matrix = matrix; };
+	void restoreState(SaveGame *state);
 	~ModelComponent();
 
-	Model::HierNode *hierarchy() { return _hier; }
-	int numNodes() { return _obj->numNodes(); }
+	Model::HierNode *getHierarchy() { return _hier; }
+	int getNumNodes() { return _obj->getNumNodes(); }
 	void draw();
 
 protected:
@@ -156,16 +172,18 @@ public:
 		ModelComponent *mc = dynamic_cast<ModelComponent *>(_parent);
 		if (!mc)
 			return NULL;
-		return mc->cmap();
+		return mc->getCMap();
 	}
 	void setKey(int val);
 	void update();
 	void reset();
+	void saveState(SaveGame *state);
+	void restoreState(SaveGame *state);
 	~MeshComponent() { }
 
 	void setMatrix(Graphics::Matrix4 matrix) { _matrix = matrix; };
 
-	Model::HierNode *node() { return _node; }
+	Model::HierNode *getNode() { return _node; }
 
 private:
 	Common::String _name;
@@ -180,7 +198,7 @@ BitmapComponent::BitmapComponent(Costume::Component *p, int parentID, const char
 
 void BitmapComponent::setKey(int val) {
 	const char *bitmap = _filename.c_str();
-	ObjectState *state = g_grim->currScene()->findState(bitmap);
+	ObjectState *state = g_grim->getCurrScene()->findState(bitmap);
 
 	if (state) {
 		state->setNumber(val);
@@ -202,9 +220,42 @@ void BitmapComponent::setKey(int val) {
 			warning("Couldn't find bitmap %s in current scene", _filename.c_str());
 		return;
 	}
-	g_grim->currScene()->addObjectState(state);
+	g_grim->getCurrScene()->addObjectState(state);
 	state->setNumber(val);
 */
+}
+
+SpriteComponent::SpriteComponent(Costume::Component *p, int parentID, const char *filename, tag32 t) :
+	Costume::Component(p, parentID, t), _filename(filename) {
+
+}
+
+SpriteComponent::~SpriteComponent() {
+	delete _material;
+}
+
+void SpriteComponent::init() {
+
+	warning("SpriteComponent '%s' not implemented. (%s)", _filename.c_str(), _cost->getFilename());
+
+	const char *comma = strchr(_filename.c_str(), ',');
+
+	Common::String name(_filename.c_str(), comma);
+
+	if (comma) {
+		_material = g_resourceloader->loadMaterial(name.c_str(), getCMap());
+
+		int a,b,c,d,e;
+		sscanf(comma, ",%d,%d,%d,%d,%d", &a, &b, &c, &d, &e);
+		// FIXME: What do these numbers mean?
+
+	} else {
+
+	}
+}
+
+void SpriteComponent::setKey(int val) {
+	_material->setNumber(val);
 }
 
 ModelComponent::ModelComponent(Costume::Component *p, int parentID, const char *filename, Costume::Component *prevComponent, tag32 t) :
@@ -226,7 +277,7 @@ ModelComponent::ModelComponent(Costume::Component *p, int parentID, const char *
 		MainModelComponent *mmc = dynamic_cast<MainModelComponent *>(prevComponent);
 
 		if (mmc)
-			_previousCmap = mmc->cmap();
+			_previousCmap = mmc->getCMap();
 	}
 }
 
@@ -235,7 +286,7 @@ void ModelComponent::init() {
 	// by the sharing MainModelComponent
 	// constructor before
 	if (!_obj) {
-		CMapPtr cm = this->cmap();
+		CMapPtr cm = getCMap();
 
 		// Get the default colormap if we haven't found
 		// a valid colormap
@@ -250,7 +301,7 @@ void ModelComponent::init() {
 
 		// Use parent availablity to decide whether to default the
 		// component to being visible
-		if (!_parent || !_parent->visible())
+		if (!_parent || !_parent->isVisible())
 			setKey(1);
 		else
 			setKey(0);
@@ -267,7 +318,7 @@ void ModelComponent::init() {
 		reset();
 
 		if (mc)
-			mc->node()->addChild(_hier);
+			mc->getNode()->addChild(_hier);
 		else if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
 			warning("Parent of model %s wasn't a mesh", _filename.c_str());
 	}
@@ -286,7 +337,7 @@ void ModelComponent::reset() {
 // Reset the hierarchy nodes for any keyframe animations (which
 // are children of this component and therefore get updated later).
 void ModelComponent::update() {
-	for (int i = 0; i < _obj->numNodes(); i++) {
+	for (int i = 0; i < _obj->getNumNodes(); i++) {
 		_hier[i]._priority = -1;
 		_hier[i]._animPos.set(0,0,0);
 		_hier[i]._animPitch = 0;
@@ -299,9 +350,13 @@ void ModelComponent::update() {
 void ModelComponent::resetColormap() {
 	CMap *cm;
 
-	cm = this->cmap();
+	cm = getCMap();
 	if (_obj && cm)
 		_obj->reload(cm);
+}
+
+void ModelComponent::restoreState(SaveGame *state) {
+	_hier->_hierVisible = _visible;
 }
 
 ModelComponent::~ModelComponent() {
@@ -335,7 +390,7 @@ void ModelComponent::draw() {
 	// If the object was drawn by being a component
 	// of it's parent then don't draw it
 
-	if (_parent && _parent->visible())
+	if (_parent && _parent->isVisible())
 			return;
 	// Need to translate object to be in accordance
 	// with the setup of the parent
@@ -405,14 +460,17 @@ private:
 ColormapComponent::ColormapComponent(Costume::Component *p, int parentID, const char *filename, tag32 t) :
 		Costume::Component(p, parentID, t) {
 	_cmap = g_resourceloader->getColormap(filename);
-
-	if (p)
-		p->setColormap(_cmap);
-	else
-		warning("No parent to apply colormap object on.");
 }
 
 ColormapComponent::~ColormapComponent() {
+}
+
+void ColormapComponent::init() {
+	if (_parent)
+		_parent->setColormap(_cmap);
+	else
+		warning("No parent to apply colormap object on. CMap: %s, Costume: %s",
+				_cmap->getFilename(),_cost->getFilename());
 }
 
 class KeyframeComponent : public Costume::Component {
@@ -424,6 +482,8 @@ public:
 	void setLowPriority(bool lowPriority);
 	void update();
 	void reset();
+	void saveState(SaveGame *state);
+	void restoreState(SaveGame *state);
 	~KeyframeComponent() {}
 
 private:
@@ -469,7 +529,7 @@ void KeyframeComponent::setKey(int val) {
 		break;
 	default:
 		if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-			warning("Unknown key %d for keyframe %s", val, _keyf->filename());
+			warning("Unknown key %d for keyframe %s", val, _keyf->getFilename());
 	}
 }
 
@@ -492,9 +552,9 @@ void KeyframeComponent::update() {
 	if (_currTime < 0)		// For first time through
 		_currTime = 0;
 	else
-		_currTime += g_grim->frameTime();
+		_currTime += g_grim->getFrameTime();
 
-	int animLength = (int)(_keyf->length() * 1000);
+	int animLength = (int)(_keyf->getLength() * 1000);
 
 	if (_currTime > animLength) { // What to do at end?
 		switch (_repeatMode) {
@@ -512,7 +572,7 @@ void KeyframeComponent::update() {
 				break;
 			default:
 				if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-					warning("Unknown repeat mode %d for keyframe %s", _repeatMode, _keyf->filename());
+					warning("Unknown repeat mode %d for keyframe %s", _repeatMode, _keyf->getFilename());
 		}
 	}
 
@@ -527,12 +587,24 @@ void KeyframeComponent::update() {
 void KeyframeComponent::init() {
 	ModelComponent *mc = dynamic_cast<ModelComponent *>(_parent);
 	if (mc)
-		_hier = mc->hierarchy();
+		_hier = mc->getHierarchy();
 	else {
 		if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-			warning("Parent of %s was not a model", _keyf->filename());
+			warning("Parent of %s was not a model", _keyf->getFilename());
 		_hier = NULL;
 	}
+}
+
+void KeyframeComponent::saveState(SaveGame *state) {
+	state->writeLESint32(_active);
+	state->writeLESint32(_repeatMode);
+	state->writeLESint32(_currTime);
+}
+
+void KeyframeComponent::restoreState(SaveGame *state) {
+	_active = state->readLESint32();
+	_repeatMode = state->readLESint32();
+	_currTime = state->readLESint32();
 }
 
 MeshComponent::MeshComponent(Costume::Component *p, int parentID, const char *name, tag32 t) :
@@ -545,7 +617,7 @@ MeshComponent::MeshComponent(Costume::Component *p, int parentID, const char *na
 void MeshComponent::init() {
 	ModelComponent *mc = dynamic_cast<ModelComponent *>(_parent);
 	if (mc)
-		_node = mc->hierarchy() + _num;
+		_node = mc->getHierarchy() + _num;
 	else {
 		if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
 			warning("Parent of mesh %d was not a model", _num);
@@ -566,6 +638,14 @@ void MeshComponent::update() {
 	_node->update();
 }
 
+void MeshComponent::saveState(SaveGame *state) {
+	state->writeLESint32(_node->_meshVisible);
+}
+
+void MeshComponent::restoreState(SaveGame *state) {
+	_node->_meshVisible = state->readLESint32();
+}
+
 MaterialComponent::MaterialComponent(Costume::Component *p, int parentID, const char *filename, tag32 t) :
 		Costume::Component(p, parentID, t), _filename(filename),
 		_num(0) {
@@ -575,7 +655,7 @@ MaterialComponent::MaterialComponent(Costume::Component *p, int parentID, const 
 }
 
 void MaterialComponent::init() {
-	CMap *cm = this->cmap();
+	CMap *cm = getCMap();
 
 	if (!cm) {
 		// Use the default colormap if we're still drawing a blank
@@ -648,9 +728,9 @@ void SoundComponent::setKey(int val) {
 		// No longer a need to check the sound status, if it's already playing
 		// then it will just use the existing handle
 		g_imuse->startSfx(_soundName.c_str());
-		if (g_grim->currScene() && g_currentUpdatedActor) {
-			Graphics::Vector3d pos = g_currentUpdatedActor->pos();
-			g_grim->currScene()->setSoundPosition(_soundName.c_str(), pos);
+		if (g_grim->getCurrScene() && g_currentUpdatedActor) {
+			Graphics::Vector3d pos = g_currentUpdatedActor->getPos();
+			g_grim->getCurrScene()->setSoundPosition(_soundName.c_str(), pos);
 		}
 		break;
 	case 1: // "Stop"
@@ -714,7 +794,7 @@ void Costume::load(const char *filename, const char *data, int len, Costume *pre
 	_components = new Component *[_numComponents];
 	for (int i = 0; i < _numComponents; i++) {
 		int id, tagID, hash, parentID, namePos;
-		const char *line = ts.currentLine();
+		const char *line = ts.getCurrentLine();
 		Component *prevComponent = NULL;
 
 		if (sscanf(line, " %d %d %d %d %n", &id, &tagID, &hash, &parentID, &namePos) < 4)
@@ -805,21 +885,21 @@ void Costume::Component::setColormap(CMap *c) {
 
 	if (c)
 		_cmap = c;
-	if (mc && this->cmap())
+	if (mc && getCMap())
 		mc->resetColormap();
 }
 
-bool Costume::Component::visible() {
+bool Costume::Component::isVisible() {
 	if (_visible && _parent)
-		return _parent->visible();
+		return _parent->isVisible();
 	return _visible;
 }
 
-CMap *Costume::Component::cmap() {
+CMap *Costume::Component::getCMap() {
 	if (!_cmap && _previousCmap)
 		return _previousCmap;
 	else if (!_cmap && _parent)
-		return _parent->cmap();
+		return _parent->getCMap();
 	else if (!_cmap && !_parent && _cost)
 		return _cost->_cmap;
 	else
@@ -911,9 +991,9 @@ void Costume::Chore::setKeys(int startTime, int stopTime) {
 			comp->setFade(1.f - ((float)_fadeCurrTime / (float)_fadeLength));
 		}
 
-		if (FROM_BE_32(comp->_tag) == MKTAG('K','E','Y','F')) {
+		if (FROM_BE_32(comp->getTag()) == MKTAG('K','E','Y','F')) {
 			KeyframeComponent *f = static_cast<KeyframeComponent *>(comp);
-			if (g_currentUpdatedActor && g_currentUpdatedActor->restChore() == _id)
+			if (g_currentUpdatedActor && g_currentUpdatedActor->getRestChore() == _id)
 				f->setLowPriority(true);
 			else
 				f->setLowPriority(false);
@@ -951,10 +1031,10 @@ void Costume::Chore::update() {
 	if (_currTime < 0)
 		newTime = 0; // For first time through
 	else
-		newTime = _currTime + g_grim->frameTime();
+		newTime = _currTime + g_grim->getFrameTime();
 
 	if (_fadeMode != None) {
-		_fadeCurrTime += g_grim->frameTime();
+		_fadeCurrTime += g_grim->getFrameTime();
 
 		if (_fadeCurrTime > _fadeLength) {
 			if (_fadeMode == FadeOut)
@@ -1011,7 +1091,7 @@ Costume::Component *Costume::loadComponent (tag32 tag, Costume::Component *paren
 	else if (FROM_BE_32(tag) == MKTAG('M','A','T',' '))
 		return new MaterialComponent(parent, parentID, name, tag);
 	else if (FROM_BE_32(tag) == MKTAG('S','P','R','T'))
-		return NULL;// new SpriteComponent(parent, parentID, name);
+		return new SpriteComponent(parent, parentID, name, tag);
 
 	char t[4];
 	memcpy(t, &tag, sizeof(tag32));
@@ -1025,8 +1105,8 @@ Model::HierNode *Costume::getModelNodes() {
 			continue;
 		// Needs to handle Main Models (pigeons) and normal Models
 		// (when Manny climbs the rope)
-		if (FROM_BE_32(_components[i]->tag()) == MKTAG('M','M','D','L'))
-			return dynamic_cast<ModelComponent *>(_components[i])->hierarchy();
+		if (FROM_BE_32(_components[i]->getTag()) == MKTAG('M','M','D','L'))
+			return dynamic_cast<ModelComponent *>(_components[i])->getHierarchy();
 	}
 	return NULL;
 }
@@ -1121,9 +1201,9 @@ void Costume::update() {
 	}
 }
 
-void Costume::moveHead() {
+void Costume::moveHead(bool lookingMode, const Graphics::Vector3d &lookAt, float rate) {
 	if (_joint1Node) {
-		float step = g_grim->perSecond(_lookAtRate);
+		float step = g_grim->getPerSecond(rate);
 		float yawStep = step;
 		float pitchStep = step / 3.f;
 
@@ -1131,7 +1211,7 @@ void Costume::moveHead() {
 		_joint2Node->_totalWeight = 1;
 		_joint3Node->_totalWeight = 1;
 
-		if (_lookAt.isZero()) {
+		if (!lookingMode) {
 			//animate yaw
 			if (_headYaw > yawStep) {
 				_headYaw -= yawStep;
@@ -1180,7 +1260,7 @@ void Costume::moveHead() {
 
 		pos += _matrix._pos;
 
-		Graphics::Vector3d v =  _lookAt - pos;
+		Graphics::Vector3d v =  lookAt - pos;
 		if (v.isZero()) {
 			return;
 		}
@@ -1274,11 +1354,6 @@ void Costume::moveHead() {
 	}
 }
 
-void Costume::setLookAt(const Graphics::Vector3d &vec, float rate) {
-	_lookAt = vec;
-	_lookAtRate = rate;
-}
-
 void Costume::setHead(int joint1, int joint2, int joint3, float maxRoll, float maxPitch, float maxYaw) {
 	_head.joint1 = joint1;
 	_head.joint2 = joint2;
@@ -1302,14 +1377,14 @@ void Costume::setPosRotate(Graphics::Vector3d pos, float pitch, float yaw, float
 	_matrix._rot.buildFromPitchYawRoll(pitch, yaw, roll);
 }
 
-Costume *Costume::previousCostume() const {
+Costume *Costume::getPreviousCostume() const {
 	return _prevCostume;
 }
 
 void Costume::saveState(SaveGame *state) const {
 	if (_cmap) {
 		state->writeLEUint32(1);
-		state->writeCharString(_cmap->filename());
+		state->writeCharString(_cmap->getFilename());
 	} else {
 		state->writeLEUint32(0);
 	}
@@ -1330,14 +1405,7 @@ void Costume::saveState(SaveGame *state) const {
 			state->writeLESint32(c->_visible);
 			state->writeVector3d(c->_matrix._pos);
 
-			if (FROM_BE_32(c->_tag) == MKTAG('K','E','Y','F')) {
-				KeyframeComponent *f = static_cast<KeyframeComponent *>(c);
-				state->writeLESint32(f->_active);
-				state->writeLESint32(f->_repeatMode);
-				state->writeLESint32(f->_currTime);
-			} else if (FROM_BE_32(c->_tag) == MKTAG('M','E','S','H')) {
-				state->writeLESint32(static_cast<MeshComponent *>(c)->node()->_meshVisible);
-			}
+			c->saveState(state);
 		}
 	}
 
@@ -1370,17 +1438,8 @@ bool Costume::restoreState(SaveGame *state) {
 		if (c) {
 			c->_visible = state->readLESint32();
 			c->_matrix._pos = state->readVector3d();
-			if (FROM_BE_32(c->_tag) == MKTAG('M','O','D','L') || FROM_BE_32(c->_tag) == MKTAG('M','M','D','L')) {
-				ModelComponent *m = static_cast<ModelComponent *>(c);
-				m->hierarchy()->_hierVisible = c->_visible;
-			} else if (FROM_BE_32(c->_tag) == MKTAG('K','E','Y','F')) {
-				KeyframeComponent *f = static_cast<KeyframeComponent *>(c);
-				f->_active = state->readLESint32();
-				f->_repeatMode = state->readLESint32();
-				f->_currTime = state->readLESint32();
-			} else if (FROM_BE_32(c->_tag) == MKTAG('M','E','S','H')) {
-				static_cast<MeshComponent *>(c)->node()->_meshVisible = state->readLESint32();
-			}
+
+			c->restoreState(state);
 		}
 	}
 
