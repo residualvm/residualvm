@@ -32,8 +32,100 @@
 #include "engines/grim/grim.h"
 #include "engines/grim/actor.h"
 #include "engines/grim/lipsync.h"
+#include "engines/grim/costume.h"
 
 namespace Grim {
+
+void L2_EnableVoiceFX() {
+	lua_Object stateObj = lua_getparam(1);
+
+	bool state = false;
+	if (!lua_isnil(stateObj))
+		state = true;
+
+	// FIXME: func(state);
+	warning("L2_EnableVoiceFX: implement opcode, state: %d", (int)state);
+}
+
+void L2_SetGroupVolume() {
+	lua_Object groupObj = lua_getparam(1);
+	lua_Object volumeObj = lua_getparam(2);
+
+	if (!lua_isnumber(groupObj))
+		return;
+	int group = lua_getnumber(groupObj);
+
+	int volume = 100;
+	if (lua_isnumber(volumeObj))
+		volume = (int)lua_getnumber(volumeObj);
+
+	// FIXME: func(group, volume);
+	warning("L2_SetGroupVolume: implement opcode, group: %d, volume %d", group, volume);
+}
+
+void L2_EnableAudioGroup() {
+	lua_Object groupObj = lua_getparam(1);
+	lua_Object stateObj = lua_getparam(2);
+
+	if (!lua_isnumber(groupObj))
+		return;
+	int group = lua_getnumber(groupObj);
+
+	bool state = false;
+	if (!lua_isnil(stateObj))
+		state = true;
+
+	// FIXME: func(group, state);
+	warning("L2_EnableAudioGroup: implement opcode, group: %d, state %d", group, (int)state);
+}
+
+void L2_ImSelectSet() {
+	lua_Object qualityObj = lua_getparam(1);
+
+	if (lua_isnumber(qualityObj)) {
+		int quality = (int)lua_getnumber(qualityObj);
+		// FIXME: func(quality);
+		warning("L2_ImSelectSet: implement opcode, quality mode: %d", quality);
+	}
+}
+
+void L2_PlayActorChore() {
+	lua_Object actorObj = lua_getparam(1);
+	lua_Object choreObj = lua_getparam(2);
+	lua_Object costumeObj = lua_getparam(3);
+	lua_Object modeObj = lua_getparam(4);
+	lua_Object paramObj = lua_getparam(5);
+
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+		return;
+
+	Actor *actor = getactor(actorObj);
+
+	if (!lua_isstring(choreObj) || !lua_isstring(costumeObj))
+		lua_pushnil();
+
+	bool mode = false;
+	float param = 0.0;
+
+	if (!lua_isnil(modeObj)) {
+		if (lua_getnumber(modeObj) != 0.0)
+			mode = true;
+		if (!lua_isnil(paramObj))
+			if (lua_isnumber(paramObj))
+				param = lua_getnumber(paramObj);
+	}
+
+	const char *choreName = lua_getstring(choreObj);
+	const char *costumeName = lua_getstring(costumeObj);
+
+	warning("L2_PlayActorChore: implement opcode actor: %s, chore: %s, costume: %s, mode bool: %d, param: %f", 
+			actor->getName(), choreName, costumeName, (int)mode, param);
+	// FIXME. code below is a hack, need proper implementation
+	actor->setCostume(costumeName);
+	Costume *costume = actor->getCurrentCostume();
+	costume->playChore(choreName);
+	pushbool(true);
+}
 
 static void L2_StopActorChores() {
 	lua_Object actorObj = lua_getparam(1);
@@ -66,7 +158,7 @@ static void L2_SetActorLighting() {
 	if (lua_isnil(lightModeObj) || !lua_isnumber(lightModeObj))
 		return;
 
-	int lightMode = lua_getnumber(lightModeObj);
+	int lightMode = (int)lua_getnumber(lightModeObj);
 	if (lightMode != 0) {
 		if (lightMode == 1) {
 			//FIXME actor->
@@ -139,9 +231,7 @@ STUB_FUNC2(L2_IsActorInSector)
 STUB_FUNC2(L2_GetActorSector)
 STUB_FUNC2(L2_TurnActor)
 STUB_FUNC2(L2_GetActorRot)
-STUB_FUNC2(L2_SetActorRot)
 STUB_FUNC2(L2_IsActorTurning)
-STUB_FUNC2(L2_PlayActorChore)
 STUB_FUNC2(L2_StopActorChore)
 STUB_FUNC2(L2_IsActorResting)
 STUB_FUNC2(L2_Exit)
@@ -178,7 +268,6 @@ STUB_FUNC2(L2_ImGetMusicVol)
 STUB_FUNC2(L2_ImSetState)
 STUB_FUNC2(L2_ImSetSequence)
 STUB_FUNC2(L2_LoadBundle)
-STUB_FUNC2(L2_SetGamma)
 STUB_FUNC2(L2_SetActorWalkDominate)
 STUB_FUNC2(L2_RenderModeUser)
 STUB_FUNC2(L2_DimScreen)
@@ -193,7 +282,6 @@ STUB_FUNC2(L2_SetTextSpeed)
 STUB_FUNC2(L2_GetTextSpeed)
 STUB_FUNC2(L2_JustLoaded)
 STUB_FUNC2(L2_IsMessageGoing)
-STUB_FUNC2(L2_SetSayLineDefaults)
 STUB_FUNC2(L2_SetActorTalkColor)
 STUB_FUNC2(L2_SayLine)
 STUB_FUNC2(L2_MakeTextObject)
@@ -307,16 +395,12 @@ STUB_FUNC2(L2_StopAllSounds)
 STUB_FUNC2(L2_LoadSound)
 STUB_FUNC2(L2_FreeSound)
 STUB_FUNC2(L2_PlayLoadedSound)
-STUB_FUNC2(L2_SetGroupVolume)
 STUB_FUNC2(L2_GetSoundVolume)
 STUB_FUNC2(L2_SetSoundVolume)
-STUB_FUNC2(L2_EnableAudioGroup)
-STUB_FUNC2(L2_EnableVoiceFX)
 STUB_FUNC2(L2_PlaySoundFrom)
 STUB_FUNC2(L2_PlayLoadedSoundFrom)
 STUB_FUNC2(L2_SetReverb)
 STUB_FUNC2(L2_UpdateSoundPosition)
-STUB_FUNC2(L2_ImSelectSet)
 STUB_FUNC2(L2_ImStateHasLooped)
 STUB_FUNC2(L2_ImStateHasEnded)
 STUB_FUNC2(L2_ImPushState)
@@ -394,7 +478,7 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "GetActorSector", L2_GetActorSector },
 	{ "TurnActor", L2_TurnActor },
 	{ "GetActorRot", L2_GetActorRot },
-	{ "SetActorRot", L2_SetActorRot },
+	{ "SetActorRot", L1_SetActorRot },
 	{ "IsActorTurning", L2_IsActorTurning },
 	{ "PlayActorChore", L2_PlayActorChore },
 	{ "StopActorChore", L2_StopActorChore },
@@ -453,7 +537,7 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "ImSetState", L2_ImSetState },
 	{ "ImSetSequence", L2_ImSetSequence },
 	{ "LoadBundle", L2_LoadBundle },
-	{ "SetGamma", L2_SetGamma },
+	{ "SetGamma", L1_SetGamma },
 	{ "SetActorWalkDominate", L2_SetActorWalkDominate },
 	{ "RenderModeUser", L2_RenderModeUser },
 	{ "DimScreen", L2_DimScreen },
@@ -571,7 +655,7 @@ struct luaL_reg monkeyMainOpcodes[] = {
 
 struct luaL_reg monkeyTextOpcodes[] = {
 	{ "IsMessageGoing", L2_IsMessageGoing },
-	{ "SetSayLineDefaults", L2_SetSayLineDefaults },
+	{ "SetSayLineDefaults", L1_SetSayLineDefaults },
 	{ "SetActorTalkColor", L2_SetActorTalkColor },
 	{ "SayLine", L2_SayLine },
 	{ "MakeTextObject", L2_MakeTextObject },

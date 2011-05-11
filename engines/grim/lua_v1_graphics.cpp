@@ -63,7 +63,7 @@ void L1_FreeImage() {
 	if (!lua_isuserdata(param) || lua_tag(param) != MKTAG('V','B','U','F'))
 		return;
 	Bitmap *bitmap = g_grim->getBitmap(lua_getuserdata(param));
-	g_grim->killBitmap(bitmap);
+	delete bitmap;
 }
 
 void L1_BlastImage() {
@@ -81,7 +81,6 @@ void L1_BlastImage() {
 //	bool transparent = getbool(4); // TODO transparent/masked copy into display
 	bitmap->setX(x);
 	bitmap->setY(y);
-	g_driver->createBitmap(bitmap);
 	g_driver->drawBitmap(bitmap);
 }
 
@@ -484,6 +483,14 @@ void L1_ScreenShot() {
 }
 
 void L1_SetGamma() {
+	lua_Object levelObj = lua_getparam(1);
+
+	if (!lua_isnumber(levelObj))
+		return;
+	int level = (int)lua_getnumber(levelObj);
+
+	// FIXME: func(level)
+	warning("L1_SetGamma, implement opcode, level: %d", level);
 }
 
 void L1_Display() {

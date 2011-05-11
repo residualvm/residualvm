@@ -30,6 +30,9 @@
 #include "engines/grim/walkplane.h"
 #include "engines/grim/objectstate.h"
 
+namespace Common {
+	class MemoryReadStream;
+}
 namespace Grim {
 
 class SaveGame;
@@ -39,6 +42,9 @@ public:
 	Scene(const char *name, const char *buf, int len);
 	Scene();
 	~Scene();
+
+	void loadText(TextSplitter &ts);
+	void loadBinary(Common::MemoryReadStream *ms);
 
 	void saveState(SaveGame *savedState) const;
 	bool restoreState(SaveGame *savedState);
@@ -100,15 +106,17 @@ public:
 
 	struct Setup {		// Camera setup data
 		void load(TextSplitter &ts);
+		void loadBinary(Common::MemoryReadStream *ms);
 		void setupCamera() const;
 		Common::String _name;
-		BitmapPtr _bkgndBm, _bkgndZBm;
+		Bitmap *_bkgndBm, *_bkgndZBm;
 		Graphics::Vector3d _pos, _interest;
 		float _roll, _fov, _nclip, _fclip;
 	};
 
 	struct Light {		// Scene lighting data
 		void load(TextSplitter &ts);
+		void loadBinary(Common::MemoryReadStream *ms);
 		Common::String _name;
 		Common::String _type;
 		Graphics::Vector3d _pos, _dir;

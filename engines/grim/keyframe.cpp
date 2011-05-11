@@ -102,6 +102,10 @@ void KeyframeAnim::loadBinary(const char *data, int len) {
 			}
 			return;
 		}
+		if (_nodes[nodeNum]) {
+			warning("The node %d was already allocated. %s", nodeNum, _fname.c_str());
+			delete _nodes[nodeNum];
+		}
 		_nodes[nodeNum] = new KeyframeNode;
 		_nodes[nodeNum]->loadBinary(data);
 	}
@@ -143,6 +147,7 @@ void KeyframeAnim::loadText(TextSplitter &ts) {
 KeyframeAnim::~KeyframeAnim() {
 	for (int i = 0; i < _numJoints; i++)
 		delete _nodes[i];
+	delete[] _nodes;
 	delete[] _markers;
 	g_resourceloader->uncacheKeyframe(this);
 }
