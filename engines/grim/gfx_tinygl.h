@@ -64,8 +64,13 @@ public:
 
 	void translateViewpointStart(Graphics::Vector3d pos, float pitch, float yaw, float roll);
 	void translateViewpointFinish();
-
+	void createFace(Model::Face *face){}
+	void createModelFace(const Model::Face *face, float *vertices, float *vertNormals, float *textureVerts, uint& ref){}
+	void createVertices(float* vertices, float* normals, float* texCoords, uint numVertices, uint numTexcoords, uint& ref){}
+	
 	void drawHierachyNode(const Model::HierNode *node);
+
+	void drawModelFace(const Model::Face *face, uint _vertRef, uint _texRef){}
 	void drawModelFace(const Model::Face *face, float *vertices, float *vertNormals, float *textureVerts);
 
 	void disableLights();
