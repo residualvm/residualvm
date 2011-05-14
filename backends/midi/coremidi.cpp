@@ -36,6 +36,10 @@
 #include "audio/musicplugin.h"
 #include "audio/mpu401.h"
 
+#if defined(__ppc)
+typdef unsigned long long uint64;
+#endif
+
 #include <CoreMIDI/CoreMIDI.h>
 
 

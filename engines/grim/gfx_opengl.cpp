@@ -343,7 +343,64 @@ void GfxOpenGL::set3DMode() {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 }
+	
+void GfxOpenGL::createFace(Model::Face *face){
+	glGenBuffers(1,&face->_faceRef);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_faceRef);
+	glBufferData(face->_faceRef, face->_numVertices*3, face->_vertices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+}
 
+void GfxOpenGL::createModelFace(const Model::Face *face, float *vertices, float *vertNormals, float *textureVerts, uint& faceRef){
+	GLuint vertRef = 0, normRef = 0, texRef = 0;
+	// This part should really be done once per model, not once per face (stubbed here for reference);
+	glGenBuffers(1,&vertRef);
+	glGenBuffers(1,&normRef);
+	glBindBuffer(GL_ARRAY_BUFFER, vertRef);
+	// Numvertices will be off here.
+	glBufferData(GL_ARRAY_BUFFER, face->_numVertices*3, vertices, GL_STATIC_DRAW);
+	// Also need to do this for normals and texcoords
+	
+	glBindBuffer(GL_ARRAY_BUFFER, normRef);
+	glBufferData(GL_ARRAY_BUFFER, face->_numVertices*3, vertices, GL_STATIC_DRAW);
+	
+	if(face->_texVertices){
+		glGenBuffers(1,&texRef);
+		glBindBuffer(GL_ARRAY_BUFFER, texRef);
+		glBufferData(GL_ARRAY_BUFFER, face->_numVertices*3, textureVerts, GL_STATIC_DRAW);
+	}else{
+		texRef = 0;
+	}
+		
+	
+}
+	
+void GfxOpenGL::drawModelFace(const Model::Face *face, uint _vertRef, uint _texRef) {
+/*	// Support transparency in actor objects, such as the message tube
+	// in Manny's Office
+	glAlphaFunc(GL_GREATER, 0.5);
+	glEnable(GL_ALPHA_TEST);
+	glNormal3fv(face->_normal._coords);
+	glBegin(GL_POLYGON);
+	for (int i = 0; i < face->_numVertices; i++) {
+		glNormal3fv(vertNormals + 3 * face->_vertices[i]);
+		
+		if (face->_texVertices)
+			glTexCoord2fv(textureVerts + 2 * face->_texVertices[i]);
+		
+		glVertex3fv(vertices + 3 * face->_vertices[i]);
+	}
+	glEnd();
+	// Done with transparency-capable objects
+	glDisable(GL_ALPHA_TEST);*/
+	glBindBuffer(GL_ARRAY_BUFFER, _vertRef);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_faceRef);
+	// This needs to be extended to do normals and texcoords too.
+	glDrawElements(GL_POLYGON, 1, GL_UNSIGNED_INT, 0); 
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+	
 void GfxOpenGL::drawModelFace(const Model::Face *face, float *vertices, float *vertNormals, float *textureVerts) {
 	// Support transparency in actor objects, such as the message tube
 	// in Manny's Office

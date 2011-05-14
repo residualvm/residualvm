@@ -88,6 +88,7 @@ public:
 	struct Face {
 		int loadBinary(const char *&data, Material *materials[]);
 		void draw(float *vertices, float *vertNormals, float *textureVerts) const;
+		void draw(uint _vertRef, uint _texRef) const;
 		void changeMaterial(Material *material);
 		~Face();
 
@@ -97,6 +98,8 @@ public:
 		int _numVertices;
 		int *_vertices, *_texVertices;
 		Graphics::Vector3d _normal;
+		
+		uint _faceRef;
 	};
 
 	struct Mesh {
@@ -120,10 +123,13 @@ public:
 
 		int _numTextureVerts;
 		float *_textureVerts;	// sets of 2
-
+		
 		int _numFaces;
 		Face *_faces;
 		Graphics::Matrix4 _matrix;
+		
+		uint _vertRef;
+		uint _texRef;
 	};
 
 	struct Geoset {

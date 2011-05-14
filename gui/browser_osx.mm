@@ -31,6 +31,10 @@
 #include "common/system.h"
 #include "common/algorithm.h"
 
+#if defined(__ppc)
+typdef unsigned long long uint64;
+#endif
+
 #include <AppKit/NSOpenPanel.h>
 #include <Foundation/NSString.h>
 

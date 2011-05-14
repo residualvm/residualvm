@@ -498,6 +498,7 @@ void Model::Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 			readlen += readlen2;
 		}
 		ts->nextLine();
+		g_driver->createFace(_faces+num);
 	}
 
 	ts->expectString("face normals");
@@ -507,6 +508,7 @@ void Model::Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 		ts->scanString(" %d: %f %f %f", 4, &num, &x, &y, &z);
 		_faces[num]._normal = Graphics::Vector3d(x, y, z);
 	}
+	g_driver->createVertices(_vertices, _vertNormals, _textureVerts, _numVertices, _numTextureVerts,  _vertRef);
 }
 
 void Model::HierNode::draw() const {
@@ -582,14 +584,23 @@ void Model::Mesh::draw() const {
 		g_winX2 = MAX(g_winX2, winX2);
 		g_winY2 = MAX(g_winY2, winY2);
 	}
-
-	for (int i = 0; i < _numFaces; i++)
-		_faces[i].draw(_vertices, _vertNormals, _textureVerts);
+	if(!g_driver->isHardwareAccelerated()){
+		for (int i = 0; i < _numFaces; i++)
+			_faces[i].draw(_vertices, _vertNormals, _textureVerts);
+	} else {
+		for (int i = 0; i < _numFaces; i++)
+			_faces[i].draw(_vertRef, _texRef);
+	}
 }
 
 void Model::Face::draw(float *vertices, float *vertNormals, float *textureVerts) const {
 	_material->select();
 	g_driver->drawModelFace(this, vertices, vertNormals, textureVerts);
+}
+
+void Model::Face::draw(uint _vertRef, uint _texRef) const {
+	_material->select();
+	g_driver->drawModelFace(this, _vertRef, _texRef);
 }
 
 } // end of namespace Grim
