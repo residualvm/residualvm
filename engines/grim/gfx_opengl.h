@@ -74,6 +74,7 @@ byte *setupScreen(int screenW, int screenH, bool fullscreen);
 
 	void drawHierachyNode(const Model::HierNode *node);
 	void drawModelFace(const Model::Face *face, float *vertices, float *vertNormals, float *textureVerts);
+	void drawSprite(const Sprite *sprite);
 
 	void disableLights();
 	void setupLight(Scene::Light *light, int lightId);
@@ -85,9 +86,6 @@ byte *setupScreen(int screenW, int screenH, bool fullscreen);
 	void createBitmap(BitmapData *bitmap);
 	void drawBitmap(const Bitmap *bitmap);
 	void destroyBitmap(BitmapData *bitmap);
-
-	void drawDepthBitmap(int x, int y, int w, int h, char *data);
-	void drawBitmap();
 
 	Bitmap *getScreenshot(int w, int h);
 	void storeDisplay();
@@ -110,7 +108,7 @@ byte *setupScreen(int screenW, int screenH, bool fullscreen);
 	void releaseSmushFrame();
 
 protected:
-
+	void drawDepthBitmap(int x, int y, int w, int h, char *data);
 private:
 	GLuint _emergFont;
 	int _smushNumTex;

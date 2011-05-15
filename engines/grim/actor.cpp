@@ -36,9 +36,11 @@
 #include "engines/grim/colormap.h"
 #include "engines/grim/costume.h"
 #include "engines/grim/lipsync.h"
-#include "engines/grim/smush/smush.h"
+#include "engines/grim/movie/movie.h"
 #include "engines/grim/imuse/imuse.h"
 #include "engines/grim/lua.h"
+#include "engines/grim/resource.h"
+#include "engines/grim/savegame.h"
 
 namespace Grim {
 
@@ -572,34 +574,52 @@ void Actor::walkTo(const Graphics::Vector3d &p) {
 							break;
 						}
 					}
-					Graphics::Line3d line;
-					if (!inClosed && sector->isAdjacentTo(s, &line)) {
-						PathNode *n = NULL;
-						for (Common::List<PathNode *>::iterator j = openList.begin(); j != openList.end(); ++j) {
-							if ((*j)->sect == s) {
-								n = *j;
-								break;
-							}
+					if (inClosed)
+						continue;
+
+					Common::List<Graphics::Line3d> bridges = sector->getBridgesTo(s);
+					if (bridges.empty())
+						continue; // The sectors are not adjacent.
+
+					PathNode *n = NULL;
+					for (Common::List<PathNode *>::iterator j = openList.begin(); j != openList.end(); ++j) {
+						if ((*j)->sect == s) {
+							n = *j;
+							break;
 						}
-						if (n) {
-							float newCost = node->cost + (n->pos - node->pos).magnitude();
-							if (newCost < n->cost) {
-								n->cost = newCost;
-								n->parent = node;
-							}
-						} else {
-							n = new PathNode;
+					}
+					if (n) {
+						float newCost = node->cost + (n->pos - node->pos).magnitude();
+						if (newCost < n->cost) {
+							n->cost = newCost;
 							n->parent = node;
-							n->sect = s;
-							n->pos = s->getClosestPoint(_destPos);
-							Graphics::Line3d l(node->pos, n->pos);
-							if (!line.intersectLine2d(l, &n->pos)) {
-								n->pos = line.middle();
-							}
-							n->dist = (n->pos - _destPos).magnitude();
-							n->cost = node->cost + (n->pos - node->pos).magnitude();
-							openList.push_back(n);
 						}
+					} else {
+						Graphics::Vector3d closestPoint = s->getClosestPoint(_destPos);
+						Graphics::Vector3d best;
+						float bestDist = 1e6f;
+						Graphics::Line3d l(node->pos, closestPoint);
+						while (!bridges.empty()) {
+							Graphics::Line3d bridge = bridges.back();
+							Graphics::Vector3d pos;
+							if (!bridge.intersectLine2d(l, &pos)) {
+								pos = bridge.middle();
+							}
+							float dist = (pos - closestPoint).magnitude();
+							if (dist < bestDist) {
+								bestDist = dist;
+								best = pos;
+							}
+							bridges.pop_back();
+						}
+
+						n = new PathNode;
+						n->parent = node;
+						n->sect = s;
+						n->pos = best;
+						n->dist = (n->pos - _destPos).magnitude();
+						n->cost = node->cost + (n->pos - node->pos).magnitude();
+						openList.push_back(n);
 					}
 				}
 			} while (!openList.empty());
@@ -850,7 +870,7 @@ void Actor::sayLine(const char *msg, const char *msgId) {
 	// However, normal SMUSH movies may call SayLine, for example:
 	// When Domino yells at Manny (a SMUSH movie) he does it with
 	// a SayLine request rather than as part of the movie!
-	if (!g_smush->isPlaying() || g_grim->getMode() == ENGINE_MODE_NORMAL) {
+	if (!g_movie->isPlaying() || g_grim->getMode() == ENGINE_MODE_NORMAL) {
 		Common::String soundName = msgId;
 		Common::String soundLip = msgId;
 		soundName += ".wav";
@@ -1133,16 +1153,14 @@ void Actor::update() {
 		updateWalk();
 	}
 
-	// The rest chore might have been stopped because of a
-	// StopActorChore(nil).  Restart it if so.
-	if (_restChore >= 0 && _restCostume->isChoring(_restChore, false) < 0)
-		_restCostume->playChoreLooping(_restChore);
-
 	if (_walkChore >= 0) {
 		if (_walkedCur) {
 			if (_walkCostume->isChoring(_walkChore, false) < 0) {
 				_lastStepTime = 0;
 				_walkCostume->playChoreLooping(_walkChore);
+			}
+			if (_restChore >= 0 && _restCostume->isChoring(_restChore, false)) {
+				_restCostume->stopChore(_restChore);
 			}
 		} else {
 			if (_walkCostume->isChoring(_walkChore, false) >= 0)
@@ -1155,10 +1173,19 @@ void Actor::update() {
 			_currTurnDir = 0;
 		if (_lastTurnDir != 0 && _lastTurnDir != _currTurnDir)
 			_turnCostume->stopChore(getTurnChore(_lastTurnDir));
-		if (_currTurnDir != 0 && _currTurnDir != _lastTurnDir)
+		if (_currTurnDir != 0 && _currTurnDir != _lastTurnDir) {
 			_turnCostume->playChore(getTurnChore(_currTurnDir));
+			if (_restChore >= 0 && _restCostume->isChoring(_restChore, false)) {
+				_restCostume->stopChore(_restChore);
+			}
+		}
 	} else
 		_currTurnDir = 0;
+
+	// The rest chore might have been stopped because of a
+	// StopActorChore(nil).  Restart it if so.
+	if (!_walkedCur && !_currTurnDir && _restChore >= 0 && _restCostume->isChoring(_restChore, false) < 0)
+		_restCostume->playChoreLooping(_restChore);
 
 	_walkedLast = _walkedCur;
 	_walkedCur = false;

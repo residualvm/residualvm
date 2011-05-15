@@ -31,6 +31,8 @@
 #include "engines/grim/localize.h"
 #include "engines/grim/actor.h"
 #include "engines/grim/lipsync.h"
+#include "engines/grim/savegame.h"
+#include "engines/grim/colormap.h"
 
 #include "engines/grim/imuse/imuse.h"
 
@@ -231,12 +233,12 @@ void L1_MakeTextObject() {
 		setTextObjectParams(textObject, tableObj);
 
 	textObject->setText(text.c_str());
-	if (!(g_grim->getGameFlags() & GF_DEMO))
+	if (!(g_grim->getGameFlags() & ADGF_DEMO))
 		textObject->createBitmap();
 	g_grim->registerTextObject(textObject);
 
 	lua_pushusertag(textObject->getId(), MKTAG('T', 'E', 'X', 'T'));
-	if (!(g_grim->getGameFlags() & GF_DEMO)) {
+	if (!(g_grim->getGameFlags() & ADGF_DEMO)) {
 		lua_pushnumber(textObject->getBitmapWidth());
 		lua_pushnumber(textObject->getBitmapHeight());
 	}
@@ -293,6 +295,7 @@ void L1_BlastText() {
 }
 
 void L1_SetOffscreenTextPos() {
+	warning("L1_SetOffscreenTextPos: implement opcode");
 	// this sets where we shouldn't put dialog maybe?
 }
 

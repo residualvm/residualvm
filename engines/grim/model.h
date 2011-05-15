@@ -27,14 +27,25 @@
 #define GRIM_MODEL_H
 
 #include "common/memstream.h"
-
-#include "engines/grim/resource.h"
 #include "engines/grim/object.h"
 #include "graphics/matrix4.h"
 
 namespace Grim {
 
 class TextSplitter;
+class Material;
+class CMap;
+
+struct Sprite {
+	void draw() const;
+
+	Graphics::Vector3d _pos;
+	float _width;
+	float _height;
+	bool _visible;
+	Material *_material;
+	Sprite *_next;
+};
 
 class Model : public Object {
 public:
@@ -49,7 +60,7 @@ public:
 	~Model();
 
 	Common::String _fname;
-	CMapPtr _cmap;
+	ObjectPtr<CMap> _cmap;
 
 	struct Geoset;
 	struct Mesh;
@@ -62,6 +73,8 @@ public:
 		void removeChild(HierNode *child);
 		void setMatrix(Graphics::Matrix4 matrix);
 		void update();
+		void addSprite(Sprite *sprite);
+		void removeSprite(Sprite *sprite);
 
 		char _name[64];
 		Mesh *_mesh;
@@ -79,6 +92,7 @@ public:
 		Graphics::Matrix4 _matrix;
 		Graphics::Matrix4 _localMatrix;
 		Graphics::Matrix4 _pivotMatrix;
+		Sprite* _sprite;
 	};
 
 	HierNode *copyHierarchy();
@@ -139,7 +153,7 @@ public:
 
 	int _numMaterials;
 	char (*_materialNames)[32];
-	MaterialPtr *_materials;
+	ObjectPtr<Material> *_materials;
 	Graphics::Vector3d _insertOffset;
 	int _numGeosets;
 	Geoset *_geosets;

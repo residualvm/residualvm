@@ -26,7 +26,6 @@
 #ifndef GRIM_BITMAP_H
 #define GRIM_BITMAP_H
 
-#include "engines/grim/resource.h"
 #include "engines/grim/object.h"
 
 namespace Grim {
@@ -47,8 +46,9 @@ public:
 	static BitmapData *getBitmapData(const char *fname, const char *data, int len);
 	static Common::HashMap<Common::String, BitmapData *> *_bitmaps;
 
+	char *getImageData(int num) const;
+
 	Common::String _fname;
-	char **_data;
 	int _numImages;
 	int _width, _height, _x, _y;
 	int _format;
@@ -59,6 +59,9 @@ public:
 	char _filename[32];
 
 	int _refCount;
+
+private:
+	char **_data;
 };
 
 class Bitmap : public Object {
@@ -86,8 +89,8 @@ public:
 	void setX(int xPos) { _x = xPos; }
 	void setY(int yPos) { _y = yPos; }
 
-	char *getData(int num) const { return _data->_data[num]; }
-	char *getData() const { return _data->_data[_currImage]; }
+	char *getData(int num) const { return _data->getImageData(num); }
+	char *getData() const { return getData(_currImage); }
 	void *getTexIds() const { return _data->_texIds; }
 	int getNumTex() const { return _data->_numTex; }
 

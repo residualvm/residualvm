@@ -36,6 +36,8 @@
 #include "engines/grim/material.h"
 #include "engines/grim/lua.h"
 #include "engines/grim/lipsync.h"
+#include "engines/grim/resource.h"
+#include "engines/grim/savegame.h"
 
 #include "engines/grim/imuse/imuse.h"
 
@@ -115,10 +117,11 @@ public:
 
 	void init();
 	void setKey(int val);
+	void reset();
 
 private:
 	Common::String _filename;
-	Material *_material;
+	Sprite *_sprite;
 };
 
 class ColormapComponent : public Costume::Component {
@@ -149,7 +152,7 @@ public:
 
 protected:
 	Common::String _filename;
-	ModelPtr _obj;
+	ObjectPtr<Model> _obj;
 	Model::HierNode *_hier;
 	Graphics::Matrix4 _matrix;
 };
@@ -229,36 +232,72 @@ void BitmapComponent::setKey(int val) {
 }
 
 SpriteComponent::SpriteComponent(Costume::Component *p, int parentID, const char *filename, tag32 t) :
-	Costume::Component(p, parentID, t), _filename(filename) {
+	Costume::Component(p, parentID, t), _filename(filename), _sprite(NULL) {
 
 }
 
 SpriteComponent::~SpriteComponent() {
-	delete _material;
+	if (_sprite) {
+		if (_parent) {
+			MeshComponent *mc = dynamic_cast<MeshComponent *>(_parent);
+			mc->getNode()->removeSprite(_sprite);
+		}
+		delete _sprite->_material;
+		delete _sprite;
+	}
 }
 
 void SpriteComponent::init() {
-
-	warning("SpriteComponent '%s' not implemented. (%s)", _filename.c_str(), _cost->getFilename());
-
 	const char *comma = strchr(_filename.c_str(), ',');
 
 	Common::String name(_filename.c_str(), comma);
 
+	if (_sprite) {
+		if (_parent) {
+			MeshComponent *mc = dynamic_cast<MeshComponent *>(_parent);
+			mc->getNode()->removeSprite(_sprite);
+		}
+		delete _sprite;
+		_sprite = NULL;
+	}
+
 	if (comma) {
-		_material = g_resourceloader->loadMaterial(name.c_str(), getCMap());
+		int width, height, x, y, z;
+		sscanf(comma, ",%d,%d,%d,%d,%d", &width, &height, &x, &y, &z);
 
-		int a,b,c,d,e;
-		sscanf(comma, ",%d,%d,%d,%d,%d", &a, &b, &c, &d, &e);
-		// FIXME: What do these numbers mean?
+		_sprite = new Sprite;
+		_sprite->_material = g_resourceloader->loadMaterial(name.c_str(), getCMap());
+		_sprite->_width = (float)width / 100.0f;
+		_sprite->_height = (float)height / 100.0f;
+		_sprite->_pos.set((float)x / 100.0f, (float)y / 100.0f, (float)z / 100.0f);
+		_sprite->_visible = false;
+		_sprite->_next = NULL;
 
-	} else {
-
+		if (_parent) {
+			MeshComponent *mc = dynamic_cast<MeshComponent *>(_parent);
+			if (mc)
+				mc->getNode()->addSprite(_sprite);
+			else if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
+				warning("Parent of sprite %s wasn't a mesh", _filename.c_str());
+		}
 	}
 }
 
 void SpriteComponent::setKey(int val) {
-	_material->setNumber(val);
+	if (!_sprite)
+		return;
+
+	if (val == 0) {
+		_sprite->_visible = false;
+	} else {
+		_sprite->_visible = true;
+		_sprite->_material->setNumber(val - 1);
+	}
+}
+
+void SpriteComponent::reset() {
+	if (_sprite)
+		_sprite->_visible = false;
 }
 
 ModelComponent::ModelComponent(Costume::Component *p, int parentID, const char *filename, Costume::Component *prevComponent, tag32 t) :
@@ -483,8 +522,6 @@ public:
 	KeyframeComponent(Costume::Component *parent, int parentID, const char *filename, tag32 tag);
 	void init();
 	void setKey(int val);
-	void setFade(float fade);
-	void setLowPriority(bool lowPriority);
 	void update();
 	void reset();
 	void saveState(SaveGame *state);
@@ -496,17 +533,15 @@ private:
 	int _priority1, _priority2;
 	Model::HierNode *_hier;
 	bool _active;
-	bool _lowPriority;
 	int _repeatMode;
 	int _currTime;
-	float _fade;
 	Common::String _fname;
 
 	friend class Costume;
 };
 
 KeyframeComponent::KeyframeComponent(Costume::Component *p, int parentID, const char *filename, tag32 t) :
-		Costume::Component(p, parentID, t), _priority1(1), _priority2(5), _hier(NULL), _active(false), _lowPriority(false) {
+		Costume::Component(p, parentID, t), _priority1(1), _priority2(5), _hier(NULL), _active(false) {
 	_fname = filename;
 	const char *comma = strchr(filename, ',');
 	if (comma) {
@@ -536,14 +571,6 @@ void KeyframeComponent::setKey(int val) {
 		if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
 			warning("Unknown key %d for keyframe %s", val, _keyf->getFilename());
 	}
-}
-
-void KeyframeComponent::setFade(float fade) {
-	_fade = fade;
-}
-
-void KeyframeComponent::setLowPriority(bool lowPriority) {
-	_lowPriority = lowPriority;
 }
 
 void KeyframeComponent::reset() {
@@ -581,12 +608,7 @@ void KeyframeComponent::update() {
 		}
 	}
 
-	if (_lowPriority) {
-		// Force 0 priority. Used for rest chores.
-		_keyf->animate(_hier, _currTime / 1000.0f, 0, 0, _fade);
-	} else {
-		_keyf->animate(_hier, _currTime / 1000.0f, _priority1, _priority2, _fade);
-	}
+	_keyf->animate(_hier, _currTime / 1000.0f, _priority1, _priority2, _fade);
 }
 
 void KeyframeComponent::init() {
@@ -665,7 +687,7 @@ void MaterialComponent::init() {
 		ModelComponent *p = static_cast<ModelComponent *>(_parent);
 		Model *model = p->getModel();
 		for (int i = 0; i < model->_numMaterials; ++i) {
-			if (strcmp(model->_materials[i]->getFilename(), _filename.c_str()) == 0)
+			if (scumm_stricmp(model->_materials[i]->getFilename(), _filename.c_str()) == 0)
 				_mat = model->_materials[i].object();
 		}
 	} else {
@@ -961,6 +983,10 @@ void Costume::Component::setColormap(CMap *c) {
 		mc->resetColormap();
 }
 
+void Costume::Component::setFade(float fade) {
+	_fade = fade;
+}
+
 bool Costume::Component::isVisible() {
 	if (_visible && _parent)
 		return _parent->isVisible();
@@ -1065,14 +1091,6 @@ void Costume::Chore::setKeys(int startTime, int stopTime) {
 			comp->setFade(1.f);
 		}
 
-		if (FROM_BE_32(comp->getTag()) == MKTAG('K','E','Y','F')) {
-			KeyframeComponent *f = static_cast<KeyframeComponent *>(comp);
-			if (g_currentUpdatedActor && g_currentUpdatedActor->getRestChore() == _id)
-				f->setLowPriority(true);
-			else
-				f->setLowPriority(false);
-		}
-
 		for (int j = 0; j < _tracks[i].numKeys; j++) {
 			if (_tracks[i].keys[j].time > stopTime)
 				break;
@@ -1086,8 +1104,14 @@ void Costume::Chore::setLastFrame() {
 	// If the chore has already played then don't set it to the end
 	// Example: This executing would result in Glottis being
 	// choppy when he hands Manny the work order
-	if (_hasPlayed)
-		return;
+	// 	if (_hasPlayed)
+	// 		return;
+
+	// This comment above is perfectly right, but unfortunately doing that
+	// breaks glottis movements when he answers to "i'm calavera, manny calavera".
+	// Moreover, the choppy behaviour stated above happens with grim original too,
+	// meaning the bug is not in Residual but in the scripts or in GrimE design.
+
 	_currTime = _length;
 	_playing = false;
 	_hasPlayed = true;
@@ -1517,6 +1541,7 @@ void Costume::saveState(SaveGame *state) const {
 		state->writeLESint32(c._playing);
 		state->writeLESint32(c._looping);
 		state->writeLESint32(c._currTime);
+		state->writeLESint32(c._fadeMode);
 	}
 
 	for (int i = 0; i < _numComponents; ++i) {
@@ -1525,6 +1550,7 @@ void Costume::saveState(SaveGame *state) const {
 		if (c) {
 			state->writeLESint32(c->_visible);
 			state->writeVector3d(c->_matrix._pos);
+			state->writeFloat(c->_fade);
 
 			c->saveState(state);
 		}
@@ -1552,6 +1578,7 @@ bool Costume::restoreState(SaveGame *state) {
 		c._playing = state->readLESint32();
 		c._looping = state->readLESint32();
 		c._currTime = state->readLESint32();
+		c._fadeMode = (Chore::FadeMode)state->readLESint32();
 	}
 	for (int i = 0; i < _numComponents; ++i) {
 		Component *c = _components[i];
@@ -1559,6 +1586,7 @@ bool Costume::restoreState(SaveGame *state) {
 		if (c) {
 			c->_visible = state->readLESint32();
 			c->_matrix._pos = state->readVector3d();
+			c->_fade = state->readFloat();
 
 			c->restoreState(state);
 		}

@@ -36,7 +36,7 @@ namespace Grim {
 #define SAVEGAME_HEADERTAG	'RSAV'
 #define SAVEGAME_FOOTERTAG	'ESAV'
 
-int SaveGame::SAVEGAME_VERSION = 12;
+int SaveGame::SAVEGAME_VERSION = 13;
 
 // Constructor. Should create/open a saved game
 SaveGame::SaveGame(const char *filename, bool saving) :
@@ -100,7 +100,7 @@ uint32 SaveGame::beginSection(uint32 sectionTag) {
 			_inSaveFile->seek(_sectionSize, SEEK_CUR);
 		}
 		_sectionBuffer = (byte *)malloc(_sectionSize);
-		_inSaveFile->seek(-_sectionSize, SEEK_CUR);
+		_inSaveFile->seek(-(int32)_sectionSize, SEEK_CUR);
 		_inSaveFile->read(_sectionBuffer, _sectionSize);
 
 	} else {

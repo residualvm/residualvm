@@ -26,15 +26,15 @@
 #ifndef GRIM_GFX_BASE_H
 #define GRIM_GFX_BASE_H
 
-#include "engines/grim/colormap.h"
 #include "engines/grim/model.h"
 #include "engines/grim/scene.h"
-#include "engines/grim/primitives.h"
 
 namespace Grim {
 
 struct Shadow;
 class SaveGame;
+class BitmapData;
+class PrimitiveObject;
 
 class GfxBase {
 public:
@@ -77,6 +77,7 @@ public:
 
 	virtual void drawHierachyNode(const Model::HierNode *node) = 0;
 	virtual void drawModelFace(const Model::Face *face, float *vertices, float *vertNormals, float *textureVerts) = 0;
+	virtual void drawSprite(const Sprite *sprite) = 0;
 
 	virtual void disableLights() = 0;
 	virtual void setupLight(Scene::Light *light, int lightId) = 0;
@@ -88,8 +89,6 @@ public:
 	virtual void createBitmap(BitmapData *bitmap) = 0;
 	virtual void drawBitmap(const Bitmap *bitmap) = 0;
 	virtual void destroyBitmap(BitmapData *bitmap) = 0;
-
-	virtual void drawDepthBitmap(int x, int y, int w, int h, char *data) = 0;
 
 	virtual Bitmap *getScreenshot(int w, int h) = 0;
 	virtual void storeDisplay() = 0;

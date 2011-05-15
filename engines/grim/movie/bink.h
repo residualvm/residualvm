@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- *
+
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- *
+
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
@@ -23,34 +23,43 @@
  *
  */
 
-#include "engines/grim/gfx_base.h"
-#include "engines/grim/savegame.h"
-#include "engines/grim/colormap.h"
+#ifndef GRIM_BINK_PLAYER_H
+#define GRIM_BINK_PLAYER_H
+
+#include "common/scummsys.h"
+#include "common/file.h"
+
+#include "graphics/pixelformat.h"
+
+#include "audio/mixer.h"
+#include "audio/audiostream.h"
+
+#include "engines/grim/movie/movie.h"
 
 namespace Grim {
 
-void GfxBase::saveState(SaveGame *state) {
-	state->beginSection('DRVR');
+class BinkPlayer : public MoviePlayer {
+private:
+	Common::File _f;
+	//Video::BaseAnimationState *_videoBase;
 
-	byte r, g, b;
-	getShadowColor(&r, &g, &b);
-	state->writeByte(r),
-	state->writeByte(g),
-	state->writeByte(b),
+public:
+	BinkPlayer();
+	~BinkPlayer();
 
-	state->endSection();
-}
+	bool play(const char *filename, bool looping, int x, int y);
+	void stop();
+	void saveState(SaveGame *state);
+	void restoreState(SaveGame *state);
+	void deliverFrameFromDecode(int width, int height, uint16 *dat);
+private:
+	static void timerCallback(void *ptr);
+	virtual void handleFrame();
+	void init();
+	void deinit();
+};
 
-void GfxBase::restoreState(SaveGame *state) {
-	state->beginSection('DRVR');
+} // end of namespace Grim
 
-	byte r, g, b;
-	r = state->readByte();
-	g = state->readByte();
-	b = state->readByte();
-	setShadowColor(r, g ,b);
 
-	state->endSection();
-}
-
-}
+#endif

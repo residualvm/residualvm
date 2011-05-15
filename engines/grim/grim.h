@@ -28,12 +28,24 @@
 
 #include "engines/engine.h"
 
+#include "common/str-array.h"
+#include "common/hashmap.h"
+
+#include "engines/advancedDetector.h"
+
 #include "engines/grim/textobject.h"
 
 namespace Grim {
 
 class Actor;
 class SaveGame;
+class Bitmap;
+class Font;
+class Color;
+class ObjectState;
+class Scene;
+class TextObject;
+class PrimitiveObject;
 
 enum enDebugLevels {
 	DEBUG_NONE, DEBUG_NORMAL, DEBUG_WARN, DEBUG_ERROR, DEBUG_LUA, DEBUG_BITMAPS, DEBUG_MODEL, DEBUG_STUB,
@@ -51,14 +63,9 @@ enum GrimGameType {
 	GType_MONKEY4
 };
 
-enum GrimGameFeatures {
-	GF_DEMO  =   1 << 0,
-	EMI_DEMO =   1 << 1
-};
-
 struct GrimGameDescription;
 
-typedef Common::HashMap<Common::String, const char *> StringPtrHashMap;
+typedef Common::HashMap<Common::String, const char *>StringPtrHashMap;
 
 struct ControlDescriptor {
 	const char *name;
@@ -82,11 +89,12 @@ public:
 	typedef Common::HashMap<int32, TextObject *> TextListType;
 	typedef Common::HashMap<int, PrimitiveObject *> PrimitiveListType;
 
-	GrimEngine(OSystem *syst, int gameFlags, GrimGameType gameType);
+	GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, Common::Platform platform, Common::Language language);
 	virtual ~GrimEngine();
 
 	int getGameFlags() { return _gameFlags; }
 	GrimGameType getGameType() { return _gameType; }
+	Common::Language getGameLanguage() { return _gameLanguage; }
 
 	bool loadSaveDirectory(void);
 	void makeSystemMenu(void);
@@ -236,9 +244,7 @@ public:
 	Common::StringArray _listFiles;
 	Common::StringArray::const_iterator _listFilesIter;
 
-	TextObjectDefaults _sayLineDefaults;
-	TextObjectDefaults _printLineDefaults;
-	TextObjectDefaults _blastTextDefaults;
+	TextObjectDefaults _sayLineDefaults, _printLineDefaults, _blastTextDefaults;
 
 private:
 
@@ -281,8 +287,10 @@ private:
 	FontListType _fonts;
 	ColorListType _colors;
 
-	int _gameFlags;
+	uint32 _gameFlags;
 	GrimGameType _gameType;
+	Common::Platform _gamePlatform;
+	Common::Language _gameLanguage;
 };
 
 extern GrimEngine *g_grim;

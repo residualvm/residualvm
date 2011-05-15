@@ -39,10 +39,12 @@
 #include "audio/mixer.h"
 #include "audio/decoders/raw.h"
 
-#include "engines/grim/smush/smush.h"
+#include "engines/grim/movie/smush.h"
 
 #include "engines/grim/grim.h"
 #include "engines/grim/colormap.h"
+#include "engines/grim/resource.h"
+#include "engines/grim/savegame.h"
 
 namespace Grim {
 
@@ -51,42 +53,30 @@ namespace Grim {
 #define ANNO_HEADER "MakeAnim animation type 'Bl16' parameters: "
 #define BUFFER_SIZE 16385
 
-Smush *g_smush;
 static uint16 smushDestTable[5786];
 
-void Smush::timerCallback(void *) {
-	if (g_grim->getGameFlags() & GF_DEMO)
-		g_smush->handleFrameDemo();
+MoviePlayer *CreateSmushPlayer() {
+	return new SmushPlayer();
+}
+
+void SmushPlayer::timerCallback(void *) {
+	if (g_grim->getGameFlags() & ADGF_DEMO)
+		((SmushPlayer *)g_movie)->handleFrameDemo();
 	else
-		g_smush->handleFrame();
+		((SmushPlayer *)g_movie)->handleFrame();
 }
 
-Smush::Smush() {
-	g_smush = this;
-	_nbframes = 0;
-	_internalBuffer = NULL;
-	_externalBuffer = NULL;
-	_width = 0;
-	_height = 0;
-	_speed = 0;
-	_channels = -1;
-	_freq = 22050;
-	_videoFinished = false;
-	_videoLooping = false;
-	_videoPause = true;
-	_updateNeeded = false;
-	_startPos = NULL;
-	_stream = NULL;
-	_movieTime = 0;
-	_frame = 0;
+SmushPlayer::SmushPlayer() {
+	g_movie = this;
 	_IACTpos = 0;
+	_nbframes = 0;
 }
 
-Smush::~Smush() {
+SmushPlayer::~SmushPlayer() {
 	deinit();
 }
 
-void Smush::init() {
+void SmushPlayer::init() {
 	_IACTpos = 0;
 	_stream = NULL;
 	_frame = 0;
@@ -98,7 +88,7 @@ void Smush::init() {
 	assert(!_internalBuffer);
 	assert(!_externalBuffer);
 
-	if (!(g_grim->getGameFlags() & GF_DEMO)) {
+	if (!(g_grim->getGameFlags() & ADGF_DEMO)) {
 		_internalBuffer = new byte[_width * _height * 2];
 		_externalBuffer = new byte[_width * _height * 2];
 		vimaInit(smushDestTable);
@@ -106,7 +96,7 @@ void Smush::init() {
 	g_system->getTimerManager()->installTimerProc(&timerCallback, _speed, NULL);
 }
 
-void Smush::deinit() {
+void SmushPlayer::deinit() {
 	g_system->getTimerManager()->removeTimerProc(&timerCallback);
 
 	if (_internalBuffer) {
@@ -130,13 +120,13 @@ void Smush::deinit() {
 	_videoLooping = false;
 	_videoFinished = true;
 	_videoPause = true;
-	if (g_grim->getGameFlags() & GF_DEMO)
+	if (g_grim->getGameFlags() & ADGF_DEMO)
 		_f.close();
 	else
 		_file.close();
 }
 
-void Smush::handleWave(const byte *src, uint32 size) {
+void SmushPlayer::handleWave(const byte *src, uint32 size) {
 	int16 *dst = (int16 *) malloc(size * _channels * sizeof(int16));
 	decompressVima(src, dst, size * _channels * 2, smushDestTable);
 
@@ -155,7 +145,7 @@ void Smush::handleWave(const byte *src, uint32 size) {
 	}
 }
 
-void Smush::handleFrame() {
+void SmushPlayer::handleFrame() {
 	uint32 tag;
 	int32 size;
 	int pos = 0;
@@ -227,7 +217,7 @@ void Smush::handleFrame() {
 				handleWave(frame + pos + 8 + 4, decompressed_size);
 			pos += READ_BE_UINT32(frame + pos + 4) + 8;
 		} else if (gDebugLevel == DEBUG_SMUSH || gDebugLevel == DEBUG_ERROR || gDebugLevel == DEBUG_ALL) {
-			error("Smush::handleFrame() unknown tag");
+			error("SmushPlayer::handleFrame() unknown tag");
 		}
 	} while (pos < size);
 	delete[] frame;
@@ -252,7 +242,7 @@ static byte delta_color(byte org_color, int16 delta_color) {
 	return CLIP(t, 0, 255);
 }
 
-void Smush::handleDeltaPalette(byte *src, int32 size) {
+void SmushPlayer::handleDeltaPalette(byte *src, int32 size) {
 	if (size == 0x300 * 3 + 4) {
 		for (int i = 0; i < 0x300; i++)
 			_deltaPal[i] = READ_LE_UINT16(src + (i * 2) + 4);
@@ -261,11 +251,11 @@ void Smush::handleDeltaPalette(byte *src, int32 size) {
 		for (int i = 0; i < 0x300; i++)
 			_pal[i] = delta_color(_pal[i], _deltaPal[i]);
 	} else {
-		error("Smush::handleDeltaPalette() Wrong size for DeltaPalette");
+		error("SmushPlayer::handleDeltaPalette() Wrong size for DeltaPalette");
 	}
 }
 
-void Smush::handleIACT(const byte *src, int32 size) {
+void SmushPlayer::handleIACT(const byte *src, int32 size) {
 	int32 bsize = size - 18;
 	const byte *d_src = src + 18;
 
@@ -332,7 +322,7 @@ void Smush::handleIACT(const byte *src, int32 size) {
 	}
 }
 
-void Smush::handleFrameDemo() {
+void SmushPlayer::handleFrameDemo() {
 	uint32 tag;
 	int32 size;
 	int pos = 0;
@@ -378,7 +368,7 @@ void Smush::handleFrameDemo() {
 			handleDeltaPalette(frame + pos + 8, READ_BE_UINT32(frame + pos + 4));
 			pos += READ_BE_UINT32(frame + pos + 4) + 8;
 		} else {
-			error("Smush::handleFrame() unknown tag");
+			error("SmushPlayer::handleFrame() unknown tag");
 		}
 	} while (pos < size);
 	delete[] frame;
@@ -400,7 +390,7 @@ void Smush::handleFrameDemo() {
 	}
 }
 
-void Smush::handleFramesHeader() {
+void SmushPlayer::handleFramesHeader() {
 	uint32 tag;
 	int32 size;
 	int pos = 0;
@@ -419,13 +409,13 @@ void Smush::handleFramesHeader() {
 			_channels = READ_LE_UINT32(f_header + pos + 12);
 			pos += 20;
 		} else {
-			error("Smush::handleFramesHeader() unknown tag");
+			error("SmushPlayer::handleFramesHeader() unknown tag");
 		}
 	} while (pos < size);
 	delete[] f_header;
 }
 
-bool Smush::setupAnimDemo(const char *file) {
+bool SmushPlayer::setupAnimDemo(const char *file) {
 	uint32 tag;
 	int32 size;
 
@@ -464,7 +454,7 @@ bool Smush::setupAnimDemo(const char *file) {
 	return true;
 }
 
-bool Smush::setupAnim(const char *file, bool looping, int x, int y) {
+bool SmushPlayer::setupAnim(const char *file, bool looping, int x, int y) {
 	uint32 tag;
 	int32 size;
 	int16 flags;
@@ -518,12 +508,12 @@ bool Smush::setupAnim(const char *file, bool looping, int x, int y) {
 	return true;
 }
 
-void Smush::stop() {
+void SmushPlayer::stop() {
 	deinit();
 	g_grim->setMode(ENGINE_MODE_NORMAL);
 }
 
-bool Smush::play(const char *filename, bool looping, int x, int y) {
+bool SmushPlayer::play(const char *filename, bool looping, int x, int y) {
 	deinit();
 	_fname = filename;
 
@@ -531,7 +521,7 @@ bool Smush::play(const char *filename, bool looping, int x, int y) {
 		printf("Playing video '%s'.\n", filename);
 
 	// Load the video
-	if (g_grim->getGameFlags() & GF_DEMO) {
+	if (g_grim->getGameFlags() & ADGF_DEMO) {
 		if (!setupAnimDemo(filename))
 			return false;
 	} else {
@@ -549,7 +539,7 @@ bool Smush::play(const char *filename, bool looping, int x, int y) {
 	return true;
 }
 
-void Smush::saveState(SaveGame *state) {
+void SmushPlayer::saveState(SaveGame *state) {
 	state->beginSection('SMUS');
 
 	state->writeString(_fname);
@@ -565,7 +555,7 @@ void Smush::saveState(SaveGame *state) {
 	state->endSection();
 }
 
-void Smush::restoreState(SaveGame *state) {
+void SmushPlayer::restoreState(SaveGame *state) {
 	state->beginSection('SMUS');
 
 	_fname = state->readString();

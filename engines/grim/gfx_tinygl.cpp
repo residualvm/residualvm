@@ -33,6 +33,8 @@
 #include "engines/grim/gfx_tinygl.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/lipsync.h"
+#include "engines/grim/bitmap.h"
+#include "engines/grim/primitives.h"
 
 namespace Grim {
 
@@ -468,6 +470,46 @@ void GfxTinyGL::drawModelFace(const Model::Face *face, float *vertices, float *v
 	tglEnd();
 }
 
+void GfxTinyGL::drawSprite(const Sprite *sprite) {
+	tglMatrixMode(TGL_TEXTURE);
+	tglLoadIdentity();
+	tglMatrixMode(TGL_MODELVIEW);
+	tglPushMatrix();
+	tglTranslatef(sprite->_pos.x(), sprite->_pos.y(), sprite->_pos.z());
+
+	TGLfloat modelview[16];
+	tglGetFloatv(TGL_MODELVIEW_MATRIX, modelview);
+
+	// We want screen-aligned sprites so reset the rotation part of the matrix.
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			if (i == j) {
+				modelview[i * 4 + j] = 1.0f;
+			} else {
+				modelview[i * 4 + j] = 0.0f;
+			}
+		}
+	}
+	tglLoadMatrixf(modelview);
+
+	tglDisable(TGL_LIGHTING);
+
+	tglBegin(TGL_POLYGON);
+	tglTexCoord2f(0.0f, 0.0f);
+	tglVertex3f(sprite->_width / 2, sprite->_height, 0.0f);
+	tglTexCoord2f(0.0f, 1.0f);
+	tglVertex3f(sprite->_width / 2, 0.0f, 0.0f);
+	tglTexCoord2f(1.0f, 1.0f);
+	tglVertex3f(-sprite->_width / 2, 0.0f, 0.0f);
+	tglTexCoord2f(1.0f, 0.0f);
+	tglVertex3f(-sprite->_width / 2, sprite->_height, 0.0f);
+	tglEnd();
+
+	tglEnable(TGL_LIGHTING);
+
+	tglPopMatrix();
+}
+
 void GfxTinyGL::translateViewpointStart(Graphics::Vector3d pos, float pitch, float yaw, float roll) {
 	tglPushMatrix();
 
@@ -492,13 +534,23 @@ void GfxTinyGL::drawHierachyNode(const Model::HierNode *node) {
 		translateViewpointStart(node->_pos, node->_pitch, node->_yaw, node->_roll);
 	}
 	if (node->_hierVisible) {
-		if (node->_mesh && node->_meshVisible) {
-			tglPushMatrix();
-			tglTranslatef(node->_pivot.x(), node->_pivot.y(), node->_pivot.z());
-			node->_mesh->draw();
-			tglMatrixMode(TGL_MODELVIEW);
-			tglPopMatrix();
+		tglPushMatrix();
+		tglTranslatef(node->_pivot.x(), node->_pivot.y(), node->_pivot.z());
+
+		if (!_currentShadowArray) {
+			Sprite* sprite = node->_sprite;
+			while (sprite) {
+				sprite->draw();
+				sprite = sprite->_next;
+			}
 		}
+
+		if (node->_mesh && node->_meshVisible) {
+			node->_mesh->draw();
+		}
+
+		tglMatrixMode(TGL_MODELVIEW);
+		tglPopMatrix();
 
 		if (node->_child) {
 			node->_child->draw();
@@ -565,9 +617,9 @@ void GfxTinyGL::setupLight(Scene::Light *light, int lightId) {
 void GfxTinyGL::createBitmap(BitmapData *bitmap) {
 	if (bitmap->_format != 1) {
 		for (int pic = 0; pic < bitmap->_numImages; pic++) {
-			uint16 *bufPtr = reinterpret_cast<uint16 *>(bitmap->_data[pic]);
+			uint16 *bufPtr = reinterpret_cast<uint16 *>(bitmap->getImageData(pic));
 			for (int i = 0; i < (bitmap->_width * bitmap->_height); i++) {
-				uint16 val = READ_LE_UINT16(bitmap->_data[pic] + 2 * i);
+				uint16 val = READ_LE_UINT16(bitmap->getImageData(pic) + 2 * i);
 				bufPtr[i] = ((uint32) val) * 0x10000 / 100 / (0x10000 - val);
 			}
 		}
@@ -637,8 +689,6 @@ void GfxTinyGL::drawBitmap(const Bitmap *bitmap) {
 }
 
 void GfxTinyGL::destroyBitmap(BitmapData *) { }
-
-void GfxTinyGL::drawDepthBitmap(int, int, int, int, char *) { }
 
 void GfxTinyGL::createMaterial(Material *material, const char *data, const CMap *cmap) {
 	material->_textures = new TGLuint[material->_numImages];
