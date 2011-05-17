@@ -118,6 +118,8 @@ public:
 	void init();
 	void setKey(int val);
 	void reset();
+	void saveState(SaveGame *state);
+	void restoreState(SaveGame *state);
 
 private:
 	Common::String _filename;
@@ -298,6 +300,16 @@ void SpriteComponent::setKey(int val) {
 void SpriteComponent::reset() {
 	if (_sprite)
 		_sprite->_visible = false;
+}
+
+void SpriteComponent::saveState(SaveGame *state) {
+	state->writeLEBool(_sprite->_visible);
+	state->writeLESint32(_sprite->_material->getCurrentImage());
+}
+
+void SpriteComponent::restoreState(SaveGame *state) {
+	_sprite->_visible = state->readLEBool();
+	_sprite->_material->setNumber(state->readLESint32());
 }
 
 ModelComponent::ModelComponent(Costume::Component *p, int parentID, const char *filename, Costume::Component *prevComponent, tag32 t) :
@@ -491,6 +503,9 @@ public:
 	void setColormap(CMap *c);
 	void setupTexture();
 	void reset();
+	void resetColormap();
+	void saveState(SaveGame *state);
+	void restoreState(SaveGame *state);
 	~MaterialComponent() { }
 
 private:
@@ -687,8 +702,10 @@ void MaterialComponent::init() {
 		ModelComponent *p = static_cast<ModelComponent *>(_parent);
 		Model *model = p->getModel();
 		for (int i = 0; i < model->_numMaterials; ++i) {
-			if (scumm_stricmp(model->_materials[i]->getFilename(), _filename.c_str()) == 0)
+			if (scumm_stricmp(model->_materials[i]->getFilename(), _filename.c_str()) == 0) {
 				_mat = model->_materials[i].object();
+				return;
+			}
 		}
 	} else {
 		warning("Parent of a MaterialComponent not a ModelComponent. %s %s", _filename.c_str(),_cost->getFilename());
@@ -706,6 +723,18 @@ void MaterialComponent::setupTexture() {
 
 void MaterialComponent::reset() {
 	_num = 0;
+}
+
+void MaterialComponent::resetColormap() {
+	init();
+}
+
+void MaterialComponent::saveState(SaveGame *state) {
+	state->writeLESint32(_num);
+}
+
+void MaterialComponent::restoreState(SaveGame *state) {
+	_num = state->readLESint32();
 }
 
 class LuaVarComponent : public Costume::Component {
@@ -975,12 +1004,10 @@ Costume::Component::Component(Component *p, int parentID, tag32 t)  {
 }
 
 void Costume::Component::setColormap(CMap *c) {
-	ModelComponent *mc = dynamic_cast<ModelComponent *>(this);
-
 	if (c)
 		_cmap = c;
-	if (mc && getCMap())
-		mc->resetColormap();
+	if (getCMap())
+		resetColormap();
 }
 
 void Costume::Component::setFade(float fade) {

@@ -329,6 +329,8 @@ LipSync *ResourceLoader::loadLipSync(const char *filename) {
 }
 
 Material *ResourceLoader::loadMaterial(const char *filename, CMap *c) {
+	Common::String fname = filename;
+	fname.toLowercase();
 	Block *b = getFileFromCache(filename);
 	if (!b) {
 		b = getFileBlock(filename);
@@ -337,7 +339,7 @@ Material *ResourceLoader::loadMaterial(const char *filename, CMap *c) {
 		putIntoCache(filename, b);
 	}
 
-	Material *result = new Material(filename, b->getData(), b->getLen(), c);
+	Material *result = new Material(fname.c_str(), b->getData(), b->getLen(), c);
 	_materials.push_back(result);
 
 	return result;

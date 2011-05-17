@@ -92,45 +92,6 @@ char *makeBitmapFromTile(char **bits, int width, int height, int bpp) {
 	return fullImage;
 }
 
-char *upconvertto32(char *data, unsigned int width, unsigned int height, int bpp) {
-	if (bpp==16) {
-		bpp = 2;
-		char *newData = new char[width * height * 4];
-		char *to = newData;
-		char red = 0, green = 0, blue = 0;
-		for (unsigned int i = 0; i< height; i++) {
-			for(unsigned int j = 0; j < width; j++) {
-				char byte2 = data[i * width * bpp + j *2];
-				char byte1 = data[i * width * bpp + j * 2 + 1];
-			// Probably Alpha, then 555.
-			// Red
-				red = (byte1 >> 2) & 31;
-				red = red << 3 | red >> 2;
-			// Green
-				char green1 = (byte1 & 3);
-				char green2 = (((byte2) >> 5) & 7);
-				char green3 = green1 << 3 | green2;
-				green = green3 << 3 | green3 >> 2 ;
-			// Blue
-				blue = (byte2) & 31;
-				blue = blue << 3 | blue >> 2;
-			// Some more magic to stretch the values
-				*to = red;
-				to++;
-				*to = green;
-				to++;
-				*to = blue;
-				to++;
-				*to = 0;
-				to++;
-			}
-		}
-		delete data;
-		return newData;
-	}
-	return data;
-}
-
 BitmapData *BitmapData::getBitmapData(const char *fname, const char *data, int len) {
 	Common::String str(fname);
 	if (_bitmaps && _bitmaps->contains(str)) {
@@ -159,21 +120,22 @@ BitmapData::BitmapData(const char *fname, const char *data, int len) {
 	}
 
 	int codec = READ_LE_UINT32(data + 8);
-//	_paletteIncluded = READ_LE_UINT32(data + 12);
+	//	_paletteIncluded = READ_LE_UINT32(data + 12);
 	_numImages = READ_LE_UINT32(data + 16);
 	_x = READ_LE_UINT32(data + 20);
 	_y = READ_LE_UINT32(data + 24);
-//	_transparentColor = READ_LE_UINT32(data + 28);
+	//	_transparentColor = READ_LE_UINT32(data + 28);
 	_format = READ_LE_UINT32(data + 32);
 	_bpp = READ_LE_UINT32(data + 36);
-//	_blueBits = READ_LE_UINT32(data + 40);
-//	_greenBits = READ_LE_UINT32(data + 44);
-//	_redBits = READ_LE_UINT32(data + 48);
-//	_blueShift = READ_LE_UINT32(data + 52);
-//	_greenShift = READ_LE_UINT32(data + 56);
-//	_redShift = READ_LE_UINT32(data + 60);
+	//	_blueBits = READ_LE_UINT32(data + 40);
+	//	_greenBits = READ_LE_UINT32(data + 44);
+	//	_redBits = READ_LE_UINT32(data + 48);
+	//	_blueShift = READ_LE_UINT32(data + 52);
+	//	_greenShift = READ_LE_UINT32(data + 56);
+	//	_redShift = READ_LE_UINT32(data + 60);
 	_width = READ_LE_UINT32(data + 128);
 	_height = READ_LE_UINT32(data + 132);
+	_colorFormat = BM_RGB565;
 
 	_data = new char *[_numImages];
 	int pos = 0x88;
@@ -214,9 +176,11 @@ BitmapData::BitmapData(const char *data, int w, int h, int bpp, const char *fnam
 	_texIds = NULL;
 	_bpp = bpp;
 	_hasTransparency = false;
+	_colorFormat = BM_RGB565;
 	_data = new char *[_numImages];
 	_data[0] = new char[_bpp / 8 * _width * _height];
 	memcpy(_data[0], data, _bpp / 8 * _width * _height);
+
 	g_driver->createBitmap(this);
 }
 
@@ -281,19 +245,22 @@ bool BitmapData::loadTile(const char *filename, const char *data, int len) {
 		o->seek(8, SEEK_CUR);
 		o->read(_data[i], size);
 	}
+
 	char *bMap = makeBitmapFromTile(_data, 640, 480, _bpp);
 	for (int i = 0; i < numSubImages; ++i) {
 		delete[] _data[i];
 	}
+	_width = 640;
+	_height = 480;
 	_data[0] = bMap;
 	_numImages = 1;
 
 	if (_bpp == 16) {
-		_data[0] = upconvertto32(_data[0], 640, 480, _bpp);
-		_bpp = 32;
+		_colorFormat = BM_RGB1555;
+		//convertToColorFormat(0, BM_RGBA);
+	} else {
+		_colorFormat = BM_RGBA;
 	}
-	_width = 640;
-	_height = 480;
 
 	g_driver->createBitmap(this);
 	return true;
@@ -306,7 +273,7 @@ char *BitmapData::getImageData(int num) const {
 // Bitmap
 
 Bitmap::Bitmap(const char *fname, const char *data, int len) :
-Object() {
+		Object() {
 	_data = BitmapData::getBitmapData(fname, data, len);
 	_x = _data->_x;
 	_y = _data->_y;
@@ -314,7 +281,7 @@ Object() {
 }
 
 Bitmap::Bitmap(const char *data, int w, int h, int bpp, const char *fname) :
-Object() {
+		Object() {
 	_data = new BitmapData(data, w, h, bpp, fname);
 	_x = _data->_x;
 	_y = _data->_y;
@@ -322,7 +289,7 @@ Object() {
 }
 
 Bitmap::Bitmap() :
-Object() {
+		Object() {
 	_data = new BitmapData();
 }
 
@@ -339,6 +306,111 @@ Bitmap::~Bitmap() {
 		delete _data;
 	}
 	g_grim->killBitmap(this);
+}
+
+void BitmapData::convertToColorFormat(int num, int format) {
+	// Supports 1555->RGBA, RGBA->565
+	unsigned char red = 0, green = 0, blue = 0, alpha = 0;
+	int size = _width * _height * (_bpp / 8);
+	if (_colorFormat == BM_RGB1555) {
+		uint16 *bitmapData = reinterpret_cast<uint16 *>(_data[num]);
+
+		if (format == BM_RGBA && _bpp == 16) {
+			// Convert data to 32-bit RGBA format
+			char *newData = new char[_width * _height * 4];
+			char *to = newData;
+
+			for (int i = 0; i< _height * _width; i++, bitmapData++, to += 4) {
+				uint pixel = *bitmapData;
+				// Alpha, then 555 (BGR).
+				blue = (pixel >> 10) & 0x1f;
+				to[2] = blue << 3 | blue >> 2;
+				green = (pixel >> 5) & 0x1f;
+				to[1] = green << 3 | green >> 2;
+				red = (pixel & 0x1f);
+				to[0] = red << 3 | red >> 2;
+
+				if (pixel >> 15 & 1)
+					alpha = 255;
+				else
+					alpha = 0;
+				to[3] = alpha;
+			}
+			delete _data[num];
+			_data[num] = newData;
+			_colorFormat = BM_RGBA;
+			_bpp = 32;
+		} else if (format == BM_RGB565){ // 1555 -> 565 (Incomplete)
+			convertToColorFormat(num, BM_RGBA);
+			convertToColorFormat(num, BM_RGB565);
+			warning("Conversion 1555->565 done with 1555->RGBA->565");
+			return;
+			warning("Conversion 1555->565 is not properly implemented");
+			// This doesn't work properly, so falling back to double-conversion via RGBA for now.
+			uint16 *to = reinterpret_cast<uint16 *>(_data[num]);
+			for (int i = 1; i < _height * _width; i++, bitmapData++, to++) {
+				uint pixel = *bitmapData;
+				// Alpha, then 555.
+				if (to[0] & 128) { // Chroma key
+					to[0] = 0xf8;
+					to[1] = 0x1f;
+				} else {
+					blue = (pixel >> 10) & 0x1f;
+					//red = red << 3 | red >> 2;
+					green = (pixel >> 5) & 0x1f;
+					green = green << 1 | green >> 1;
+					red = (pixel) & 0x1f;
+					to[0] = (red << 3) | green >> 3;
+					to[1] = (green << 5) | blue;
+				}
+			}
+			_colorFormat = BM_RGB565;
+		}
+	} else if (_colorFormat == BM_RGBA) {
+		if (format == BM_RGB565) { // RGBA->565
+			char* tempStore = _data[num];
+			char* newStore = new char[size / 2];
+			uint16 *to = reinterpret_cast<uint16 *>(newStore);
+			for(int j = 0; j < size;j += 4, to++){
+				red = (tempStore[j] >> 3) & 0x1f;
+				green = (tempStore[j + 1] >> 2) & 0x3f;
+				blue = (tempStore[j + 2] >> 3) &0x1f;
+				*to = (red << 11) | (green << 5) | blue;
+			}
+			delete[] tempStore;
+			_data[num] = newStore;
+			_colorFormat = BM_RGB565;
+		}
+
+	} else if (_colorFormat == BM_RGB565) {
+		if (format == BM_RGBA && _bpp == 16) {
+			byte *tempData = new byte[4 * _width * _height];
+			// Convert data to 32-bit RGBA format
+			byte *tempDataPtr = tempData;
+			uint16 *bitmapData = reinterpret_cast<uint16 *>(_data[num]);
+			for (int i = 0; i < _width * _height; i++, tempDataPtr += 4, bitmapData++) {
+				uint16 pixel = *bitmapData;
+				int r = pixel >> 11;
+				tempDataPtr[0] = (r << 3) | (r >> 2);
+				int g = (pixel >> 5) & 0x3f;
+				tempDataPtr[1] = (g << 2) | (g >> 4);
+				int b = pixel & 0x1f;
+				tempDataPtr[2] = (b << 3) | (b >> 2);
+				if (pixel == 0xf81f) { // transparent
+					tempDataPtr[3] = 0;
+					_hasTransparency = true;
+				} else {
+					tempDataPtr[3] = 255;
+				}
+			}
+			delete[] _data[num];
+			_data[num] = (char *)tempData;
+			_colorFormat = BM_RGBA;
+			_bpp = 32;
+		}
+	} else {
+		error("Conversion between format: %d and format %d not implemented",_colorFormat, format);
+	}
 }
 
 #define GET_BIT do { bit = bitstr_value & 1; \
