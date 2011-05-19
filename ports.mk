@@ -1,8 +1,6 @@
 # This file contains port specific Makefile rules. It is automatically
 # included by the default (main) Makefile.
 #
-# $URL$
-# $Id$
 
 
 #
@@ -78,7 +76,7 @@ endif
 # Location of static libs for the iPhone
 ifneq ($(BACKEND), iphone)
 # Static libaries, used for the residual-static and iphone targets
-OSX_STATIC_LIBS := `$(STATICLIBPATH)/bin/sdl-config --static-libs`
+OSX_STATIC_LIBS := `$(SDLCONFIG) --static-libs`
 endif
 
 ifdef USE_VORBIS

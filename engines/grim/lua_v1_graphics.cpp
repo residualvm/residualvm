@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_chdir
@@ -459,6 +456,7 @@ void L1_KillPrimitive() {
 }
 
 void L1_DimScreen() {
+	g_driver->storeDisplay();
 	g_driver->dimScreen();
 }
 
@@ -477,6 +475,7 @@ void L1_ScreenShot() {
 	int mode = g_grim->getMode();
 	g_grim->setMode(ENGINE_MODE_NORMAL);
 	g_grim->updateDisplayScene();
+	g_driver->storeDisplay();
 	Bitmap *screenshot = g_driver->getScreenshot(width, height);
 	g_grim->setMode(mode);
 	if (screenshot) {

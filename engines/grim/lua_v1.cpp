@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_printf
@@ -996,7 +993,7 @@ void L1_GetSaveGameData() {
 void L1_Load() {
 	lua_Object fileName = lua_getparam(1);
 	if (lua_isnil(fileName)) {
-		g_grim->_savegameFileName = NULL;
+		g_grim->_savegameFileName = "";
 	} else if (lua_isstring(fileName)) {
 		g_grim->_savegameFileName = lua_getstring(fileName);
 	} else {
@@ -1009,7 +1006,7 @@ void L1_Load() {
 void L1_Save() {
 	lua_Object fileName = lua_getparam(1);
 	if (lua_isnil(fileName)) {
-		g_grim->_savegameFileName = NULL;
+		g_grim->_savegameFileName = "";
 	} else if (lua_isstring(fileName)) {
 		g_grim->_savegameFileName = lua_getstring(fileName);
 	} else {

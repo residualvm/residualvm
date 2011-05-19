@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #include "engines/grim/resource.h"
@@ -307,17 +304,20 @@ KeyframeAnim *ResourceLoader::loadKeyframe(const char *filename) {
 LipSync *ResourceLoader::loadLipSync(const char *filename) {
 	LipSync *result;
 	Block *b = getFileFromCache(filename);
+	bool cached = true;
 	if (!b) {
 		b = getFileBlock(filename);
 		if (!b)
 			return NULL;
+		cached = false;
 	}
 
 	result = new LipSync(filename, b->getData(), b->getLen());
 
 	// Some lipsync files have no data
 	if (result->isValid()) {
-		putIntoCache(filename, b);
+		if (!cached)
+			putIntoCache(filename, b);
 		_lipsyncs.push_back(result);
 	} else {
 		delete result;

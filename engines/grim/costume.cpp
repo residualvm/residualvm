@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_printf
@@ -240,10 +237,6 @@ SpriteComponent::SpriteComponent(Costume::Component *p, int parentID, const char
 
 SpriteComponent::~SpriteComponent() {
 	if (_sprite) {
-		if (_parent) {
-			MeshComponent *mc = dynamic_cast<MeshComponent *>(_parent);
-			mc->getNode()->removeSprite(_sprite);
-		}
 		delete _sprite->_material;
 		delete _sprite;
 	}

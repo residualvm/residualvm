@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_setjmp
@@ -386,32 +383,32 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 	registerColor(c);
 	registerColor(new Color(255, 255, 255)); // Default color for actors. Id == 2
 
-	_printLineDefaults.x = 0;
-	_printLineDefaults.y = 100;
-	_printLineDefaults.width = 0;
-	_printLineDefaults.height = 0;
-	_printLineDefaults.fgColor = c;
-	_printLineDefaults.font = NULL;
-	_printLineDefaults.justify = TextObject::LJUSTIFY;
-	_printLineDefaults.disabled = false;
+	_printLineDefaults.setX(0);
+	_printLineDefaults.setY(100);
+	_printLineDefaults.setWidth(0);
+	_printLineDefaults.setHeight(0);
+	_printLineDefaults.setFGColor(c);
+	_printLineDefaults.setFont(NULL);
+	_printLineDefaults.setJustify(TextObject::LJUSTIFY);
+	_printLineDefaults.setDisabled(false);
 
-	_sayLineDefaults.x = 0;
-	_sayLineDefaults.y = 100;
-	_sayLineDefaults.width = 0;
-	_sayLineDefaults.height = 0;
-	_sayLineDefaults.fgColor = c;
-	_sayLineDefaults.font = NULL;
-	_sayLineDefaults.justify = TextObject::CENTER;
-	_sayLineDefaults.disabled = false;
+	_sayLineDefaults.setX(0);
+	_sayLineDefaults.setY(100);
+	_sayLineDefaults.setWidth(0);
+	_sayLineDefaults.setHeight(0);
+	_sayLineDefaults.setFGColor(c);
+	_sayLineDefaults.setFont(NULL);
+	_sayLineDefaults.setJustify(TextObject::CENTER);
+	_sayLineDefaults.setDisabled(false);
 
-	_blastTextDefaults.x = 0;
-	_blastTextDefaults.y = 200;
-	_blastTextDefaults.width = 0;
-	_blastTextDefaults.height = 0;
-	_blastTextDefaults.fgColor = c;
-	_blastTextDefaults.font = NULL;
-	_blastTextDefaults.justify = TextObject::LJUSTIFY;
-	_blastTextDefaults.disabled = false;
+	_blastTextDefaults.setX(0);
+	_blastTextDefaults.setY(200);
+	_blastTextDefaults.setWidth(0);
+	_blastTextDefaults.setHeight(0);
+	_blastTextDefaults.setFGColor(c);
+	_blastTextDefaults.setFont(NULL);
+	_blastTextDefaults.setJustify(TextObject::LJUSTIFY);
+	_blastTextDefaults.setDisabled(false);
 
 	// Add 'movies' subdirectory for the demo
 	const Common::FSNode gameDataDir(ConfMan.get("path"));
@@ -520,6 +517,21 @@ Common::Error GrimEngine::run() {
 	lua_pushnil();		// bootParam - not used in scripts
 //	lua_pushnumber(0);	// bootParam
 	lua_call("BOOT");
+
+	_savegameLoadRequest = false;
+	_savegameSaveRequest = false;
+
+
+	// Load game from specified slot, if any
+	if (ConfMan.hasKey("save_slot")) {
+		int slot = ConfMan.getInt("save_slot");
+		assert(slot <= 99);
+		assert(slot >= 0);
+		char saveName[16];
+		sprintf(saveName, "grim%02d.gsv", slot);
+		_savegameLoadRequest = true;
+		_savegameFileName = saveName;
+	}
 
 	g_grim->setMode(ENGINE_MODE_NORMAL);
 	g_grim->mainLoop();
@@ -978,7 +990,6 @@ void GrimEngine::updateDisplayScene() {
 		// including 3D objects such as Manny and the message tube
 		_currScene->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
 
-		g_driver->storeDisplay();
 		drawPrimitives();
 	} else if (_mode == ENGINE_MODE_DRAW) {
 		// Adding line below and comment out rest solve flickering, also in tripple buffering mode too
@@ -1018,9 +1029,6 @@ void GrimEngine::mainLoop() {
 	_timeAccum = 0;
 	_frameTimeCollection = 0;
 	_prevSmushFrame = 0;
-	_savegameLoadRequest = false;
-	_savegameSaveRequest = false;
-	_savegameFileName = NULL;
 	_refreshShadowMask = false;
 
 	for (;;) {
@@ -1124,10 +1132,10 @@ void GrimEngine::savegameRestore() {
 	printf("GrimEngine::savegameRestore() started.\n");
 	_savegameLoadRequest = false;
 	char filename[200];
-	if (!_savegameFileName) {
+	if (_savegameFileName.size() == 0) {
 		strcpy(filename, "grim.sav");
 	} else {
-		strcpy(filename, _savegameFileName);
+		strcpy(filename, _savegameFileName.c_str());
 	}
 	_savedState = new SaveGame(filename, false);
 	if (!_savedState || _savedState->saveVersion() != SaveGame::SAVEGAME_VERSION)
@@ -1142,7 +1150,8 @@ void GrimEngine::savegameRestore() {
 	//  lock resources
 
 	_selectedActor = NULL;
-	removeScene(_currScene);
+	if (_currScene)
+		removeScene(_currScene);
 	delete _currScene;
 	_currScene = NULL;
 
@@ -1214,14 +1223,14 @@ void GrimEngine::restoreActors(SaveGame *state) {
 void GrimEngine::restoreTextObjects(SaveGame *state) {
 	state->beginSection('TEXT');
 
-	_sayLineDefaults.disabled = state->readLESint32();
-	_sayLineDefaults.fgColor = getColor(state->readLEUint32());
-	_sayLineDefaults.font = getFont(state->readLEUint32());
-	_sayLineDefaults.height = state->readLESint32();
-	_sayLineDefaults.justify = state->readLESint32();
-	_sayLineDefaults.width = state->readLESint32();
-	_sayLineDefaults.x = state->readLESint32();
-	_sayLineDefaults.y = state->readLESint32();
+	_sayLineDefaults.setDisabled(state->readLESint32());
+	_sayLineDefaults.setFGColor(getColor(state->readLEUint32()));
+	_sayLineDefaults.setFont(getFont(state->readLEUint32()));
+	_sayLineDefaults.setHeight(state->readLESint32());
+	_sayLineDefaults.setJustify(state->readLESint32());
+	_sayLineDefaults.setWidth(state->readLESint32());
+	_sayLineDefaults.setX(state->readLESint32());
+	_sayLineDefaults.setY(state->readLESint32());
 
 	killTextObjects();
 
@@ -1411,10 +1420,10 @@ void GrimEngine::savegameSave() {
 	printf("GrimEngine::savegameSave() started.\n");
 	_savegameSaveRequest = false;
 	char filename[200];
-	if (!_savegameFileName) {
+	if (_savegameFileName.size() == 0) {
 		strcpy(filename, "grim.sav");
 	} else {
-		strcpy(filename, _savegameFileName);
+		strcpy(filename, _savegameFileName.c_str());
 	}
 	_savedState = new SaveGame(filename, true);
 	if (!_savedState)
@@ -1482,14 +1491,14 @@ void GrimEngine::saveActors(SaveGame *state) {
 void GrimEngine::saveTextObjects(SaveGame *state) {
 	state->beginSection('TEXT');
 
-	state->writeLESint32(_sayLineDefaults.disabled);
-	state->writeLEUint32(_sayLineDefaults.fgColor->getId());
-	state->writeLEUint32(_sayLineDefaults.font->getId());
-	state->writeLESint32(_sayLineDefaults.height);
-	state->writeLESint32(_sayLineDefaults.justify);
-	state->writeLESint32(_sayLineDefaults.width);
-	state->writeLESint32(_sayLineDefaults.x);
-	state->writeLESint32(_sayLineDefaults.y);
+	state->writeLESint32(_sayLineDefaults.getDisabled());
+	state->writeLEUint32(_sayLineDefaults.getFGColor()->getId());
+	state->writeLEUint32(_sayLineDefaults.getFont()->getId());
+	state->writeLESint32(_sayLineDefaults.getHeight());
+	state->writeLESint32(_sayLineDefaults.getJustify());
+	state->writeLESint32(_sayLineDefaults.getWidth());
+	state->writeLESint32(_sayLineDefaults.getX());
+	state->writeLESint32(_sayLineDefaults.getY());
 
 	state->writeLESint32(_textObjects.size());
 	for (TextListType::iterator i = _textObjects.begin(); i != _textObjects.end(); ++i) {
