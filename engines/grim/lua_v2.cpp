@@ -438,6 +438,71 @@ void L2_Display() {
 	// dummy
 }
 
+static void L2_ImGetMillisecondPosition() {
+	lua_Object param = lua_getparam(1);
+	int soundScript = (int)lua_getnumber(param);
+	warning("ImGetMillisecondPosition: got %d, return const -1", soundScript);
+	lua_pushnumber(-1.0f);
+}
+
+static void L2_sleep_for() {
+	lua_Object param = lua_getparam(1);
+	int sleepDuration = (int)lua_getnumber(param);
+	warning("sleep_for: got %d", sleepDuration);
+}
+
+static void L2_UndimRegion() {
+	lua_Object param = lua_getparam(1);
+	int dimID = (int)lua_getnumber(param);
+	warning("UndimRegion: got %d", dimID);
+}
+
+static void L2_SetActorGlobalAlpha() {
+	lua_Object actorObj = lua_getparam(1);
+	lua_Object valueObj = lua_getparam(2);
+
+	// There is a third parameter
+
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+		return;
+
+	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
+	float value = lua_getnumber(valueObj);
+
+	// do somthing with actor and value
+
+	warning("SetActorGlobalAlpha: actor: %s wants alpha %f", actor->getName(), value);
+}
+
+static void L2_RemoveActorFromOverworld() {
+	lua_Object actorObj = lua_getparam(1);
+
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+		return;
+
+	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
+	warning("RemoveActorFromOverworld: actor: %s", actor->getName());
+}
+
+static void L2_UnloadActor() {
+	lua_Object actorObj = lua_getparam(1);
+
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+		return;
+
+	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
+	warning("UnloadActor: actor: %s", actor->getName());
+}
+
 // Stub function for builtin functions not yet implemented
 static void stubWarning(const char *funcName) {
 	warning("Stub function: %s", funcName);
@@ -467,8 +532,6 @@ STUB_FUNC2(L2_GetActorRot)
 STUB_FUNC2(L2_MakeCurrentSet)
 STUB_FUNC2(L2_LockSet)
 STUB_FUNC2(L2_UnLockSet)
-STUB_FUNC2(L2_MakeCurrentSetup)
-STUB_FUNC2(L2_GetCurrentSetup)
 STUB_FUNC2(L2_StartMovie)
 STUB_FUNC2(L2_PlaySound)
 STUB_FUNC2(L2_IsSoundPlaying)
@@ -544,14 +607,11 @@ STUB_FUNC2(L2_GetFontDimensions)
 // Monkey specific opcodes
 STUB_FUNC2(L2_ThumbnailFromFile)
 STUB_FUNC2(L2_ClearSpecialtyTexture)
-STUB_FUNC2(L2_UnloadActor)
-STUB_FUNC2(L2_RemoveActorFromOverworld)
 STUB_FUNC2(L2_ClearOverworld)
 STUB_FUNC2(L2_ToggleOverworld)
 STUB_FUNC2(L2_SetActorFOV)
 STUB_FUNC2(L2_SetActorHeadLimits)
 STUB_FUNC2(L2_EnableActorPuck)
-STUB_FUNC2(L2_SetActorGlobalAlpha)
 STUB_FUNC2(L2_SetActorLocalAlpha)
 STUB_FUNC2(L2_GetActorSortOrder)
 STUB_FUNC2(L2_AttachActor)
@@ -582,7 +642,6 @@ STUB_FUNC2(L2_ImStateHasLooped)
 STUB_FUNC2(L2_ImStateHasEnded)
 STUB_FUNC2(L2_ImPushState)
 STUB_FUNC2(L2_ImPopState)
-STUB_FUNC2(L2_ImGetMillisecondPosition)
 STUB_FUNC2(L2_ImSetMusicVol)
 STUB_FUNC2(L2_ImSetSfxVol)
 STUB_FUNC2(L2_ImSetVoiceVol)
@@ -594,7 +653,6 @@ STUB_FUNC2(L2_GetCameraPitch)
 STUB_FUNC2(L2_PitchCamera)
 STUB_FUNC2(L2_RollCamera)
 STUB_FUNC2(L2_UndimAll)
-STUB_FUNC2(L2_UndimRegion)
 STUB_FUNC2(L2_NewLayer)
 STUB_FUNC2(L2_FreeLayer)
 STUB_FUNC2(L2_SetLayerSortOrder)
@@ -672,11 +730,11 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "PrintError", L1_PrintDebug },
 	{ "PrintWarning", L1_PrintDebug },
 	{ "PrintDebug", L1_PrintDebug },
-	{ "MakeCurrentSet", L2_MakeCurrentSet },
+	{ "MakeCurrentSet", L1_MakeCurrentSet },
 	{ "LockSet", L2_LockSet },
 	{ "UnLockSet", L2_UnLockSet },
-	{ "MakeCurrentSetup", L2_MakeCurrentSetup },
-	{ "GetCurrentSetup", L2_GetCurrentSetup },
+	{ "MakeCurrentSetup", L1_MakeCurrentSetup },
+	{ "GetCurrentSetup", L1_GetCurrentSetup },
 	{ "NextSetup", L2_NextSetup },
 	{ "PreviousSetup", L2_PreviousSetup },
 	{ "StartMovie", L2_StartMovie },
@@ -720,7 +778,7 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "SetGamma", L1_SetGamma },
 	{ "SetActorWalkDominate", L1_SetActorWalkDominate },
 	{ "RenderModeUser", L2_RenderModeUser },
-	{ "DimScreen", L2_DimScreen },
+	{ "DimScreen", L1_DimScreen },
 	{ "Display", L2_Display },
 	{ "SetSpeechMode", L1_SetSpeechMode },
 	{ "GetSpeechMode", L1_GetSpeechMode },
@@ -828,7 +886,8 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "SectEditSortAdd", L2_SectEditSortAdd },
 	{ "SectEditForgetIt", L2_SectEditForgetIt },
 	{ "FRUTEY_Begin", L2_FRUTEY_Begin },
-	{ "FRUTEY_End", L2_FRUTEY_End }
+	{ "FRUTEY_End", L2_FRUTEY_End },
+	{ "sleep_for", L2_sleep_for }
 };
 
 struct luaL_reg monkeyTextOpcodes[] = {
