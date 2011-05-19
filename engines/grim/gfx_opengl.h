@@ -26,6 +26,7 @@
 #ifndef GRIM_GFX_OPENGL_H
 #define GRIM_GFX_OPENGL_H
 
+
 #include "engines/grim/gfx_base.h"
 
 #ifdef USE_OPENGL
@@ -35,6 +36,9 @@
 #else
 #include <GL/gl.h>
 #include <GL/glu.h>
+#ifndef WIN32
+#include <GL/glext.h>
+#endif
 #endif
 
 namespace Grim {
@@ -44,7 +48,8 @@ public:
 	GfxOpenGL();
 	virtual ~GfxOpenGL();
 
-byte *setupScreen(int screenW, int screenH, bool fullscreen);
+	byte *setupScreen(int screenW, int screenH, bool fullscreen);
+	void initExtensions();
 
 	const char *getVideoDeviceName();
 
@@ -116,6 +121,8 @@ private:
 	int _smushWidth;
 	int _smushHeight;
 	byte *_storedDisplay;
+	bool _useDepthShader;
+	GLuint _fragmentProgram;
 };
 
 } // end of namespace Grim
