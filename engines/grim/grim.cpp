@@ -359,6 +359,7 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 
 	_currScene = NULL;
 	_selectedActor = NULL;
+	_currTextObject = NULL;
 	_controlsEnabled = new bool[KEYCODE_EXTRA_LAST];
 	_controlsState = new bool[KEYCODE_EXTRA_LAST];
 	for (int i = 0; i < KEYCODE_EXTRA_LAST; i++) {
@@ -1725,6 +1726,9 @@ void GrimEngine::registerTextObject(TextObject *t) {
 
 void GrimEngine::killTextObject(TextObject *t) {
 	_textObjects.erase(t->getId());
+	if (t == _currTextObject) {
+		_currTextObject = NULL;
+	}
 	delete t;
 }
 
@@ -1736,6 +1740,14 @@ void GrimEngine::killTextObjects() {
 
 TextObject *GrimEngine::getTextObject(int id) const {
 	return _textObjects[id];
+}
+
+TextObject *GrimEngine::getCurrentTextObject() const {
+	return _currTextObject;
+}
+
+void GrimEngine::setCurrentTextObject(TextObject *text) {
+	_currTextObject = text;
 }
 
 void GrimEngine::registerActor(Actor *a) {

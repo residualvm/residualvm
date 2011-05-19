@@ -497,13 +497,6 @@ void L1_SayLine() {
 			}
 			if (!msg.empty()) {
 				actor->sayLine(msg.c_str(), msgId); //background, vol, pan, x, y
-
-				// Set the value of "system.lastActortalking".
-				// Necessary for wait_for_message() (_system.LUA, line 1319)
-				lua_pushobject(lua_getref(refSystemTable));
-				lua_pushstring("lastActorTalking");
-				lua_pushusertag(actor->getId(), MKTAG('A','C','T','R'));
-				lua_settable();
 			}
 		}
 	}
@@ -570,9 +563,10 @@ void L1_IsMessageGoing() {
 				pushbool(actor->isTalking());
 			}
 		} else {
-			// TODO
-			// this part code check something more
-			pushbool(g_imuse->isVoicePlaying());
+			// NOTE: i'm not sure this currentTextObject stuff is totally right.
+			// if you do changes test them against the crying angelitos in the fo set.
+			// the dialog menu should appear few secods after they start crying.
+			pushbool(g_grim->getCurrentTextObject() != NULL);
 		}
 	} else
 		lua_pushnil();

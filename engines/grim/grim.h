@@ -182,6 +182,9 @@ public:
 	void killTextObject(TextObject *a);
 	void killTextObjects();
 	TextObject *getTextObject(int id) const;
+	TextObject *getCurrentTextObject() const;
+	void setCurrentTextObject(TextObject *text);
+
 
 	// Primitives Object Registration
 	PrimitiveListType::const_iterator primitivesBegin() const { return _primitiveObjects.begin(); }
@@ -277,6 +280,7 @@ private:
 	bool *_controlsState;
 
 	Actor *_selectedActor;
+	TextObject *_currTextObject;
 
 	SceneListType _scenes;
 	ActorListType _actors;
