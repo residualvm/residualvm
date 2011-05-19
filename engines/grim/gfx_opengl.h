@@ -35,9 +35,6 @@
 #else
 #include <GL/gl.h>
 #include <GL/glu.h>
-#ifndef WIN32
-#include <GL/glext.h>
-#endif
 #endif
 
 namespace Grim {
