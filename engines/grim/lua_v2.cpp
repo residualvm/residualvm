@@ -503,6 +503,21 @@ static void L2_UnloadActor() {
 	warning("UnloadActor: actor: %s", actor->getName());
 }
 
+static void L2_MakeCurrentSet() {
+	warning("Stub function: L2_MakeCurrentSet");
+	L1_MakeCurrentSet();
+}
+
+static void L2_MakeCurrentSetup() {
+	warning("Stub function: L2_MakeCurrentSetup");
+	L1_MakeCurrentSetup();
+}
+
+static void L2_GetCurrentSetup() {
+	warning("Stub function: L2_GetCurrentSetup");
+	L1_GetCurrentSetup();
+}
+
 // Stub function for builtin functions not yet implemented
 static void stubWarning(const char *funcName) {
 	warning("Stub function: %s", funcName);
@@ -529,7 +544,6 @@ STUB_FUNC2(L2_GetActorLookRate)
 STUB_FUNC2(L2_GetVisibleThings)
 STUB_FUNC2(L2_SetActorHead)
 STUB_FUNC2(L2_GetActorRot)
-STUB_FUNC2(L2_MakeCurrentSet)
 STUB_FUNC2(L2_LockSet)
 STUB_FUNC2(L2_UnLockSet)
 STUB_FUNC2(L2_StartMovie)
@@ -730,11 +744,11 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "PrintError", L1_PrintDebug },
 	{ "PrintWarning", L1_PrintDebug },
 	{ "PrintDebug", L1_PrintDebug },
-	{ "MakeCurrentSet", L1_MakeCurrentSet },
+	{ "MakeCurrentSet", L2_MakeCurrentSet },
 	{ "LockSet", L2_LockSet },
 	{ "UnLockSet", L2_UnLockSet },
-	{ "MakeCurrentSetup", L1_MakeCurrentSetup },
-	{ "GetCurrentSetup", L1_GetCurrentSetup },
+	{ "MakeCurrentSetup", L2_MakeCurrentSetup },
+	{ "GetCurrentSetup", L2_GetCurrentSetup },
 	{ "NextSetup", L2_NextSetup },
 	{ "PreviousSetup", L2_PreviousSetup },
 	{ "StartMovie", L2_StartMovie },
