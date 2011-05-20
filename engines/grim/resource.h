@@ -92,6 +92,11 @@ public:
 	};
 
 private:
+	template<typename T>
+	T *getResource(Common::List<T *> &list, const Common::String &fname, CMap *c);
+	template<typename T>
+	T *getResource(Common::List<T *> &list, const Common::String &fname);
+
 	const Lab *getLab(const char *filename) const;
 	Block *getFileFromCache(const char *filename);
 	ResourceLoader::ResourceCache *getEntryFromCache(const char *filename);

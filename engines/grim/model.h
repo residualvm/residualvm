@@ -56,6 +56,7 @@ public:
 
 	~Model();
 
+	const char *getFilename() { return _fname.c_str(); }
 	Common::String _fname;
 	ObjectPtr<CMap> _cmap;
 
