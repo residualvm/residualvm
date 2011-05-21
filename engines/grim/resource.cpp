@@ -405,85 +405,70 @@ void ResourceLoader::uncacheLipSync(LipSync *s) {
 	_lipsyncs.remove(s);
 }
 
-MaterialPtr ResourceLoader::getMaterial(const char *fname, CMap *c) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<Material *>::const_iterator i = _materials.begin(); i != _materials.end(); ++i) {
-		Material *m = *i;
-		if (filename.equals(m->_fname) && *m->_cmap == *c) {
-			return m;
+template<typename T>
+T *ResourceLoader::getResource(Common::List<T *> &list, const Common::String &fname, CMap *c) {
+	for (Common::List<T *>::const_iterator i = list.begin(); i != list.end(); ++i) {
+		T *r = *i;
+		if (fname.compareToIgnoreCase(r->getFilename()) == 0 && *r->_cmap == *c) {
+			return r;
 		}
 	}
+	return 0;
+}
 
-	return loadMaterial(fname, c);
+template<typename T>
+T *ResourceLoader::getResource(Common::List<T *> &list, const Common::String &fname) {
+	for (Common::List<T *>::const_iterator i = list.begin(); i != list.end(); ++i) {
+		T *r = *i;
+		if (fname.compareToIgnoreCase(r->getFilename()) == 0) {
+			return r;
+		}
+	}
+	return 0;
+}
+
+MaterialPtr ResourceLoader::getMaterial(const char *fname, CMap *c) {
+	Material *m = getResource(_materials, fname, c);
+	if (!m)
+		m = loadMaterial(fname, c);
+	return m;
 }
 
 ModelPtr ResourceLoader::getModel(const char *fname, CMap *c) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<Model *>::const_iterator i = _models.begin(); i != _models.end(); ++i) {
-		Model *m = *i;
-		if (filename.equals(m->_fname) && *m->_cmap == *c) {
-			return m;
-		}
-	}
-
-	return loadModel(fname, c);
+	Model *m = getResource(_models, fname, c);
+	if (!m)
+		m = loadModel(fname, c);
+	return m;
 }
 
 CMapPtr ResourceLoader::getColormap(const char *fname) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<CMap *>::const_iterator i = _colormaps.begin(); i != _colormaps.end(); ++i) {
-		CMap *c = *i;
-		if (filename.equals(c->_fname)) {
-			return c;
-		}
-	}
-
-	return loadColormap(fname);
+	CMap *c = getResource(_colormaps, fname);
+	if (!c)
+		c = loadColormap(fname);
+	return c;
 }
 
 KeyframeAnimPtr ResourceLoader::getKeyframe(const char *fname) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<KeyframeAnim *>::const_iterator i = _keyframeAnims.begin(); i != _keyframeAnims.end(); ++i) {
-		KeyframeAnim *k = *i;
-		if (strcmp(filename.c_str(), k->getFilename()) == 0) {
-			return k;
-		}
-	}
-
-	return loadKeyframe(fname);
+	KeyframeAnim *k = getResource(_keyframeAnims, fname);
+	if (!k)
+		k = loadKeyframe(fname);
+	return k;
 }
 
 FontPtr ResourceLoader::getFont(const char *fname) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<Font *>::const_iterator i = _fonts.begin(); i != _fonts.end(); ++i) {
-		Font *f = *i;
-		if (strcmp(filename.c_str(), f->getFilename().c_str()) == 0) {
-			return f;
-		}
+	Font *f = getResource(_fonts, fname);
+	if (!f) {
+		f = loadFont(fname);
+		_fonts.push_back(f);
 	}
-
-	Font *f = loadFont(fname);
-	_fonts.push_back(f);
-
 	return f;
 }
 
 LipSyncPtr ResourceLoader::getLipSync(const char *fname) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<LipSync *>::const_iterator i = _lipsyncs.begin(); i != _lipsyncs.end(); ++i) {
-		LipSync *l = *i;
-		if (strcmp(filename.c_str(), l->getFilename()) == 0) {
-			return l;
-		}
-	}
-
-	return loadLipSync(fname);
+	LipSync *l = getResource(_lipsyncs, fname);
+	if (!l)
+		l = loadLipSync(fname);
+	return l;
 }
 
 } // end of namespace Grim
