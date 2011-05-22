@@ -902,9 +902,6 @@ void GrimEngine::luaUpdate() {
 		}
 		g_currentUpdatedActor = NULL;
 	}
-	for (TextListType::iterator i = _textObjects.begin(); i != _textObjects.end(); ++i) {
-		i->_value->update();
-	}
 }
 
 void GrimEngine::updateDisplayScene() {

@@ -303,7 +303,7 @@ void TextObject::createBitmap() {
 			message.deleteChar(0);
 	}
 	_created = true;
-	_endTime = g_system->getMillis() + _duration;
+	_endTime = g_system->getMillis() + _duration * 10;
 }
 
 void TextObject::subBaseOffsetY() {
@@ -338,6 +338,8 @@ void TextObject::destroyBitmap() {
 
 void TextObject::draw() {
 	int height = 0;
+
+	update();
 
 	if (!_created || _disabled)
 		return;
