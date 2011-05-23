@@ -35,7 +35,7 @@ class Color;
 
 class SaveGame {
 public:
-	SaveGame(const char *filename, bool saving);
+	SaveGame(const Common::String &filename, bool saving);
 	~SaveGame();
 
 	static int SAVEGAME_VERSION;
@@ -47,14 +47,15 @@ public:
 	void read(void *data, int size);
 	void write(const void *data, int size);
 	uint32 readLEUint32();
+	uint16 readLEUint16();
 	int32 readLESint32();
 	bool readLEBool();
 	byte readByte();
 	void writeLEUint32(uint32 data);
+	void writeLEUint16(uint16 data);
 	void writeLESint32(int32 data);
 	void writeLEBool(bool data);
 	void writeByte(byte data);
-	void writeCharString(const char *string);
 	void writeString(const Common::String &string);
 
 	void writeVector3d(const Graphics::Vector3d &vec);
@@ -63,7 +64,6 @@ public:
 	Graphics::Vector3d readVector3d();
 	Grim::Color readColor();
 	float readFloat();
-	const char *readCharString();
 	Common::String readString();
 
 	void checkAlloc(int size);

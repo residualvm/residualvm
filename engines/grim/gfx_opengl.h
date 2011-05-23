@@ -27,7 +27,7 @@
 
 #ifdef USE_OPENGL
 
-#ifdef SDL_BACKEND
+#if defined (SDL_BACKEND) && !defined(__amigaos4__)
 #include <SDL_opengl.h>
 #else
 #include <GL/gl.h>
@@ -41,7 +41,8 @@ public:
 	GfxOpenGL();
 	virtual ~GfxOpenGL();
 
-byte *setupScreen(int screenW, int screenH, bool fullscreen);
+	byte *setupScreen(int screenW, int screenH, bool fullscreen);
+	void initExtensions();
 
 	const char *getVideoDeviceName();
 
@@ -113,6 +114,8 @@ private:
 	int _smushWidth;
 	int _smushHeight;
 	byte *_storedDisplay;
+	bool _useDepthShader;
+	GLuint _fragmentProgram;
 };
 
 } // end of namespace Grim

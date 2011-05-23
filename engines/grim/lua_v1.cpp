@@ -517,7 +517,7 @@ void L1_GetActorSector() {
 
 	Actor *actor = getactor(actorObj);
 	Sector::SectorType sectorType = (Sector::SectorType)(int)lua_getnumber(typeObj);
-	Graphics::Vector3d pos = actor->getDestPos();
+	Graphics::Vector3d pos = actor->getPos();
 	Sector *result = g_grim->getCurrScene()->findPointSector(pos, sectorType);
 	if (result) {
 		lua_pushnumber(result->getSectorId());
@@ -648,6 +648,7 @@ void L1_MakeCurrentSet() {
 	lua_Object nameObj = lua_getparam(1);
 	if (!lua_isstring(nameObj)) {
 		// TODO setting current set null
+		warning("L1_MakeCurrentSet: implement missing case");
 		return;
 	}
 
@@ -813,18 +814,13 @@ void L1_Exit() {
 }
 
 void L1_SetSpeechMode() {
-	int mode;
-
-	mode = (int)lua_getnumber(lua_getparam(1));
+	GrimEngine::SpeechMode mode = (GrimEngine::SpeechMode)((int)lua_getnumber(lua_getparam(1)));
 	if (mode >= 1 && mode <= 3)
 		g_grim->setSpeechMode(mode);
 }
 
 void L1_GetSpeechMode() {
-	int mode;
-
-	mode = g_grim->getSpeechMode();
-	lua_pushnumber(mode);
+	lua_pushnumber(g_grim->getSpeechMode());
 }
 
 void L1_GetDiskFreeSpace() {
@@ -889,7 +885,6 @@ void L1_GetCurrentScript() {
 
 void L1_GetSaveGameImage() {
 	int width = 250, height = 188;
-	char *data;
 	Bitmap *screenshot;
 	int dataSize;
 
@@ -905,9 +900,11 @@ void L1_GetSaveGameImage() {
 		return;
 	}
 	dataSize = savedState->beginSection('SIMG');
-	data = new char[dataSize];
-	savedState->read(data, dataSize);
-	screenshot = g_grim->registerBitmap(data, width, height, "screenshot");
+	uint16 *data = new uint16[dataSize / 2];
+	for (int l = 0; l < dataSize / 2; l++) {
+		data[l] = savedState->readLEUint16();
+	}
+	screenshot = g_grim->registerBitmap((char *)data, width, height, "screenshot");
 	if (screenshot) {
 		lua_pushusertag(screenshot->getId(), MKTAG('V','B','U','F'));
 	} else {

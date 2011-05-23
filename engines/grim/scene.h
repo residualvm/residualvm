@@ -37,7 +37,7 @@ class CMap;
 
 class Scene {
 public:
-	Scene(const char *name, const char *buf, int len);
+	Scene(const Common::String &name, const char *buf, int len);
 	Scene();
 	~Scene();
 
@@ -63,10 +63,11 @@ public:
 	void setSoundParameters(int minVolume, int maxVolume);
 	void getSoundParameters(int *minVolume, int *maxVolume);
 
-	const char *getName() const { return _name.c_str(); }
+	const Common::String &getName() const { return _name; }
 
 	void setLightEnableState(bool state) {
 		_enableLights = state;
+		_lightsConfigured = false;
 	}
 	void setLightIntensity(const char *light, float intensity);
 	void setLightIntensity(int light, float intensity);
@@ -123,6 +124,11 @@ public:
 	};
 
 	bool _locked;
+	CMap *getCMap() {
+		if (!_cmaps || ! _numCmaps)
+			return NULL;
+		return _cmaps[0];
+	};
 
 private:
 
@@ -134,6 +140,7 @@ private:
 	Sector **_sectors;
 	Light *_lights;
 	Setup *_setups;
+	bool _lightsConfigured;
 public:
 	Setup *_currSetup;
 private:

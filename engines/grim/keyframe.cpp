@@ -32,9 +32,8 @@
 
 namespace Grim {
 
-KeyframeAnim::KeyframeAnim(const char *fname, const char *data, int len) :
-	Object() {
-	_fname = fname;
+KeyframeAnim::KeyframeAnim(const Common::String &fname, const char *data, int len) :
+	Object(), _fname(fname) {
 
 	if (len >= 4 && READ_BE_UINT32(data) == MKTAG('F','Y','E','K'))
 		loadBinary(data, len);
@@ -150,13 +149,19 @@ KeyframeAnim::~KeyframeAnim() {
 	g_resourceloader->uncacheKeyframe(this);
 }
 
-void KeyframeAnim::animate(Model::HierNode *nodes, float time, int priority1, int priority2, float fade) const {
+void KeyframeAnim::animate(Model::HierNode *nodes, int num, float time, int priority1, int priority2, float fade) const {
 	float frame = time * _fps;
 
 	if (frame > _numFrames)
 		frame = _numFrames;
 
-	for (int i = 0; i < _numJoints; i++) {
+	// Without this sending the bread down the tube in "mo" often crashes,
+	// because it goes outside the bounds of the array of the nodes.
+	if (_numJoints < num) {
+		num = _numJoints;
+	}
+
+	for (int i = 0; i < num; i++) {
 		if (_nodes[i])
 			_nodes[i]->animate(nodes[i], frame, ((_type & nodes[i]._type) != 0 ? priority2 : priority1), fade);
 	}

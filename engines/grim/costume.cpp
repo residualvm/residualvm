@@ -261,7 +261,7 @@ void SpriteComponent::init() {
 		sscanf(comma, ",%d,%d,%d,%d,%d", &width, &height, &x, &y, &z);
 
 		_sprite = new Sprite;
-		_sprite->_material = g_resourceloader->loadMaterial(name.c_str(), getCMap());
+		_sprite->_material = g_resourceloader->loadMaterial(name, getCMap());
 		_sprite->_width = (float)width / 100.0f;
 		_sprite->_height = (float)height / 100.0f;
 		_sprite->_pos.set((float)x / 100.0f, (float)y / 100.0f, (float)z / 100.0f);
@@ -337,13 +337,15 @@ void ModelComponent::init() {
 
 		// Get the default colormap if we haven't found
 		// a valid colormap
+		if (!cm)
+			cm = g_grim->getCurrScene()->getCMap();
 		if (!cm) {
 			if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
 				warning("No colormap specified for %s, using %s", _filename.c_str(), DEFAULT_COLORMAP);
 
 			cm = g_resourceloader->getColormap(DEFAULT_COLORMAP);
 		}
-		_obj = g_resourceloader->getModel(_filename.c_str(), cm);
+		_obj = g_resourceloader->getModel(_filename, cm);
 		_hier = _obj->copyHierarchy();
 
 		// Use parent availablity to decide whether to default the
@@ -522,7 +524,7 @@ ColormapComponent::~ColormapComponent() {
 void ColormapComponent::init() {
 	if (!_parent)
 		warning("No parent to apply colormap object on. CMap: %s, Costume: %s",
-				_cmap->getFilename(),_cost->getFilename());
+			_cmap->getFilename().c_str(), _cost->getFilename().c_str());
 }
 
 class KeyframeComponent : public Costume::Component {
@@ -540,6 +542,7 @@ private:
 	KeyframeAnimPtr _keyf;
 	int _priority1, _priority2;
 	Model::HierNode *_hier;
+	int _numNodes;
 	bool _active;
 	int _repeatMode;
 	int _currTime;
@@ -554,7 +557,7 @@ KeyframeComponent::KeyframeComponent(Costume::Component *p, int parentID, const 
 	const char *comma = strchr(filename, ',');
 	if (comma) {
 		Common::String realName(filename, comma);
-		_keyf = g_resourceloader->getKeyframe(realName.c_str());
+		_keyf = g_resourceloader->getKeyframe(realName);
 		sscanf(comma + 1, "%d,%d", &_priority1, &_priority2);
 	} else
 		_keyf = g_resourceloader->getKeyframe(filename);
@@ -572,12 +575,14 @@ void KeyframeComponent::setKey(int val) {
 		}
 		_repeatMode = val;
 		break;
+	case 5:
+		warning("Key 5 (meaning uncertain) used  for keyframe %s", _keyf->getFilename().c_str());
 	case 4:
 		_active = false;
 		break;
 	default:
 		if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-			warning("Unknown key %d for keyframe %s", val, _keyf->getFilename());
+			warning("Unknown key %d for keyframe %s", val, _keyf->getFilename().c_str());
 	}
 }
 
@@ -612,21 +617,23 @@ void KeyframeComponent::update() {
 				break;
 			default:
 				if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-					warning("Unknown repeat mode %d for keyframe %s", _repeatMode, _keyf->getFilename());
+					warning("Unknown repeat mode %d for keyframe %s", _repeatMode, _keyf->getFilename().c_str());
 		}
 	}
 
-	_keyf->animate(_hier, _currTime / 1000.0f, _priority1, _priority2, _fade);
+	_keyf->animate(_hier, _numNodes, _currTime / 1000.0f, _priority1, _priority2, _fade);
 }
 
 void KeyframeComponent::init() {
 	ModelComponent *mc = dynamic_cast<ModelComponent *>(_parent);
-	if (mc)
+	if (mc) {
 		_hier = mc->getHierarchy();
-	else {
+		_numNodes = mc->getNumNodes();
+	} else {
 		if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-			warning("Parent of %s was not a model", _keyf->getFilename());
+			warning("Parent of %s was not a model", _keyf->getFilename().c_str());
 		_hier = NULL;
+		_numNodes = 0;
 	}
 }
 
@@ -695,13 +702,13 @@ void MaterialComponent::init() {
 		ModelComponent *p = static_cast<ModelComponent *>(_parent);
 		Model *model = p->getModel();
 		for (int i = 0; i < model->_numMaterials; ++i) {
-			if (scumm_stricmp(model->_materials[i]->getFilename(), _filename.c_str()) == 0) {
+			if (_filename.compareToIgnoreCase(model->_materials[i]->getFilename()) == 0) {
 				_mat = model->_materials[i].object();
 				return;
 			}
 		}
 	} else {
-		warning("Parent of a MaterialComponent not a ModelComponent. %s %s", _filename.c_str(),_cost->getFilename());
+		warning("Parent of a MaterialComponent not a ModelComponent. %s %s", _filename.c_str(), _cost->getFilename().c_str());
 		_mat = NULL;
 	}
 }
@@ -746,7 +753,7 @@ LuaVarComponent::LuaVarComponent(Costume::Component *p, int parentID, const char
 
 void LuaVarComponent::setKey(int val) {
 	lua_pushnumber(val);
-	lua_setglobal(const_cast<char *>(_name.c_str()));
+	lua_setglobal(_name.c_str());
 }
 
 class SoundComponent : public Costume::Component {
@@ -802,7 +809,7 @@ void SoundComponent::reset() {
 		g_imuse->stopSound(_soundName.c_str());
 }
 
-Costume::Costume(const char *fname, const char *data, int len, Costume *prevCost) :
+Costume::Costume(const Common::String &fname, const char *data, int len, Costume *prevCost) :
 		Object() {
 
 	_fname = fname;
@@ -934,7 +941,7 @@ void Costume::loadEMI(Common::MemoryReadStream &ms, Costume *prevCost) {
 			char name[64];
 			ms.read(name, componentNameLength);
 
-			int trackID = ms.readUint32LE();
+			//int trackID = ms.readUint32LE();
 			int parent = ms.readUint32LE();
 			assert(parent == -1);
 
@@ -952,11 +959,11 @@ void Costume::loadEMI(Common::MemoryReadStream &ms, Costume *prevCost) {
 				float time, value;
 				ms.read(&time, 4);
 				ms.read(&value, 4);
-				track.keys[j].time = time;
-				track.keys[j].value = value;
+				track.keys[j].time = (int)time;
+				track.keys[j].value = (int)value;
 			}
 		}
-		_chores[i]._tracks->compID;
+		//_chores[i]._tracks->compID;
 	}
 
 	_numComponents = components.size();
@@ -1306,10 +1313,10 @@ void Costume::playChore(int num) {
 	_chores[num].play();
 }
 
-void Costume::setColormap(const char *map) {
+void Costume::setColormap(const Common::String &map) {
 	// Sometimes setColormap is called on a null costume,
 	// see where raoul is gone in hh.set
-	if (!map)
+	if (!map.size())
 		return;
 	_cmap = g_resourceloader->getColormap(map);
 	for (int i = 0; i < _numComponents; i++)
@@ -1549,7 +1556,7 @@ Costume *Costume::getPreviousCostume() const {
 void Costume::saveState(SaveGame *state) const {
 	if (_cmap) {
 		state->writeLEUint32(1);
-		state->writeCharString(_cmap->getFilename());
+		state->writeString(_cmap->getFilename());
 	} else {
 		state->writeLEUint32(0);
 	}
@@ -1586,9 +1593,8 @@ void Costume::saveState(SaveGame *state) const {
 
 bool Costume::restoreState(SaveGame *state) {
 	if (state->readLEUint32()) {
-		const char *str = state->readCharString();
+		Common::String str = state->readString();
 		setColormap(str);
-		delete[] str;
 	}
 
 	for (int i = 0; i < _numChores; ++i) {

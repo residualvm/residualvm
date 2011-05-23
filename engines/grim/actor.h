@@ -51,21 +51,20 @@ struct Shadow {
 
 class Actor : public Object {
 public:
-	Actor(const char *name);
+	Actor(const Common::String &name);
 	Actor();
 	~Actor();
 
 	void saveState(SaveGame *savedState) const;
 	bool restoreState(SaveGame *savedState);
 
-	const char *getName() const { return _name.c_str(); }
+	const Common::String &getName() const { return _name; }
 
 	void setTalkColor(Color *c) { _talkColor = c; }
 	Color *getTalkColor() const { return _talkColor; }
 	void setPos(Graphics::Vector3d position);
 	Graphics::Vector3d getPos() const;
 	void walkTo(const Graphics::Vector3d &p);
-	Graphics::Vector3d getDestPos() const;
 	void stopWalking() { _walking = false; }
 	bool isWalking() const;
 	void setRot(float pitch, float yaw, float roll);
@@ -89,7 +88,7 @@ public:
 	float getAngleTo(const Actor &a) const;
 	float getYawTo(Graphics::Vector3d p) const;
 
-	bool isInSet(const char *setName) const;
+	bool isInSet(const Common::String &setName) const;
 	void walkForward();
 	void setRunning(bool running);
 	void setReflection(float angle) { _reflectionAngle = angle; }
@@ -121,7 +120,7 @@ public:
 		else
 			return _costumeStack.back();
 	}
-	Costume *findCostume(const char *name);
+	Costume *findCostume(const Common::String &name);
 	int getCostumeStackDepth() const {
 		return _costumeStack.size();
 	}

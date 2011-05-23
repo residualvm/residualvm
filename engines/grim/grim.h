@@ -76,6 +76,11 @@ protected:
 	virtual Common::Error run();
 
 public:
+	enum SpeechMode {
+		TextOnly = 1,
+		VoiceOnly = 2,
+		TextAndVoice = 3
+	};
 
 	typedef Common::HashMap<int32, Bitmap *> BitmapListType;
 	typedef Common::HashMap<int32, Font *> FontListType;
@@ -102,8 +107,8 @@ public:
 	int getMode() { return _mode; }
 	void setPreviousMode(int mode) { _previousMode = mode; }
 	int getPreviousMode() { return _previousMode; }
-	void setSpeechMode(int mode) { _speechMode = mode; }
-	int getSpeechMode() { return _speechMode; }
+	void setSpeechMode(SpeechMode mode) { _speechMode = mode; }
+	SpeechMode getSpeechMode() { return _speechMode; }
 	SaveGame *savedState() { return _savedState; }
 
 	void handleDebugLoadResource();
@@ -135,12 +140,12 @@ public:
 	float getControlAxis(int num);
 	bool getControlState(int num);
 
-	Scene *findScene(const char *name);
+	Scene *findScene(const Common::String &name);
 	void setSceneLock(const char *name, bool lockStatus);
 	void setScene(const char *name);
 	void setScene(Scene *scene);
 	Scene *getCurrScene() { return _currScene; }
-	const char *getSceneName() const { return _currScene->getName(); }
+	const Common::String &getSceneName() const { return _currScene->getName(); }
 	void makeCurrentSetup(int num);
 
 	// Scene registration
@@ -167,6 +172,8 @@ public:
 	void registerActor(Actor *a);
 	void killActor(Actor *a);
 	Actor *getActor(int id) const;
+	Actor *getTalkingActor() const;
+	void setTalkingActor(Actor *actor);
 
 	void setSelectedActor(Actor *a) { _selectedActor = a; }
 	Actor *getSelectedActor() { return _selectedActor; }
@@ -179,6 +186,7 @@ public:
 	void killTextObject(TextObject *a);
 	void killTextObjects();
 	TextObject *getTextObject(int id) const;
+
 
 	// Primitives Object Registration
 	PrimitiveListType::const_iterator primitivesBegin() const { return _primitiveObjects.begin(); }
@@ -253,7 +261,7 @@ private:
 
 	Scene *_currScene;
 	int _mode, _previousMode;
-	int _speechMode;
+	SpeechMode _speechMode;
 	int _textSpeed;
 	bool _flipEnable;
 	bool _refreshDrawNeeded;
@@ -274,6 +282,7 @@ private:
 	bool *_controlsState;
 
 	Actor *_selectedActor;
+	Actor *_talkingActor;
 
 	SceneListType _scenes;
 	ActorListType _actors;
