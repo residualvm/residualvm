@@ -32,7 +32,7 @@ template class ObjectPtr<LipSync>;
 // A new define that'll be around when theres a configure script :)
 #undef DEBUG_VERBOSE
 
-LipSync::LipSync(const Common::String &filename, const char *data, int len) :
+LipSync::LipSync(const Common::String &filename, const char *data, int len, void *) :
 	Object() {
 	_fname = filename;
 	uint16 readPhoneme;
@@ -81,7 +81,6 @@ LipSync::LipSync(const Common::String &filename, const char *data, int len) :
 
 LipSync::~LipSync() {
 	delete[] _entries;
-	g_resourceloader->uncacheLipSync(this);
 }
 
 int LipSync::getAnim(int pos) {

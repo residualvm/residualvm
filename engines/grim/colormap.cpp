@@ -26,16 +26,15 @@
 namespace Grim {
 
 // Load a colormap from the given data.
-CMap::CMap(const Common::String &fileName, const char *data, int len) :
+CMap::CMap(const Common::String &fileName, const char *data, int len, void *) :
 	Object(), _fname(fileName) {
 	if (len < 4 || READ_BE_UINT32(data) != MKTAG('C','M','P',' '))
 		error("Invalid magic loading colormap");
 	memcpy(_colors, data + 64, sizeof(_colors));
 }
-CMap::CMap() : Object() {}
+CMap::CMap() : Object() {
+}
 CMap::~CMap() {
-	if (g_resourceloader)
-		g_resourceloader->uncacheColormap(this);
 }
 
 bool CMap::operator==(const CMap &c) const {

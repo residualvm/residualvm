@@ -29,7 +29,7 @@ namespace Grim {
 
 class KeyframeAnim : public Object {
 public:
-	KeyframeAnim(const Common::String &filename, const char *data, int len);
+	KeyframeAnim(const Common::String &filename, const char *data, int len, void *);
 	~KeyframeAnim();
 
 	void loadBinary(const char *data, int len);

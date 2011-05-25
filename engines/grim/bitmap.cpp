@@ -269,7 +269,7 @@ char *BitmapData::getImageData(int num) const {
 
 // Bitmap
 
-Bitmap::Bitmap(const Common::String &fname, const char *data, int len) :
+Bitmap::Bitmap(const Common::String &fname, const char *data, int len, void *) :
 		Object() {
 	_data = BitmapData::getBitmapData(fname, data, len);
 	_x = _data->_x;

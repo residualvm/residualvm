@@ -133,7 +133,7 @@ public:
 };
 
 struct AnimationState {
-	KeyframeAnimPtr _keyf;
+	ObjectPtr<KeyframeAnim> _keyf;
 	int _time;
 	float _fade;
 };
@@ -252,7 +252,6 @@ SpriteComponent::SpriteComponent(Costume::Component *p, int parentID, const char
 
 SpriteComponent::~SpriteComponent() {
 	if (_sprite) {
-		delete _sprite->_material;
 		delete _sprite;
 	}
 }
@@ -276,7 +275,7 @@ void SpriteComponent::init() {
 		sscanf(comma, ",%d,%d,%d,%d,%d", &width, &height, &x, &y, &z);
 
 		_sprite = new Sprite;
-		_sprite->_material = g_resourceloader->loadMaterial(name, getCMap());
+		_sprite->_material = g_resourceloader->getMaterial(name, getCMap());
 		_sprite->_width = (float)width / 100.0f;
 		_sprite->_height = (float)height / 100.0f;
 		_sprite->_pos.set((float)x / 100.0f, (float)y / 100.0f, (float)z / 100.0f);
@@ -348,7 +347,7 @@ void ModelComponent::init() {
 	// by the sharing MainModelComponent
 	// constructor before
 	if (!_obj) {
-		CMapPtr cm = getCMap();
+		ObjectPtr<CMap> cm = getCMap();
 
 		// Get the default colormap if we haven't found
 		// a valid colormap
@@ -607,7 +606,7 @@ public:
 	~MaterialComponent() { }
 
 private:
-	MaterialPtr _mat;
+	ObjectPtr<Material> _mat;
 	Common::String _filename;
 	int _num;
 };
@@ -934,9 +933,9 @@ void SoundComponent::reset() {
 		g_imuse->stopSound(_soundName.c_str());
 }
 
-Costume::Costume(const Common::String &fname, const char *data, int len, Costume *prevCost) :
+Costume::Costume(const Common::String &fname, const char *data, int len, void *prev) :
 		Object() {
-
+	Costume *prevCost = (Costume *)prev;
 	_fname = fname;
 	_head.maxPitch = 0;
 	_head.joint1 = -1;

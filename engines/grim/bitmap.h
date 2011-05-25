@@ -55,7 +55,6 @@ public:
 	int _colorFormat;
 	void *_texIds;
 	bool _hasTransparency;
-	char _filename[32];
 
 	int _refCount;
 
@@ -66,7 +65,7 @@ private:
 class Bitmap : public Object {
 public:
 	// Construct a bitmap from the given data.
-	Bitmap(const Common::String &filename, const char *data, int len);
+	Bitmap(const Common::String &filename, const char *data, int len, void *d = 0);
 	Bitmap(const char *data, int width, int height, int bpp, const char *filename);
 	Bitmap();
 

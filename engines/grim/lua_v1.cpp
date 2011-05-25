@@ -1034,7 +1034,7 @@ void L1_LockFont() {
 	lua_Object param1 = lua_getparam(1);
 	if (lua_isstring(param1)) {
 		const char *fontName = lua_getstring(param1);
-		Font *result = g_resourceloader->loadFont(fontName);
+		ObjectPtr<Font> result = g_resourceloader->getFont(fontName);
 		if (result) {
 			g_grim->registerFont(result);
 			lua_pushusertag(result->getId(), MKTAG('F','O','N','T'));

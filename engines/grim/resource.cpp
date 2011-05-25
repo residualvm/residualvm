@@ -39,14 +39,14 @@ ResourceLoader *g_resourceloader = NULL;
 
 ResourceLoader::ResourceLoader() {
 	int lab_counter = 0;
-	_cacheDirty = false;
-	_cacheMemorySize = 0;
 
 	Lab *l;
 	Common::ArchiveMemberList files;
 
 	SearchMan.listMatchingMembers(files, "*.lab");
 	SearchMan.listMatchingMembers(files, "*.m4b");
+	if (g_grim->getGameFlags() & ADGF_DEMO)
+		SearchMan.listMatchingMembers(files, "*.mus");
 
 	if (files.empty())
 		error("Cannot find game data - check configuration file");
@@ -67,46 +67,14 @@ ResourceLoader::ResourceLoader() {
 	}
 
 	files.clear();
-
-	if (g_grim->getGameFlags() & ADGF_DEMO) {
-		SearchMan.listMatchingMembers(files, "*.mus");
-
-		for (Common::ArchiveMemberList::const_iterator x = files.begin(); x != files.end(); ++x) {
-			const Common::String filename = (*x)->getName();
-			l = new Lab();
-
-			if (l->open(filename)) {
-				_labs.push_back(l);
-				lab_counter++;
-			} else {
-				delete l;
-			}
-		}
-	}
-}
-
-template<typename T>
-void clearList(Common::List<T> &list) {
-	while (!list.empty()) {
-		T p = list.front();
-		list.erase(list.begin());
-		delete p;
-	}
 }
 
 ResourceLoader::~ResourceLoader() {
-	for (Common::Array<ResourceCache>::iterator i = _cache.begin(); i != _cache.end(); ++i) {
-		ResourceCache &r = *i;
-		delete[] r.fname;
-		delete r.resPtr;
+	while (!_labs.empty()) {
+		Lab *p = _labs.front();
+		_labs.erase(_labs.begin());
+		delete p;
 	}
-	clearList(_labs);
-	clearList(_materials);
-	clearList(_models);
-	clearList(_colormaps);
-	clearList(_keyframeAnims);
-	clearList(_fonts);
-	clearList(_lipsyncs);
 }
 
 const Lab *ResourceLoader::getLab(const Common::String &filename) const {
@@ -117,133 +85,37 @@ const Lab *ResourceLoader::getLab(const Common::String &filename) const {
 	return NULL;
 }
 
-static int sortCallback(const void *entry1, const void *entry2) {
-	return scumm_stricmp(((ResourceLoader::ResourceCache *)entry1)->fname, ((ResourceLoader::ResourceCache *)entry2)->fname);
-}
-
-Block *ResourceLoader::getFileFromCache(const Common::String &filename) {
-	ResourceLoader::ResourceCache *entry = getEntryFromCache(filename);
-	if (entry)
-		return entry->resPtr;
-	else
-		return NULL;
-}
-
-ResourceLoader::ResourceCache *ResourceLoader::getEntryFromCache(const Common::String &filename) {
-	if (_cache.empty())
-		return NULL;
-
-	if (_cacheDirty) {
-		qsort(_cache.begin(), _cache.size(), sizeof(ResourceCache), sortCallback);
-		_cacheDirty = false;
-	}
-
-	ResourceCache key;
-	key.fname = const_cast<char *>(filename.c_str());
-
-	return (ResourceLoader::ResourceCache *)bsearch(&key, _cache.begin(), _cache.size(), sizeof(ResourceCache), sortCallback);
-}
-
 bool ResourceLoader::getFileExists(const Common::String &filename) const {
 	return getLab(filename) != NULL;
 }
 
 Block *ResourceLoader::getFileBlock(const Common::String &filename) const {
 	const Lab *l = getLab(filename);
-	if (!l)
-		return NULL;
-	else
-		return l->getFileBlock(filename);
-}
-
-Block *ResourceLoader::getBlock(const char *filename) {
-    Common::String fname = filename;
-    fname.toLowercase();
-    Block *b = getFileFromCache(fname);
-    if (!b) {
-        b = getFileBlock(fname);
-		if (b) {
-			putIntoCache(fname, b);
-		}
-    }
-
-    return b;
+	Block *block = 0;
+	if (l)
+		block = l->getFileBlock(filename);
+	return block;
 }
 
 LuaFile *ResourceLoader::openNewStreamLuaFile(const char *filename) const {
 	const Lab *l = getLab(filename);
-
-	if (!l)
-		return NULL;
-	else
-		return l->openNewStreamLua(filename);
+	LuaFile * file = 0;
+	if (l)
+		file = l->openNewStreamLua(filename);
+	return file;
 }
 
 Common::File *ResourceLoader::openNewStreamFile(const char *filename) const {
 	const Lab *l = getLab(filename);
-
-	if (!l)
-		return NULL;
-	else
-		return l->openNewStreamFile(filename);
-}
-
-int ResourceLoader::getFileLength(const char *filename) const {
-	const Lab *l = getLab(filename);
+	Common::File *file = 0;
 	if (l)
-		return l->getFileLength(filename);
-	else
-		return 0;
-}
-
-void ResourceLoader::putIntoCache(const Common::String &fname, Block *res) {
-	ResourceCache entry;
-	entry.resPtr = res;
-	entry.fname = new char[fname.size() + 1];
-	strcpy(entry.fname, fname.c_str());
-	_cacheMemorySize += res->getLen();
-	_cache.push_back(entry);
-	_cacheDirty = true;
-}
-
-Bitmap *ResourceLoader::loadBitmap(const Common::String &filename) {
-	Common::String fname = filename;
-	fname.toLowercase();
-	Block *b = getFileFromCache(fname);
-	if (!b) {
-		b = getFileBlock(fname);
-		if (!b) {	// Grim sometimes asks for non-existant bitmaps (eg, ha_overhead)
-			warning("Could not find bitmap %s", filename.c_str());
-			return NULL;
-		}
-		putIntoCache(fname, b);
-	}
-
-	Bitmap *result = new Bitmap(filename, b->getData(), b->getLen());
-	if (result)
-		g_grim->registerBitmap(result);
-
-	return result;
-}
-
-CMap *ResourceLoader::loadColormap(const Common::String &filename) {
-	Block *b = getFileFromCache(filename);
-	if (!b) {
-		b = getFileBlock(filename);
-		if (!b) {
-			error("Could not find colormap %s", filename.c_str());
-        }
-		putIntoCache(filename, b);
-	}
-
-	CMap *result = new CMap(filename, b->getData(), b->getLen());
-	_colormaps.push_back(result);
-
-	return result;
+		file = l->openNewStreamFile(filename);
+	return file;
 }
 
 static Common::String fixFilename(const Common::String filename) {
 	Common::String fname(filename);
+	fname.toLowercase();
 	if (g_grim->getGameType() == GType_MONKEY4) {
 		int len = fname.size();
 		for (int i = 0; i < len; i++) {
@@ -257,233 +129,77 @@ static Common::String fixFilename(const Common::String filename) {
 	return fname;
 }
 
+template<typename T>
+T *ResourceLoader::loadResource(const Common::String &filename, void *additionalData, int errorLevel) {
+	Common::String fname = fixFilename(filename);
+
+	Block *b = getFileBlock(fname);
+	if (!b) {
+		if (errorLevel == 0)
+			error("Could not find resource %s", fname.c_str());
+		else if (errorLevel == 1)
+			warning("Could not find resource %s", fname.c_str());
+		return 0;
+    }
+	T *result = new T(fname, b->getData(), b->getLen(), additionalData);
+	delete b;
+	return result;
+}
+
+Bitmap *ResourceLoader::loadBitmap(const Common::String &filename) {
+	Bitmap *result = loadResource<Bitmap>(filename, 0, 1);
+
+	if (result)
+		g_grim->registerBitmap(result);
+
+	return result;
+}
+
 Costume *ResourceLoader::loadCostume(const Common::String &filename, Costume *prevCost) {
-	Common::String fname = fixFilename(filename);
-	fname.toLowercase();
-	Block *b = getFileFromCache(fname);
-	if (!b) {
-		b = getFileBlock(fname);
-		if (!b)
-			error("Could not find costume \"%s\"", filename.c_str());
-		putIntoCache(fname, b);
-	}
-	Costume *result = new Costume(filename, b->getData(), b->getLen(), prevCost);
-
-	return result;
+	return loadResource<Costume>(filename, prevCost);
 }
 
-Font *ResourceLoader::loadFont(const Common::String &filename) {
-	Block *b = getFileFromCache(filename);
-	if (!b) {
-		b = getFileBlock(filename);
-		if (!b)
-			error("Could not find font file %s", filename.c_str());
-		putIntoCache(filename, b);
-	}
-
-	Font *result = new Font(filename, b->getData(), b->getLen());
-
-	return result;
-}
-
-KeyframeAnim *ResourceLoader::loadKeyframe(const Common::String &filename) {
-	Block *b = getFileFromCache(filename);
-	if (!b) {
-		b = getFileBlock(filename);
-		if (!b)
-			error("Could not find keyframe file %s", filename.c_str());
-		putIntoCache(filename, b);
-	}
-
-	KeyframeAnim *result = new KeyframeAnim(filename, b->getData(), b->getLen());
-	_keyframeAnims.push_back(result);
-
-	return result;
-}
-
-LipSync *ResourceLoader::loadLipSync(const Common::String &filename) {
-	LipSync *result;
-	Block *b = getFileFromCache(filename);
-	bool cached = true;
-	if (!b) {
-		b = getFileBlock(filename);
-		if (!b)
-			return NULL;
-		cached = false;
-	}
-
-	result = new LipSync(filename, b->getData(), b->getLen());
-
-	// Some lipsync files have no data
-	if (result->isValid()) {
-		if (!cached)
-			putIntoCache(filename, b);
-		_lipsyncs.push_back(result);
-	} else {
-		delete result;
-		delete b;
-		result = NULL;
-	}
-
-	return result;
-}
-
-Material *ResourceLoader::loadMaterial(const Common::String &filename, CMap *c) {
-	Common::String fname = filename;
-	fname.toLowercase();
-	Block *b = getFileFromCache(filename);
-	if (!b) {
-		b = getFileBlock(filename);
-		if (!b)
-			error("Could not find material %s", filename.c_str());
-		putIntoCache(filename, b);
-	}
-
-	Material *result = new Material(fname, b->getData(), b->getLen(), c);
-	_materials.push_back(result);
-
-	return result;
-}
-
-Model *ResourceLoader::loadModel(const Common::String &filename, CMap *c) {
-	Common::String fname = fixFilename(filename);
-	Block *b = getFileFromCache(fname);
-	if (!b) {
-		b = getFileBlock(fname);
-		if (!b)
-			error("Could not find model %s", filename.c_str());
-		putIntoCache(fname, b);
-	}
-
-	Model *result = new Model(filename, b->getData(), b->getLen(), c);
-	_models.push_back(result);
-
-	return result;
-}
-
-void ResourceLoader::uncache(const char *filename) {
+template<typename T>
+ObjectPtr<T> ResourceLoader::getResource(const Common::String &filename, void *additionalData, int errorLevel) {
 	Common::String fname = filename;
 	fname.toLowercase();
 
-	if (_cacheDirty) {
-		qsort(_cache.begin(), _cache.size(), sizeof(ResourceCache), sortCallback);
-		_cacheDirty = false;
+	if (additionalData) {
+		// use the pointer to differentiate between resources with different colormaps
+		fname += Common::tag2string((uint32)additionalData);
 	}
 
-	for (unsigned int i = 0; i < _cache.size(); i++) {
-		if (fname.compareTo(_cache[i].fname) == 0) {
-			delete[] _cache[i].fname;
-			_cacheMemorySize -= _cache[i].resPtr->getLen();
-			delete _cache[i].resPtr;
-			_cache.remove_at(i);
-			_cacheDirty = true;
-		}
-	}
-}
-
-void ResourceLoader::uncacheMaterial(Material *mat) {
-	_materials.remove(mat);
-}
-
-void ResourceLoader::uncacheModel(Model *m) {
-	_models.remove(m);
-}
-
-void ResourceLoader::uncacheColormap(CMap *c) {
-	_colormaps.remove(c);
-}
-
-void ResourceLoader::uncacheKeyframe(KeyframeAnim *k) {
-	_keyframeAnims.remove(k);
-}
-
-void ResourceLoader::uncacheFont(Font *f) {
-	_fonts.remove(f);
-}
-
-void ResourceLoader::uncacheLipSync(LipSync *s) {
-	_lipsyncs.remove(s);
-}
-
-MaterialPtr ResourceLoader::getMaterial(const char *fname, CMap *c) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<Material *>::const_iterator i = _materials.begin(); i != _materials.end(); ++i) {
-		Material *m = *i;
-		if (filename.equals(m->_fname) && *m->_cmap == *c) {
-			return m;
-		}
+	Object *p = _objectCache[fname];
+	if (!p) {
+		p = loadResource<T>(filename, additionalData, errorLevel);
+		_objectCache[fname] = p;
 	}
 
-	return loadMaterial(fname, c);
+	return (T *)p;
 }
 
-ModelPtr ResourceLoader::getModel(const Common::String &fname, CMap *c) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<Model *>::const_iterator i = _models.begin(); i != _models.end(); ++i) {
-		Model *m = *i;
-		if (filename == m->_fname && *m->_cmap == *c) {
-			return m;
-		}
-	}
-
-	return loadModel(fname, c);
+ObjectPtr<Material> ResourceLoader::getMaterial(const Common::String &fname, CMap *c) {
+	return getResource<Material>(fname, c);
 }
 
-CMapPtr ResourceLoader::getColormap(const Common::String &fname) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<CMap *>::const_iterator i = _colormaps.begin(); i != _colormaps.end(); ++i) {
-		CMap *c = *i;
-		if (filename.equals(c->_fname)) {
-			return c;
-		}
-	}
-
-	return loadColormap(fname);
+ObjectPtr<Model> ResourceLoader::getModel(const Common::String &fname, CMap *c) {
+	return getResource<Model>(fname, c);
 }
 
-KeyframeAnimPtr ResourceLoader::getKeyframe(const Common::String &fname) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<KeyframeAnim *>::const_iterator i = _keyframeAnims.begin(); i != _keyframeAnims.end(); ++i) {
-		KeyframeAnim *k = *i;
-		if (filename == k->getFilename()) {
-			return k;
-		}
-	}
-
-	return loadKeyframe(fname);
+ObjectPtr<CMap> ResourceLoader::getColormap(const Common::String &fname) {
+	return getResource<CMap>(fname);
 }
 
-FontPtr ResourceLoader::getFont(const Common::String &fname) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<Font *>::const_iterator i = _fonts.begin(); i != _fonts.end(); ++i) {
-		Font *f = *i;
-		if (filename == f->getFilename()) {
-			return f;
-		}
-	}
-
-	Font *f = loadFont(fname);
-	_fonts.push_back(f);
-
-	return f;
+ObjectPtr<KeyframeAnim> ResourceLoader::getKeyframe(const Common::String &fname) {
+	return getResource<KeyframeAnim>(fname);
 }
 
-LipSyncPtr ResourceLoader::getLipSync(const Common::String &fname) {
-	Common::String filename = fname;
-	filename.toLowercase();
-	for (Common::List<LipSync *>::const_iterator i = _lipsyncs.begin(); i != _lipsyncs.end(); ++i) {
-		LipSync *l = *i;
-		if (filename == l->getFilename()) {
-			return l;
-		}
-	}
+ObjectPtr<Font> ResourceLoader::getFont(const Common::String &fname) {
+	return getResource<Font>(fname);
+}
 
-	return loadLipSync(fname);
+ObjectPtr<LipSync> ResourceLoader::getLipSync(const Common::String &fname) {
+	return getResource<LipSync>(fname, 0, 2);
 }
 
 } // end of namespace Grim

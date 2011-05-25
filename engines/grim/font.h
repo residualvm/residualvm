@@ -31,7 +31,7 @@ class SaveGame;
 
 class Font : public Object {
 public:
-	Font(const Common::String &filename, const char *data, int len);
+	Font(const Common::String &filename, const char *data, int len, void *);
 	Font();
 	~Font();
 
