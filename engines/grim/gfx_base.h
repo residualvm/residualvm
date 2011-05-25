@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #ifndef GRIM_GFX_BASE_H
@@ -129,6 +126,11 @@ protected:
 	unsigned char _shadowColorG;
 	unsigned char _shadowColorB;
 };
+
+// Factory-like functions:
+
+GfxBase *CreateGfxOpenGL();
+GfxBase *CreateGfxTinyGL();
 
 extern GfxBase *g_driver;
 

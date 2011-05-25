@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_printf
@@ -35,9 +32,8 @@
 
 namespace Grim {
 
-KeyframeAnim::KeyframeAnim(const char *fname, const char *data, int len) :
-	Object() {
-	_fname = fname;
+KeyframeAnim::KeyframeAnim(const Common::String &fname, const char *data, int len) :
+	Object(), _fname(fname) {
 
 	if (len >= 4 && READ_BE_UINT32(data) == MKTAG('F','Y','E','K'))
 		loadBinary(data, len);
@@ -153,15 +149,21 @@ KeyframeAnim::~KeyframeAnim() {
 	g_resourceloader->uncacheKeyframe(this);
 }
 
-void KeyframeAnim::animate(Model::HierNode *nodes, float time, int priority1, int priority2, float fade) const {
+bool KeyframeAnim::animate(Model::HierNode *nodes, int num, float time, float fade, bool tagged) const {
+	// Without this sending the bread down the tube in "mo" often crashes,
+	// because it goes outside the bounds of the array of the nodes.
+	if (num >= _numJoints)
+		return false;
+
 	float frame = time * _fps;
 
 	if (frame > _numFrames)
 		frame = _numFrames;
 
-	for (int i = 0; i < _numJoints; i++) {
-		if (_nodes[i])
-			_nodes[i]->animate(nodes[i], frame, ((_type & nodes[i]._type) != 0 ? priority2 : priority1), fade);
+	if (_nodes[num] && tagged == ((_type & nodes[num]._type) != 0)) {
+		return _nodes[num]->animate(nodes[num], frame, fade);
+	} else {
+		return false;
 	}
 }
 
@@ -220,11 +222,9 @@ KeyframeAnim::KeyframeNode::~KeyframeNode() {
 	delete[] _entries;
 }
 
-void KeyframeAnim::KeyframeNode::animate(Model::HierNode &node, float frame, int priority, float fade) const {
+bool KeyframeAnim::KeyframeNode::animate(Model::HierNode &node, float frame, float fade) const {
 	if (_numEntries == 0)
-		return;
-	if (priority < node._priority)
-		return;
+		return false;
 
 	// Do a binary search for the nearest previous frame
 	// Loop invariant: entries_[low].frame_ <= frame < entries_[high].frame_
@@ -242,23 +242,6 @@ void KeyframeAnim::KeyframeNode::animate(Model::HierNode &node, float frame, int
 	float pitch = _entries[low]._pitch + dt * _entries[low]._dpitch;
 	float yaw = _entries[low]._yaw + dt * _entries[low]._dyaw;
 	float roll = _entries[low]._roll + dt * _entries[low]._droll;
-
-	if (priority > node._priority) {
-		node._priority = priority;
-		if (node._totalWeight > 0) {
-			node._animPos = node._animPos * (1 - fade) / node._totalWeight;
-			node._animPitch = node._animPitch * (1 - fade) / node._totalWeight;
-			node._animYaw = node._animYaw * (1 - fade) / node._totalWeight;
-			node._animRoll = node._animRoll * (1 - fade) / node._totalWeight;
-			node._totalWeight = 1 - fade;
-		} else {
-			node._animPos.set(0,0,0);
-			node._animPitch = 0;
-			node._animYaw = 0;
-			node._animRoll = 0;
-			node._totalWeight = 0;
-		}
-	}
 
 	node._animPos += (pos - node._pos) * fade;
 
@@ -283,7 +266,7 @@ void KeyframeAnim::KeyframeNode::animate(Model::HierNode &node, float frame, int
 		droll += 360;
 	node._animRoll += droll * fade;
 
-	node._totalWeight += fade;
+	return true;
 }
 
 } // end of namespace Grim

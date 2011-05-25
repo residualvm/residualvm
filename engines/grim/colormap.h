@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #ifndef GRIM_COLORMAP_H
@@ -33,10 +30,10 @@ namespace Grim {
 class CMap : public Object {
 public:
 	// Load a colormap from the given data.
-	CMap(const char *fileName, const char *data, int len);
+	CMap(const Common::String &fileName, const char *data, int len);
 	CMap();
 	~CMap();
-	const char *getFilename() const { return _fname.c_str(); }
+	const Common::String &getFilename() const { return _fname; }
 
 	// The color data, in RGB format
 	char _colors[256 * 3];

@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #ifndef GRIM_MATERIAL_H
@@ -36,7 +33,7 @@ class Material : public Object {
 public:
 	Material() { _width = 0; }
 	// Load a texture from the given data.
-	Material(const char *filename, const char *data, int len, CMap *cmap);
+	Material(const Common::String &filename, const char *data, int len, CMap *cmap);
 
 	// Load this texture into the GL context
 	void select() const;
@@ -46,7 +43,7 @@ public:
 
 	int getNumImages() const { return _numImages; }
 	int getCurrentImage() const { return _currImage; }
-	const char *getFilename() { return _fname.c_str(); }
+	const Common::String &getFilename() { return _fname; }
 
 	~Material();
 

@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #ifndef GRIM_ACTOR_H
@@ -54,21 +51,20 @@ struct Shadow {
 
 class Actor : public Object {
 public:
-	Actor(const char *name);
+	Actor(const Common::String &name);
 	Actor();
 	~Actor();
 
 	void saveState(SaveGame *savedState) const;
 	bool restoreState(SaveGame *savedState);
 
-	const char *getName() const { return _name.c_str(); }
+	const Common::String &getName() const { return _name; }
 
 	void setTalkColor(Color *c) { _talkColor = c; }
 	Color *getTalkColor() const { return _talkColor; }
 	void setPos(Graphics::Vector3d position);
 	Graphics::Vector3d getPos() const;
 	void walkTo(const Graphics::Vector3d &p);
-	Graphics::Vector3d getDestPos() const;
 	void stopWalking() { _walking = false; }
 	bool isWalking() const;
 	void setRot(float pitch, float yaw, float roll);
@@ -92,14 +88,14 @@ public:
 	float getAngleTo(const Actor &a) const;
 	float getYawTo(Graphics::Vector3d p) const;
 
-	bool isInSet(const char *setName) const;
+	bool isInSet(const Common::String &setName) const;
 	void walkForward();
 	void setRunning(bool running);
 	void setReflection(float angle) { _reflectionAngle = angle; }
 	Graphics::Vector3d getPuckVector() const;
 	void turn(int dir);
 
-	void sayLine(const char *msg, const char *msgId);
+	void sayLine(const char *msg, const char *msgId, bool background);
 	// When we clean all text objects we don't want the actors to clean their
 	// objects again since they're already freed
 	void lineCleanup() { _sayLineText = NULL; }
@@ -124,7 +120,7 @@ public:
 		else
 			return _costumeStack.back();
 	}
-	Costume *findCostume(const char *name);
+	Costume *findCostume(const Common::String &name);
 	int getCostumeStackDepth() const {
 		return _costumeStack.size();
 	}

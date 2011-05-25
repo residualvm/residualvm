@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_printf
@@ -135,16 +132,24 @@ public:
 	void init();
 };
 
+struct AnimationState {
+	KeyframeAnimPtr _keyf;
+	int _time;
+	float _fade;
+};
+
 class ModelComponent : public Costume::Component {
 public:
 	ModelComponent(Costume::Component *parent, int parentID, const char *filename, Costume::Component *prevComponent, tag32 tag);
 	void init();
 	void setKey(int val);
-	void update();
+	void animate();
 	void reset();
 	void resetColormap();
 	void setMatrix(Graphics::Matrix4 matrix) { _matrix = matrix; };
 	void restoreState(SaveGame *state);
+	void addActiveAnimation(AnimationState *anim, int priority1, int priority2);
+	void removeActiveAnimation(AnimationState *anim);
 	~ModelComponent();
 
 	Model::HierNode *getHierarchy() { return _hier; }
@@ -153,10 +158,17 @@ public:
 	void draw();
 
 protected:
+	struct AnimationEntry {
+		AnimationState *_anim;
+		int _priority;
+		bool _tagged;
+	};
+
 	Common::String _filename;
 	ObjectPtr<Model> _obj;
 	Model::HierNode *_hier;
 	Graphics::Matrix4 _matrix;
+	Common::List<AnimationEntry> *_activeAnims;
 };
 
 class MainModelComponent : public ModelComponent {
@@ -240,10 +252,6 @@ SpriteComponent::SpriteComponent(Costume::Component *p, int parentID, const char
 
 SpriteComponent::~SpriteComponent() {
 	if (_sprite) {
-		if (_parent) {
-			MeshComponent *mc = dynamic_cast<MeshComponent *>(_parent);
-			mc->getNode()->removeSprite(_sprite);
-		}
 		delete _sprite->_material;
 		delete _sprite;
 	}
@@ -268,7 +276,7 @@ void SpriteComponent::init() {
 		sscanf(comma, ",%d,%d,%d,%d,%d", &width, &height, &x, &y, &z);
 
 		_sprite = new Sprite;
-		_sprite->_material = g_resourceloader->loadMaterial(name.c_str(), getCMap());
+		_sprite->_material = g_resourceloader->loadMaterial(name, getCMap());
 		_sprite->_width = (float)width / 100.0f;
 		_sprite->_height = (float)height / 100.0f;
 		_sprite->_pos.set((float)x / 100.0f, (float)y / 100.0f, (float)z / 100.0f);
@@ -314,7 +322,7 @@ void SpriteComponent::restoreState(SaveGame *state) {
 
 ModelComponent::ModelComponent(Costume::Component *p, int parentID, const char *filename, Costume::Component *prevComponent, tag32 t) :
 		Costume::Component(p, parentID, t), _filename(filename),
-		_obj(NULL), _hier(NULL) {
+		_obj(NULL), _hier(NULL), _activeAnims(NULL) {
 	const char *comma = strchr(filename, ',');
 
 	// Can be called with a comma and a numeric parameter afterward, but
@@ -344,13 +352,15 @@ void ModelComponent::init() {
 
 		// Get the default colormap if we haven't found
 		// a valid colormap
+		if (!cm)
+			cm = g_grim->getCurrScene()->getCMap();
 		if (!cm) {
 			if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
 				warning("No colormap specified for %s, using %s", _filename.c_str(), DEFAULT_COLORMAP);
 
 			cm = g_resourceloader->getColormap(DEFAULT_COLORMAP);
 		}
-		_obj = g_resourceloader->getModel(_filename.c_str(), cm);
+		_obj = g_resourceloader->getModel(_filename, cm);
 		_hier = _obj->copyHierarchy();
 
 		// Use parent availablity to decide whether to default the
@@ -359,6 +369,10 @@ void ModelComponent::init() {
 			setKey(1);
 		else
 			setKey(0);
+	}
+
+	if (!_activeAnims) {
+		_activeAnims = new Common::List<AnimationEntry>();
 	}
 
 	// If we're the child of a mesh component, put our nodes in the
@@ -388,16 +402,103 @@ void ModelComponent::reset() {
 	_hier->_hierVisible = _visible;
 }
 
-// Reset the hierarchy nodes for any keyframe animations (which
-// are children of this component and therefore get updated later).
-void ModelComponent::update() {
-	for (int i = 0; i < _obj->getNumNodes(); i++) {
-		_hier[i]._priority = -1;
+void ModelComponent::addActiveAnimation(AnimationState *anim, int priority1, int priority2) {
+	// Keep the list of animations sorted by priorities in descending order. Because
+	// the animations have two different priorities, we add the animation to the list
+	// with both priorities.
+	Common::List<AnimationEntry>::iterator i;
+	AnimationEntry entry;
+	entry._anim = anim;
+	entry._priority = priority1;
+	entry._tagged = false;
+	for (i = _activeAnims->begin(); i != _activeAnims->end(); ++i) {
+		if (i->_priority < entry._priority) {
+			_activeAnims->insert(i, entry);
+			break;
+		}
+	}
+	if (i == _activeAnims->end())
+		_activeAnims->push_back(entry);
+
+	entry._priority = priority2;
+	entry._tagged = true;
+	for (i = _activeAnims->begin(); i != _activeAnims->end(); ++i) {
+		if (i->_priority < entry._priority) {
+			_activeAnims->insert(i, entry);
+			break;
+		}
+	}
+	if (i == _activeAnims->end())
+		_activeAnims->push_back(entry);
+}
+
+void ModelComponent::removeActiveAnimation(AnimationState *anim) {
+	Common::List<AnimationEntry>::iterator i;
+	for (i = _activeAnims->begin(); i != _activeAnims->end(); ++i) {
+		if (i->_anim == anim) {
+			i = _activeAnims->erase(i);
+			i--;
+		}
+	}
+}
+
+void ModelComponent::animate() {
+	// First reset the current animation.
+	for (int i = 0; i < getNumNodes(); i++) {
 		_hier[i]._animPos.set(0,0,0);
 		_hier[i]._animPitch = 0;
 		_hier[i]._animYaw = 0;
 		_hier[i]._animRoll = 0;
-		_hier[i]._totalWeight = 0;
+	}
+
+	// Apply animation to each hierarchy node separately.
+	for (int i = 0; i < getNumNodes(); i++) {
+		Graphics::Vector3d tempPos;
+		float tempYaw = 0.0f, tempPitch = 0.0f, tempRoll = 0.0f;
+		float totalWeight = 0.0f;
+		float remainingWeight = 1.0f;
+		int currPriority = -1;
+
+		// The animations are layered so that animations with a higher priority
+		// are played regardless of the blend weights of lower priority animations.
+		// The highest priority layer gets as much weight as it wants, while the
+		// next layer gets the remaining amount and so on.
+		for (Common::List<AnimationEntry>::iterator j = _activeAnims->begin(); j != _activeAnims->end(); ++j) {
+			if (currPriority != j->_priority) {
+				currPriority = j->_priority;
+				remainingWeight *= 1 - totalWeight;
+				if (remainingWeight <= 0.0f)
+					break;
+
+				float weightFactor = 1.0f;
+				if (totalWeight > 1.0f) {
+					weightFactor = 1.0f / totalWeight;
+				}
+				tempPos += _hier[i]._animPos * weightFactor;
+				tempYaw += _hier[i]._animYaw * weightFactor;
+				tempPitch += _hier[i]._animPitch * weightFactor;
+				tempRoll += _hier[i]._animRoll * weightFactor;
+				_hier[i]._animPos.set(0,0,0);
+				_hier[i]._animYaw = 0.0f;
+				_hier[i]._animPitch = 0.0f;
+				_hier[i]._animRoll = 0.0f;
+				totalWeight = 0.0f;
+			}
+
+			float time = j->_anim->_time / 1000.0f;
+			float weight = j->_anim->_fade * remainingWeight;
+			if (j->_anim->_keyf->animate(_hier, i, time, weight, j->_tagged))
+				totalWeight += weight;
+		}
+
+		float weightFactor = 1.0f;
+		if (totalWeight > 1.0f) {
+			weightFactor = 1.0f / totalWeight;
+		}
+		_hier[i]._animPos = _hier[i]._animPos * weightFactor + tempPos;
+		_hier[i]._animYaw = _hier[i]._animYaw * weightFactor + tempYaw;
+		_hier[i]._animPitch = _hier[i]._animPitch * weightFactor + tempPitch;
+		_hier[i]._animRoll = _hier[i]._animRoll * weightFactor + tempRoll;
 	}
 }
 
@@ -428,15 +529,11 @@ void translateObject(Model::HierNode *node, bool reset) {
 	if (reset) {
 		g_driver->translateViewpointFinish();
 	} else {
-		if (node->_totalWeight > 0) {
-			Graphics::Vector3d animPos = node->_pos + node->_animPos / node->_totalWeight;
-			float animPitch = node->_pitch + node->_animPitch / node->_totalWeight;
-			float animYaw = node->_yaw + node->_animYaw / node->_totalWeight;
-			float animRoll = node->_roll + node->_animRoll / node->_totalWeight;
-			g_driver->translateViewpointStart(animPos, animPitch, animYaw, animRoll);
-		} else {
-			g_driver->translateViewpointStart(node->_pos, node->_pitch, node->_yaw, node->_roll);
-		}
+		Graphics::Vector3d animPos = node->_pos + node->_animPos;
+		float animPitch = node->_pitch + node->_animPitch;
+		float animYaw = node->_yaw + node->_animYaw;
+		float animRoll = node->_roll + node->_animRoll;
+		g_driver->translateViewpointStart(animPos, animPitch, animYaw, animRoll);
 	}
 }
 
@@ -464,6 +561,7 @@ MainModelComponent::MainModelComponent(Costume::Component *p, int parentID, cons
 		MainModelComponent *mmc = dynamic_cast<MainModelComponent *>(prevComponent);
 
 		if (mmc && mmc->_filename == filename) {
+			_activeAnims = mmc->_activeAnims;
 			_obj = mmc->_obj;
 			_hier = mmc->_hier;
 			_hierShared = true;
@@ -529,7 +627,7 @@ ColormapComponent::~ColormapComponent() {
 void ColormapComponent::init() {
 	if (!_parent)
 		warning("No parent to apply colormap object on. CMap: %s, Costume: %s",
-				_cmap->getFilename(),_cost->getFilename());
+			_cmap->getFilename().c_str(), _cost->getFilename().c_str());
 }
 
 class KeyframeComponent : public Costume::Component {
@@ -541,15 +639,17 @@ public:
 	void reset();
 	void saveState(SaveGame *state);
 	void restoreState(SaveGame *state);
+	void activate();
+	void deactivate();
 	~KeyframeComponent() {}
 
 private:
-	KeyframeAnimPtr _keyf;
+	AnimationState _anim;
 	int _priority1, _priority2;
 	Model::HierNode *_hier;
+	int _numNodes;
 	bool _active;
 	int _repeatMode;
-	int _currTime;
 	Common::String _fname;
 
 	friend class Costume;
@@ -561,10 +661,10 @@ KeyframeComponent::KeyframeComponent(Costume::Component *p, int parentID, const 
 	const char *comma = strchr(filename, ',');
 	if (comma) {
 		Common::String realName(filename, comma);
-		_keyf = g_resourceloader->getKeyframe(realName.c_str());
+		_anim._keyf = g_resourceloader->getKeyframe(realName.c_str());
 		sscanf(comma + 1, "%d,%d", &_priority1, &_priority2);
 	} else
-		_keyf = g_resourceloader->getKeyframe(filename);
+		_anim._keyf = g_resourceloader->getKeyframe(filename);
 }
 
 void KeyframeComponent::setKey(int val) {
@@ -574,79 +674,104 @@ void KeyframeComponent::setKey(int val) {
 	case 2:
 	case 3:
 		if (!_active || val != 1) {
-			_active = true;
-			_currTime = -1;
+			activate();
+			_anim._time = -1;
 		}
 		_repeatMode = val;
 		break;
+	case 5:
+		warning("Key 5 (meaning uncertain) used  for keyframe %s", _anim._keyf->getFilename().c_str());
 	case 4:
-		_active = false;
+		deactivate();
 		break;
 	default:
 		if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-			warning("Unknown key %d for keyframe %s", val, _keyf->getFilename());
+			warning("Unknown key %d for keyframe %s", val, _anim._keyf->getFilename().c_str());
 	}
 }
 
 void KeyframeComponent::reset() {
-	_active = false;
+	deactivate();
 }
 
 void KeyframeComponent::update() {
 	if (!_active)
 		return;
 
-	if (_currTime < 0)		// For first time through
-		_currTime = 0;
+	if (_anim._time < 0)		// For first time through
+		_anim._time = 0;
 	else
-		_currTime += g_grim->getFrameTime();
+		_anim._time += g_grim->getFrameTime();
 
-	int animLength = (int)(_keyf->getLength() * 1000);
+	int animLength = (int)(_anim._keyf->getLength() * 1000);
 
-	if (_currTime > animLength) { // What to do at end?
+	if (_anim._time > animLength) { // What to do at end?
 		switch (_repeatMode) {
 			case 0: // Stop
 			case 3: // Fade at end
-				_active = false;
+				deactivate();
 				return;
 			case 1: // Loop
 				do
-					_currTime -= animLength;
-				while (_currTime > animLength);
+					_anim._time -= animLength;
+				while (_anim._time > animLength);
 				break;
 			case 2: // Hold at end
-				_currTime = animLength;
+				_anim._time = animLength;
 				break;
 			default:
 				if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-					warning("Unknown repeat mode %d for keyframe %s", _repeatMode, _keyf->getFilename());
+					warning("Unknown repeat mode %d for keyframe %s", _repeatMode, _anim._keyf->getFilename().c_str());
 		}
 	}
 
-	_keyf->animate(_hier, _currTime / 1000.0f, _priority1, _priority2, _fade);
+	_anim._fade = _fade;
 }
 
 void KeyframeComponent::init() {
 	ModelComponent *mc = dynamic_cast<ModelComponent *>(_parent);
-	if (mc)
+	if (mc) {
 		_hier = mc->getHierarchy();
-	else {
+		_numNodes = mc->getNumNodes();
+	} else {
 		if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-			warning("Parent of %s was not a model", _keyf->getFilename());
+			warning("Parent of %s was not a model", _anim._keyf->getFilename().c_str());
 		_hier = NULL;
+		_numNodes = 0;
 	}
 }
 
 void KeyframeComponent::saveState(SaveGame *state) {
 	state->writeLESint32(_active);
 	state->writeLESint32(_repeatMode);
-	state->writeLESint32(_currTime);
+	state->writeLESint32(_anim._time);
 }
 
 void KeyframeComponent::restoreState(SaveGame *state) {
-	_active = state->readLESint32();
+	bool active = state->readLESint32();
 	_repeatMode = state->readLESint32();
-	_currTime = state->readLESint32();
+	_anim._time = state->readLESint32();
+
+	if (active)
+		activate();
+}
+
+void KeyframeComponent::activate() {
+	if (!_active) {
+		_active = true;
+		ModelComponent *mc = dynamic_cast<ModelComponent *>(_parent);
+		if (mc)
+			 mc->addActiveAnimation(&_anim, _priority1, _priority2);
+	}
+}
+
+void KeyframeComponent::deactivate() {
+	if (_active) {
+		_active = false;
+		ModelComponent *mc = dynamic_cast<ModelComponent *>(_parent);
+		if (mc)
+			 mc->removeActiveAnimation(&_anim);
+	}
 }
 
 MeshComponent::MeshComponent(Costume::Component *p, int parentID, const char *name, tag32 t) :
@@ -702,13 +827,13 @@ void MaterialComponent::init() {
 		ModelComponent *p = static_cast<ModelComponent *>(_parent);
 		Model *model = p->getModel();
 		for (int i = 0; i < model->_numMaterials; ++i) {
-			if (scumm_stricmp(model->_materials[i]->getFilename(), _filename.c_str()) == 0) {
+			if (_filename.compareToIgnoreCase(model->_materials[i]->getFilename()) == 0) {
 				_mat = model->_materials[i].object();
 				return;
 			}
 		}
 	} else {
-		warning("Parent of a MaterialComponent not a ModelComponent. %s %s", _filename.c_str(),_cost->getFilename());
+		warning("Parent of a MaterialComponent not a ModelComponent. %s %s", _filename.c_str(), _cost->getFilename().c_str());
 		_mat = NULL;
 	}
 }
@@ -753,7 +878,7 @@ LuaVarComponent::LuaVarComponent(Costume::Component *p, int parentID, const char
 
 void LuaVarComponent::setKey(int val) {
 	lua_pushnumber(val);
-	lua_setglobal(const_cast<char *>(_name.c_str()));
+	lua_setglobal(_name.c_str());
 }
 
 class SoundComponent : public Costume::Component {
@@ -809,7 +934,7 @@ void SoundComponent::reset() {
 		g_imuse->stopSound(_soundName.c_str());
 }
 
-Costume::Costume(const char *fname, const char *data, int len, Costume *prevCost) :
+Costume::Costume(const Common::String &fname, const char *data, int len, Costume *prevCost) :
 		Object() {
 
 	_fname = fname;
@@ -941,7 +1066,7 @@ void Costume::loadEMI(Common::MemoryReadStream &ms, Costume *prevCost) {
 			char name[64];
 			ms.read(name, componentNameLength);
 
-			int trackID = ms.readUint32LE();
+			//int trackID = ms.readUint32LE();
 			int parent = ms.readUint32LE();
 			assert(parent == -1);
 
@@ -959,11 +1084,11 @@ void Costume::loadEMI(Common::MemoryReadStream &ms, Costume *prevCost) {
 				float time, value;
 				ms.read(&time, 4);
 				ms.read(&value, 4);
-				track.keys[j].time = time;
-				track.keys[j].value = value;
+				track.keys[j].time = (int)time;
+				track.keys[j].value = (int)value;
 			}
 		}
-		_chores[i]._tracks->compID;
+		//_chores[i]._tracks->compID;
 	}
 
 	_numComponents = components.size();
@@ -1313,10 +1438,10 @@ void Costume::playChore(int num) {
 	_chores[num].play();
 }
 
-void Costume::setColormap(const char *map) {
+void Costume::setColormap(const Common::String &map) {
 	// Sometimes setColormap is called on a null costume,
 	// see where raoul is gone in hh.set
-	if (!map)
+	if (!map.size())
 		return;
 	_cmap = g_resourceloader->getColormap(map);
 	for (int i = 0; i < _numComponents; i++)
@@ -1384,16 +1509,19 @@ void Costume::update() {
 	}
 }
 
+void Costume::animate() {
+	for (int i = 0; i < _numComponents; i++) {
+		if (_components[i]) {
+			_components[i]->animate();
+		}
+	}
+}
+
 void Costume::moveHead(bool lookingMode, const Graphics::Vector3d &lookAt, float rate) {
 	if (_joint1Node) {
 		float step = g_grim->getPerSecond(rate);
 		float yawStep = step;
 		float pitchStep = step / 3.f;
-
-		_joint1Node->_totalWeight = 1;
-		_joint2Node->_totalWeight = 1;
-		_joint3Node->_totalWeight = 1;
-
 		if (!lookingMode) {
 			//animate yaw
 			if (_headYaw > yawStep) {
@@ -1448,9 +1576,7 @@ void Costume::moveHead(bool lookingMode, const Graphics::Vector3d &lookAt, float
 		float bodyYaw = _matrix._rot.getYaw();
 		p = _joint1Node->_parent;
 		while (p) {
-			bodyYaw += p->_yaw;
-			if (p->_totalWeight > 0)
-				bodyYaw += p->_animYaw / p->_totalWeight;
+			bodyYaw += p->_yaw + p->_animYaw;
 			p = p->_parent;
 		}
 
@@ -1556,7 +1682,7 @@ Costume *Costume::getPreviousCostume() const {
 void Costume::saveState(SaveGame *state) const {
 	if (_cmap) {
 		state->writeLEUint32(1);
-		state->writeCharString(_cmap->getFilename());
+		state->writeString(_cmap->getFilename());
 	} else {
 		state->writeLEUint32(0);
 	}
@@ -1593,9 +1719,8 @@ void Costume::saveState(SaveGame *state) const {
 
 bool Costume::restoreState(SaveGame *state) {
 	if (state->readLEUint32()) {
-		const char *str = state->readCharString();
+		Common::String str = state->readString();
 		setColormap(str);
-		delete[] str;
 	}
 
 	for (int i = 0; i < _numChores; ++i) {

@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #ifndef GRIM_GFX_OPENGL_H
@@ -30,7 +27,7 @@
 
 #ifdef USE_OPENGL
 
-#ifdef SDL_BACKEND
+#if defined (SDL_BACKEND) && !defined(__amigaos4__)
 #include <SDL_opengl.h>
 #else
 #include <GL/gl.h>
@@ -44,7 +41,8 @@ public:
 	GfxOpenGL();
 	virtual ~GfxOpenGL();
 
-byte *setupScreen(int screenW, int screenH, bool fullscreen);
+	byte *setupScreen(int screenW, int screenH, bool fullscreen);
+	void initExtensions();
 
 	const char *getVideoDeviceName();
 
@@ -116,6 +114,8 @@ private:
 	int _smushWidth;
 	int _smushHeight;
 	byte *_storedDisplay;
+	bool _useDepthShader;
+	GLuint _fragmentProgram;
 };
 
 } // end of namespace Grim

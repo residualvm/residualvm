@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #ifndef GRIM_TEXTOBJECT_H
@@ -59,6 +56,9 @@ public:
 	void setHeight(int height) { _height = height; }
 	int getHeight() { return _height; }
 
+	void setDuration(int duration) { _duration = duration; }
+	int getDuration() const { return _duration; }
+
 protected:
 	TextObjectCommon();
 
@@ -68,6 +68,7 @@ protected:
 	int _justify;
 	bool _disabled;
 	Font *_font;
+	int _duration;
 };
 
 class TextObjectDefaults : public TextObjectCommon {
@@ -95,6 +96,7 @@ public:
 
 	const char *getName() const { return _textID; }
 	void draw();
+	void update();
 
 	void saveState(SaveGame *state) const;
 	bool restoreState(SaveGame *state);
@@ -115,6 +117,7 @@ protected:
 	uint8 *_textBitmap;
 	int *_bitmapWidthPtr;
 	GfxBase::TextObjectHandle **_textObjectHandle;
+	int _elapsedTime;
 
 	friend class GrimEngine;
 };

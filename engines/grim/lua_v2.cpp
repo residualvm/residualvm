@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #include "common/endian.h"
@@ -35,6 +32,118 @@
 #include "engines/grim/costume.h"
 
 namespace Grim {
+
+void L2_UndimRegion() {
+	lua_Object regionObj = lua_getparam(1);
+
+	if (lua_isnumber(regionObj)) {
+		int region = (int)lua_getnumber(regionObj);
+		// FIXME func(region);
+		warning("L2_UndimRegion: region: %d", region);
+	} else {
+		lua_pushnil();
+	}
+}
+
+void L2_SleepFor() {
+	lua_Object msObj = lua_getparam(1);
+
+	if (lua_isnumber(msObj)) {
+		int ms = (int)lua_getnumber(msObj);
+		// FIXME func(ms);
+		warning("L2_SleepFor: ms: %d", ms);
+	}
+}
+
+void L2_DimScreen() {
+	lua_Object dimObj = lua_getparam(1);
+	float dim = 0.6999f;
+
+	if (lua_isnumber(dimObj))
+		dim = lua_getnumber(dimObj);
+
+	// FIXME func(dim);
+	warning("L2_DimScreen: dim: %f", dim);
+}
+
+void L2_MakeCurrentSetup() {
+	lua_Object setupObj = lua_getparam(1);
+	if (lua_isnumber(setupObj)) {
+		int num = (int)lua_getnumber(setupObj);
+		g_grim->makeCurrentSetup(num);
+	} else if (lua_isstring(setupObj)) {
+		const char *setupName = lua_getstring(setupObj);
+		error("L2_MakeCurrentSetup: Not implemented case: setup: %s", setupName);
+	}
+}
+
+void L2_SetActorGlobalAlpha() {
+	lua_Object actorObj = lua_getparam(1);
+//	lua_Object alphaModeObj = lua_getparam(2);
+//	lua_Object valueObj = lua_getparam(3);
+
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+		return;
+
+	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
+	warning("L2_SetActorGlobalAlpha: actor: %s", actor->getName().c_str());
+
+	/* Only when actor has primitives
+	if (!actor->primities)
+			return;
+	if (lua_isnumber(alphaModeObj) {
+		int alphaMode = (int)lua_getnumber(alphaModeObj);
+		if (!lua_isnil(valueObj) && lua_isstring(valueObj)) {
+				// TODO: missing part
+		}
+		// TODO
+	}
+	*/
+}
+
+void L2_ImGetMillisecondPosition() {
+	lua_Object soundObj = lua_getparam(1);
+
+	if (lua_isnumber(soundObj)) {
+		int sound = (int)lua_getnumber(soundObj);
+		// FIXME int ms = func(sound);
+		// lua_pushnumber(ms);
+		// push -1 for now
+		warning("L2_ImGetMillisecondPosition: sound: %d", sound);
+		lua_pushnumber(-1);
+	}
+}
+
+void L2_RemoveActorFromOverworld() {
+	lua_Object actorObj = lua_getparam(1);
+
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+		return;
+
+	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
+	warning("L2_RemoveActorFromOverworld: actor: %s", actor->getName().c_str());
+	// FIXME actor->func();
+}
+
+void L2_UnloadActor() {
+	lua_Object actorObj = lua_getparam(1);
+
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+		return;
+
+	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
+	warning("L2_UnloadActor: actor: %s", actor->getName().c_str());
+	// FIXME actor->func();
+}
 
 void L2_SetActorWalkRate() {
 	lua_Object actorObj = lua_getparam(1);
@@ -141,7 +250,7 @@ void L2_SetActorSortOrder() {
 
 	Actor *actor = getactor(actorObj);
 	int mode = (int)lua_getnumber(modeObj);
-	warning("L2_SetActorSortOrder, actor: %s, mode: %d", actor->getName(), mode);
+	warning("L2_SetActorSortOrder, actor: %s, mode: %d", actor->getName().c_str(), mode);
 	// FIXME: actor->func(mode);
 }
 
@@ -160,7 +269,7 @@ void L2_ActorActivateShadow() {
 	const char *plane = "NULL";
 	if (lua_isstring(planeObj))
 		plane = lua_getstring(planeObj);
-	warning("L2_ActorActivateShadow, actor: %s, aquality: %d, plane: %s", actor->getName(), quality, plane);
+	warning("L2_ActorActivateShadow, actor: %s, aquality: %d, plane: %s", actor->getName().c_str(), quality, plane);
 	// FIXME: implement missing rest part of code
 }
 
@@ -172,7 +281,7 @@ void L2_ActorStopMoving() {
 
 	Actor *actor = getactor(actorObj);
 
-	warning("L2_ActorStopMoving, actor: %s", actor->getName());
+	warning("L2_ActorStopMoving, actor: %s", actor->getName().c_str());
 	// FIXME: implement missing rest part of code
 }
 
@@ -184,7 +293,7 @@ void L2_PutActorInOverworld() {
 
 	Actor *actor = getactor(actorObj);
 
-	warning("L2_PutActorInOverworld, actor: %s", actor->getName());
+	warning("L2_PutActorInOverworld, actor: %s", actor->getName().c_str());
 	// FIXME: implement missing func
 	//actor->func();
 }
@@ -275,7 +384,7 @@ void L2_SetGroupVolume() {
 
 	if (!lua_isnumber(groupObj))
 		return;
-	int group = lua_getnumber(groupObj);
+	int group = (int)lua_getnumber(groupObj);
 
 	int volume = 100;
 	if (lua_isnumber(volumeObj))
@@ -291,7 +400,7 @@ void L2_EnableAudioGroup() {
 
 	if (!lua_isnumber(groupObj))
 		return;
-	int group = lua_getnumber(groupObj);
+	int group = (int)lua_getnumber(groupObj);
 
 	bool state = false;
 	if (!lua_isnil(stateObj))
@@ -341,7 +450,7 @@ void L2_PlayActorChore() {
 	const char *costumeName = lua_getstring(costumeObj);
 
 	warning("L2_PlayActorChore: implement opcode actor: %s, chore: %s, costume: %s, mode bool: %d, param: %f",
-			actor->getName(), choreName, costumeName, (int)mode, param);
+			actor->getName().c_str(), choreName, costumeName, (int)mode, param);
 	// FIXME. code below is a hack, need proper implementation
 	actor->setCostume(costumeName);
 	Costume *costume = actor->getCurrentCostume();
@@ -363,7 +472,7 @@ static void L2_StopActorChores() {
 	bool p = lua_isnil(paramObj) != 0;
 	// I'm not fully sure about bool logic here
 	//actor->func(p);
-	warning("L2_StopActorChores: implement opcode... bool param: %d, actor: %s", (int)p, actor->getName());
+	warning("L2_StopActorChores: implement opcode... bool param: %d, actor: %s", (int)p, actor->getName().c_str());
 }
 
 static void L2_SetActorLighting() {
@@ -384,17 +493,17 @@ static void L2_SetActorLighting() {
 	if (lightMode != 0) {
 		if (lightMode == 1) {
 			//FIXME actor->
-			warning("L2_SetActorLighting: case param 1(LIGHT_FASTDYN), actor: %s", actor->getName());
+			warning("L2_SetActorLighting: case param 1(LIGHT_FASTDYN), actor: %s", actor->getName().c_str());
 		} else if (lightMode == 2) {
 			//FIXME actor->
-			warning("L2_SetActorLighting: case param 2(LIGHT_NORMDYN), actor: %s", actor->getName());
+			warning("L2_SetActorLighting: case param 2(LIGHT_NORMDYN), actor: %s", actor->getName().c_str());
 		} else {
 			//FIXME actor->
-			warning("L2_SetActorLighting: case param %d(LIGHT_NONE), actor: %s", lightMode, actor->getName());
+			warning("L2_SetActorLighting: case param %d(LIGHT_NONE), actor: %s", lightMode, actor->getName().c_str());
 		}
 	} else {
 		//FIXME actor->
-		warning("L2_SetActorLighting: case param 0(LIGHT_STATIC), actor: %s", actor->getName());
+		warning("L2_SetActorLighting: case param 0(LIGHT_STATIC), actor: %s", actor->getName().c_str());
 	}
 }
 
@@ -467,11 +576,8 @@ STUB_FUNC2(L2_GetActorLookRate)
 STUB_FUNC2(L2_GetVisibleThings)
 STUB_FUNC2(L2_SetActorHead)
 STUB_FUNC2(L2_GetActorRot)
-STUB_FUNC2(L2_MakeCurrentSet)
 STUB_FUNC2(L2_LockSet)
 STUB_FUNC2(L2_UnLockSet)
-STUB_FUNC2(L2_MakeCurrentSetup)
-STUB_FUNC2(L2_GetCurrentSetup)
 STUB_FUNC2(L2_StartMovie)
 STUB_FUNC2(L2_PlaySound)
 STUB_FUNC2(L2_IsSoundPlaying)
@@ -484,7 +590,6 @@ STUB_FUNC2(L2_ImGetVoiceVol)
 STUB_FUNC2(L2_ImGetMusicVol)
 STUB_FUNC2(L2_ImSetSequence)
 STUB_FUNC2(L2_RenderModeUser)
-STUB_FUNC2(L2_DimScreen)
 STUB_FUNC2(L2_SayLine)
 STUB_FUNC2(L2_MakeTextObject)
 STUB_FUNC2(L2_GetTextObjectDimensions)
@@ -547,14 +652,11 @@ STUB_FUNC2(L2_GetFontDimensions)
 // Monkey specific opcodes
 STUB_FUNC2(L2_ThumbnailFromFile)
 STUB_FUNC2(L2_ClearSpecialtyTexture)
-STUB_FUNC2(L2_UnloadActor)
-STUB_FUNC2(L2_RemoveActorFromOverworld)
 STUB_FUNC2(L2_ClearOverworld)
 STUB_FUNC2(L2_ToggleOverworld)
 STUB_FUNC2(L2_SetActorFOV)
 STUB_FUNC2(L2_SetActorHeadLimits)
 STUB_FUNC2(L2_EnableActorPuck)
-STUB_FUNC2(L2_SetActorGlobalAlpha)
 STUB_FUNC2(L2_SetActorLocalAlpha)
 STUB_FUNC2(L2_GetActorSortOrder)
 STUB_FUNC2(L2_AttachActor)
@@ -585,7 +687,6 @@ STUB_FUNC2(L2_ImStateHasLooped)
 STUB_FUNC2(L2_ImStateHasEnded)
 STUB_FUNC2(L2_ImPushState)
 STUB_FUNC2(L2_ImPopState)
-STUB_FUNC2(L2_ImGetMillisecondPosition)
 STUB_FUNC2(L2_ImSetMusicVol)
 STUB_FUNC2(L2_ImSetSfxVol)
 STUB_FUNC2(L2_ImSetVoiceVol)
@@ -597,7 +698,6 @@ STUB_FUNC2(L2_GetCameraPitch)
 STUB_FUNC2(L2_PitchCamera)
 STUB_FUNC2(L2_RollCamera)
 STUB_FUNC2(L2_UndimAll)
-STUB_FUNC2(L2_UndimRegion)
 STUB_FUNC2(L2_NewLayer)
 STUB_FUNC2(L2_FreeLayer)
 STUB_FUNC2(L2_SetLayerSortOrder)
@@ -675,11 +775,11 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "PrintError", L1_PrintDebug },
 	{ "PrintWarning", L1_PrintDebug },
 	{ "PrintDebug", L1_PrintDebug },
-	{ "MakeCurrentSet", L2_MakeCurrentSet },
+	{ "MakeCurrentSet", L1_MakeCurrentSet },
 	{ "LockSet", L2_LockSet },
 	{ "UnLockSet", L2_UnLockSet },
 	{ "MakeCurrentSetup", L2_MakeCurrentSetup },
-	{ "GetCurrentSetup", L2_GetCurrentSetup },
+	{ "GetCurrentSetup", L1_GetCurrentSetup },
 	{ "NextSetup", L2_NextSetup },
 	{ "PreviousSetup", L2_PreviousSetup },
 	{ "StartMovie", L2_StartMovie },
@@ -831,7 +931,8 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "SectEditSortAdd", L2_SectEditSortAdd },
 	{ "SectEditForgetIt", L2_SectEditForgetIt },
 	{ "FRUTEY_Begin", L2_FRUTEY_Begin },
-	{ "FRUTEY_End", L2_FRUTEY_End }
+	{ "FRUTEY_End", L2_FRUTEY_End },
+	{ "sleep_for", L2_SleepFor }
 };
 
 struct luaL_reg monkeyTextOpcodes[] = {

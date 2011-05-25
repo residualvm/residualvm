@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #include "engines/grim/colormap.h"
@@ -29,9 +26,8 @@
 namespace Grim {
 
 // Load a colormap from the given data.
-CMap::CMap(const char *fileName, const char *data, int len) :
-	Object() {
-	_fname = fileName;
+CMap::CMap(const Common::String &fileName, const char *data, int len) :
+	Object(), _fname(fileName) {
 	if (len < 4 || READ_BE_UINT32(data) != MKTAG('C','M','P',' '))
 		error("Invalid magic loading colormap");
 	memcpy(_colors, data + 64, sizeof(_colors));

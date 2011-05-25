@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #include "common/endian.h"
@@ -36,10 +33,10 @@ namespace Grim {
 #define SAVEGAME_HEADERTAG	'RSAV'
 #define SAVEGAME_FOOTERTAG	'ESAV'
 
-int SaveGame::SAVEGAME_VERSION = 14;
+int SaveGame::SAVEGAME_VERSION = 15;
 
 // Constructor. Should create/open a saved game
-SaveGame::SaveGame(const char *filename, bool saving) :
+SaveGame::SaveGame(const Common::String &filename, bool saving) :
 		_saving(saving), _currentSection(0) {
 	if (_saving) {
 		_outSaveFile = g_system->getSavefileManager()->openForSaving(filename);
@@ -149,6 +146,16 @@ uint32 SaveGame::readLEUint32() {
 	return data;
 }
 
+uint16 SaveGame::readLEUint16() {
+	if (_saving)
+		error("SaveGame::readBlock called when storing a savegame");
+	if (_currentSection == 0)
+		error("Tried to read a block without starting a section");
+	uint16 data = READ_LE_UINT16(&_sectionBuffer[_sectionPtr]);
+	_sectionPtr += 2;
+	return data;
+}
+
 int32 SaveGame::readLESint32() {
 	if (_saving)
 		error("SaveGame::readBlock called when storing a savegame");
@@ -213,6 +220,18 @@ void SaveGame::writeLEUint32(uint32 data) {
 	_sectionSize += 4;
 }
 
+void SaveGame::writeLEUint16(uint16 data) {
+	if (!_saving)
+		error("SaveGame::writeBlock called when restoring a savegame");
+	if (_currentSection == 0)
+		error("Tried to write a block without starting a section");
+
+	checkAlloc(2);
+
+	WRITE_LE_UINT16(&_sectionBuffer[_sectionSize], data);
+	_sectionSize += 2;
+}
+
 void SaveGame::writeLESint32(int32 data) {
 	if (!_saving)
 		error("SaveGame::writeBlock called when restoring a savegame");
@@ -262,29 +281,15 @@ void SaveGame::writeColor(const Grim::Color &color) {
 }
 
 void SaveGame::writeFloat(float data) {
-	byte *udata = (byte *)(&data);
 	uint32 v;
-#if defined(SCUMM_LITTLE_ENDIAN)
-	byte b[4];
-	b[0] = udata[3];
-	b[1] = udata[2];
-	b[2] = udata[1];
-	b[3] = udata[0];
-	v = *(uint32 *)b;
-#else
-	memcpy(&v, udata, 4);
-#endif
+	memcpy(&v, &data, 4);
 	writeLEUint32(v);
 }
 
-void SaveGame::writeCharString(const char *string) {
-	int32 len = strlen(string);
-	writeLESint32(len);
-	write(string, len);
-}
-
 void SaveGame::writeString(const Common::String &string) {
-	writeCharString(string.c_str());
+	int32 len = string.size();
+	writeLESint32(len);
+	write(string.c_str(), len);
 }
 
 Graphics::Vector3d SaveGame::readVector3d() {
@@ -305,35 +310,16 @@ Grim::Color SaveGame::readColor() {
 
 float SaveGame::readFloat() {
 	float f;
-	byte *udata = (byte *)(&f);
 	uint32 v = readLEUint32();
-#if defined(SCUMM_LITTLE_ENDIAN)
-	byte b[4];
-	*(uint32 *)&b = v;
-	udata[0] = b[3];
-	udata[1] = b[2];
-	udata[2] = b[1];
-	udata[3] = b[0];
-#else
-	memcpy(udata, &v, 4);
-#endif
+	memcpy(&f, &v, 4);
 
 	return f;
 }
 
-const char *SaveGame::readCharString() {
-	int32 len = readLESint32();
-	char *str = new char[len + 1];
-	read(str, len);
-	str[len] = '\0';
-
-	return str;
-}
-
 Common::String SaveGame::readString() {
-	const char *str = readCharString();
-	Common::String s = str;
-	delete[] str;
+	int32 len = readLESint32();
+	Common::String s((const char *)&_sectionBuffer[_sectionPtr], len);
+	_sectionPtr += len;
 	return s;
 }
 

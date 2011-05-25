@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_setjmp
@@ -31,6 +28,7 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_chdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_getcwd
 #define FORBIDDEN_SYMBOL_EXCEPTION_getwd
+#define FORBIDDEN_SYMBOL_EXCEPTION_mkdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_unlink
 
 #if defined(WIN32)
@@ -55,8 +53,7 @@
 #include "engines/grim/registry.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/localize.h"
-#include "engines/grim/gfx_tinygl.h"
-#include "engines/grim/gfx_opengl.h"
+#include "engines/grim/gfx_base.h"
 #include "engines/grim/object.h"
 #include "engines/grim/costume.h"
 #include "engines/grim/material.h"
@@ -359,13 +356,14 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 
 	_currScene = NULL;
 	_selectedActor = NULL;
+	_talkingActor = NULL;
 	_controlsEnabled = new bool[KEYCODE_EXTRA_LAST];
 	_controlsState = new bool[KEYCODE_EXTRA_LAST];
 	for (int i = 0; i < KEYCODE_EXTRA_LAST; i++) {
 		_controlsEnabled[i] = false;
 		_controlsState[i] = false;
 	}
-	_speechMode = 3; // VOICE + TEXT
+	_speechMode = TextAndVoice;
 	_textSpeed = 7;
 	_mode = _previousMode = ENGINE_MODE_IDLE;
 	_flipEnable = true;
@@ -401,7 +399,7 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 	_sayLineDefaults.setHeight(0);
 	_sayLineDefaults.setFGColor(c);
 	_sayLineDefaults.setFont(NULL);
-	_sayLineDefaults.setJustify(TextObject::LJUSTIFY);
+	_sayLineDefaults.setJustify(TextObject::CENTER);
 	_sayLineDefaults.setDisabled(false);
 
 	_blastTextDefaults.setX(0);
@@ -478,10 +476,10 @@ Common::Error GrimEngine::run() {
 	}
 
 	if (_softRenderer)
-		g_driver = new GfxTinyGL();
+		g_driver = CreateGfxTinyGL();
 #ifdef USE_OPENGL
 	else
-		g_driver = new GfxOpenGL();
+		g_driver = CreateGfxOpenGL();
 #endif
 
 	g_driver->setupScreen(640, 480, fullscreen);
@@ -905,6 +903,9 @@ void GrimEngine::luaUpdate() {
 		}
 		g_currentUpdatedActor = NULL;
 	}
+	for (TextListType::iterator i = _textObjects.begin(); i != _textObjects.end(); ++i) {
+		i->_value->update();
+	}
 }
 
 void GrimEngine::updateDisplayScene() {
@@ -993,7 +994,6 @@ void GrimEngine::updateDisplayScene() {
 		// including 3D objects such as Manny and the message tube
 		_currScene->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
 
-		g_driver->storeDisplay();
 		drawPrimitives();
 	} else if (_mode == ENGINE_MODE_DRAW) {
 		// Adding line below and comment out rest solve flickering, also in tripple buffering mode too
@@ -1135,11 +1135,11 @@ void GrimEngine::savegameWriteUint32(uint32 val) {
 void GrimEngine::savegameRestore() {
 	printf("GrimEngine::savegameRestore() started.\n");
 	_savegameLoadRequest = false;
-	char filename[200];
+	Common::String filename;
 	if (_savegameFileName.size() == 0) {
-		strcpy(filename, "grim.sav");
+		filename = "grim.sav";
 	} else {
-		strcpy(filename, _savegameFileName.c_str());
+		filename = _savegameFileName;
 	}
 	_savedState = new SaveGame(filename, false);
 	if (!_savedState || _savedState->saveVersion() != SaveGame::SAVEGAME_VERSION)
@@ -1154,6 +1154,7 @@ void GrimEngine::savegameRestore() {
 	//  lock resources
 
 	_selectedActor = NULL;
+	_talkingActor = NULL;
 	if (_currScene)
 		removeScene(_currScene);
 	delete _currScene;
@@ -1220,6 +1221,7 @@ void GrimEngine::restoreActors(SaveGame *state) {
 	if (id != 0) {
 		_selectedActor = _actors[id];
 	}
+	_talkingActor = getActor(state->readLEUint32());
 
 	state->endSection();
 }
@@ -1235,6 +1237,7 @@ void GrimEngine::restoreTextObjects(SaveGame *state) {
 	_sayLineDefaults.setWidth(state->readLESint32());
 	_sayLineDefaults.setX(state->readLESint32());
 	_sayLineDefaults.setY(state->readLESint32());
+	_sayLineDefaults.setDuration(state->readLESint32());
 
 	killTextObjects();
 
@@ -1333,7 +1336,7 @@ void GrimEngine::restoreBitmaps(SaveGame *state) {
 	int32 size = state->readLESint32();
 	for (int32 i = 0; i < size; ++i) {
 		int32 id = state->readLEUint32();
-		const char *fname = state->readCharString();
+		Common::String fname = state->readString();
 		Bitmap *b = g_resourceloader->loadBitmap(fname);
 		killBitmap(b);
 		b->setNumber(state->readLESint32());
@@ -1345,7 +1348,6 @@ void GrimEngine::restoreBitmaps(SaveGame *state) {
 		}
 		registerBitmap(b);
 
-		delete[] fname;
 	}
 
 	state->endSection();
@@ -1359,7 +1361,7 @@ void GrimEngine::restoreFonts(SaveGame *state) {
 	int32 size = state->readLESint32();
 	for (int32 i = 0; i < size; ++i) {
 		int32 id = state->readLEUint32();
-		const char *fname = state->readCharString();
+		Common::String fname = state->readString();
 		Font *f = g_resourceloader->loadFont(fname);
 		f->_id = id;
 		if (id > Object::s_id) {
@@ -1367,7 +1369,6 @@ void GrimEngine::restoreFonts(SaveGame *state) {
 		}
 		registerFont(f);
 
-		delete[] fname;
 	}
 
 	state->endSection();
@@ -1404,14 +1405,17 @@ void GrimEngine::storeSaveGameImage(SaveGame *state) {
 	int mode = g_grim->getMode();
 	g_grim->setMode(ENGINE_MODE_NORMAL);
 	g_grim->updateDisplayScene();
+	g_driver->storeDisplay();
 	screenshot = g_driver->getScreenshot(width, height);
 	g_grim->setMode(mode);
 	state->beginSection('SIMG');
 	if (screenshot) {
-		int size = screenshot->getWidth() * screenshot->getHeight() * sizeof(uint16);
+		int size = screenshot->getWidth() * screenshot->getHeight();
 		screenshot->setNumber(0);
-		char *data = screenshot->getData();
-		state->write(data, size);
+		uint16 *data = (uint16 *)screenshot->getData();
+		for (int l = 0; l < size; l++) {
+			state->writeLEUint16(data[l]);
+		}
 	} else {
 		error("Unable to store screenshot");
 	}
@@ -1488,6 +1492,11 @@ void GrimEngine::saveActors(SaveGame *state) {
 	} else {
 		state->writeLEUint32(0);
 	}
+	if (_talkingActor) {
+		state->writeLEUint32(_talkingActor->getId());
+	} else {
+		state->writeLEUint32(0);
+	}
 
 	state->endSection();
 }
@@ -1503,6 +1512,7 @@ void GrimEngine::saveTextObjects(SaveGame *state) {
 	state->writeLESint32(_sayLineDefaults.getWidth());
 	state->writeLESint32(_sayLineDefaults.getX());
 	state->writeLESint32(_sayLineDefaults.getY());
+	state->writeLESint32(_sayLineDefaults.getDuration());
 
 	state->writeLESint32(_textObjects.size());
 	for (TextListType::iterator i = _textObjects.begin(); i != _textObjects.end(); ++i) {
@@ -1562,7 +1572,7 @@ void GrimEngine::saveBitmaps(SaveGame *state) {
 	for (BitmapListType::iterator i = _bitmaps.begin(); i != _bitmaps.end(); ++i) {
 		state->writeLEUint32(i->_key);
 		Bitmap *b = i->_value;
-		state->writeCharString(b->getFilename());
+		state->writeString(b->getFilename());
 
 		state->writeLESint32(b->getCurrentImage());
 		state->writeLESint32(b->getX());
@@ -1578,7 +1588,7 @@ void GrimEngine::saveFonts(SaveGame *state) {
 	state->writeLESint32(_fonts.size());
 	for (FontListType::iterator i = _fonts.begin(); i != _fonts.end(); ++i) {
 		state->writeLEUint32(i->_key);
-		state->writeCharString(i->_value->getFilename().c_str());
+		state->writeString(i->_value->getFilename());
 	}
 
 	state->endSection();
@@ -1627,10 +1637,10 @@ void GrimEngine::savegameCallback() {
 	lua_endblock();
 }
 
-Scene *GrimEngine::findScene(const char *name) {
+Scene *GrimEngine::findScene(const Common::String &name) {
 	// Find scene object
 	for (SceneListType::const_iterator i = scenesBegin(); i != scenesEnd(); ++i) {
-		if (!strcmp(i->_value->getName(), name))
+		if (i->_value->getName() == name)
 			return i->_value;
 	}
 	return NULL;
@@ -1662,7 +1672,7 @@ void GrimEngine::setScene(const char *name) {
 	if (g_grim->getGameType() == GType_MONKEY4) {
 		filename += "b";
 	}
-	Block *b = g_resourceloader->getFileBlock(filename.c_str());
+	Block *b = g_resourceloader->getFileBlock(filename);
 	if (!b)
 		warning("Could not find scene file %s", name);
 	_currScene = new Scene(name, b->getData(), b->getLen());
@@ -1736,6 +1746,7 @@ TextObject *GrimEngine::getTextObject(int id) const {
 	return _textObjects[id];
 }
 
+
 void GrimEngine::registerActor(Actor *a) {
 	_actors[a->getId()] = a;
 }
@@ -1756,6 +1767,14 @@ Actor *GrimEngine::getActor(int id) const {
 	}
 
 	return NULL;
+}
+
+Actor *GrimEngine::getTalkingActor() const {
+	return _talkingActor;
+}
+
+void GrimEngine::setTalkingActor(Actor *a) {
+	_talkingActor = a;
 }
 
 Bitmap *GrimEngine::registerBitmap(const char *filename, const char *data, int len) {

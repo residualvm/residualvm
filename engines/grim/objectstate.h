@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #ifndef GRIM_OSTATE_H
@@ -53,7 +50,7 @@ public:
 	Position getPos() const { return _pos; }
 	void setPos(Position position) { _pos = position; }
 
-	const char *getBitmapFilename() const;
+	const Common::String &getBitmapFilename() const;
 
 	void setNumber(int val);
 	void draw();

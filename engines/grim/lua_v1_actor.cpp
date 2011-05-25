@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #include "engines/grim/grim.h"
@@ -616,7 +613,7 @@ void L1_GetActorNodeLocation() {
 	int nodeId = (int)lua_getnumber(nodeObj);
 
 	Model::HierNode *allNodes = actor->getCurrentCostume()->getModelNodes();
-	Model::HierNode *node = allNodes + nodeId - 1;
+	Model::HierNode *node = allNodes + nodeId;
 
 	Model::HierNode *root = node;
 	while (root->_parent) {
@@ -629,9 +626,9 @@ void L1_GetActorNodeLocation() {
 	root->setMatrix(matrix);
 	root->update();
 
-	lua_pushnumber(node->_matrix._pos.x());
-	lua_pushnumber(node->_matrix._pos.y());
-	lua_pushnumber(node->_matrix._pos.z());
+	lua_pushnumber(node->_pivotMatrix._pos.x());
+	lua_pushnumber(node->_pivotMatrix._pos.y());
+	lua_pushnumber(node->_pivotMatrix._pos.z());
 }
 
 void L1_SetActorWalkDominate() {
@@ -737,7 +734,7 @@ void L1_GetActorCostume() {
 		return;
 
 	if (costume)
-		lua_pushstring(const_cast<char *>(costume->getFilename()));
+		lua_pushstring(costume->getFilename().c_str());
 	else
 		lua_pushnil();
 }
@@ -749,7 +746,7 @@ void L1_PopActorCostume() {
 
 	Actor *actor = getactor(actorObj);
 	if (actor->getCurrentCostume()) {
-		lua_pushstring(const_cast<char *>(actor->getCurrentCostume()->getFilename()));
+		lua_pushstring(actor->getCurrentCostume()->getFilename().c_str());
 		actor->popCostume();
 	} else
 		lua_pushnil();

@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_printf
@@ -42,8 +39,8 @@ namespace Grim {
 
 int Scene::s_id = 0;
 
-Scene::Scene(const char *sceneName, const char *buf, int len) :
-		_locked(false), _name(sceneName), _enableLights(false) {
+Scene::Scene(const Common::String &sceneName, const char *buf, int len) :
+		_locked(false), _name(sceneName), _enableLights(false), _lightsConfigured(false) {
 
 	++s_id;
 	_id = s_id;
@@ -110,6 +107,7 @@ void Scene::loadText(TextSplitter &ts){
 		_setups[i].load(ts);
 	_currSetup = _setups;
 
+	_lightsConfigured = false;
 	_numSectors = -1;
 	_numLights = -1;
 	_lights = NULL;
@@ -155,7 +153,7 @@ void Scene::loadText(TextSplitter &ts){
 void Scene::loadBinary(Common::MemoryReadStream *ms)
 {
 	// yes, an array of size 0
-	_cmaps = new CMapPtr[0];
+	_cmaps = NULL;//new CMapPtr[0];
 
 
 	_numSetups = ms->readUint32LE();
@@ -196,7 +194,7 @@ void Scene::saveState(SaveGame *savedState) const {
 	savedState->writeString(_name);
 	savedState->writeLESint32(_numCmaps);
 	for (int i = 0; i < _numCmaps; ++i) {
-		savedState->writeCharString(_cmaps[i]->getFilename());
+		savedState->writeString(_cmaps[i]->getFilename());
 	}
 	savedState->writeLEUint32(_currSetup - _setups); // current setup id
 	savedState->writeLEUint32(_locked);
@@ -272,9 +270,8 @@ bool Scene::restoreState(SaveGame *savedState) {
 	_numCmaps = savedState->readLESint32();
 	_cmaps = new CMapPtr[_numCmaps];
 	for (int i = 0; i < _numCmaps; ++i) {
-		const char *str = savedState->readCharString();
+		Common::String str = savedState->readString();
 		_cmaps[i] = g_resourceloader->getColormap(str);
-		delete[] str;
 	}
 
 	int32 currSetupId = savedState->readLEUint32();
@@ -340,6 +337,8 @@ bool Scene::restoreState(SaveGame *savedState) {
 		l._umbraangle    = savedState->readFloat();
 		l._penumbraangle = savedState->readFloat();
 	}
+
+	_lightsConfigured = false;
 
 	return true;
 }
@@ -462,6 +461,9 @@ void Scene::Setup::setupCamera() const {
 }
 
 void Scene::setupLights() {
+	if (_lightsConfigured)
+		return;
+	_lightsConfigured = true;
 	if (!_enableLights) {
 		g_driver->disableLights();
 		return;
@@ -481,6 +483,7 @@ void Scene::setSetup(int num) {
 	}
 	_currSetup = _setups + num;
 	g_grim->flagRefreshShadowMask(true);
+	_lightsConfigured = false;
 }
 
 void Scene::drawBackground() const {
@@ -540,13 +543,13 @@ void Scene::findClosestSector(Graphics::Vector3d p, Sector **sect, Graphics::Vec
 ObjectState *Scene::findState(const char *filename) {
 	// Check the different state objects for the bitmap
 	for (StateList::iterator i = _states.begin(); i != _states.end(); ++i) {
-		const char *file = (*i)->getBitmapFilename();
+		const Common::String &file = (*i)->getBitmapFilename();
 
-		if (strcmp(file, filename) == 0)
+		if (file == filename)
 			return *i;
-		if (scumm_stricmp(file, filename) == 0) {
+		if (file.compareToIgnoreCase(filename) == 0) {
 			if (gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
-				warning("State object request '%s' matches object '%s' but is the wrong case", filename, file);
+				warning("State object request '%s' matches object '%s' but is the wrong case", filename, file.c_str());
 			return *i;
 		}
 	}
@@ -558,6 +561,8 @@ void Scene::setLightIntensity(const char *light, float intensity) {
 		Light &l = _lights[i];
 		if (l._name == light) {
 			l._intensity = intensity;
+			_lightsConfigured = false;
+			return;
 		}
 	}
 }
@@ -565,6 +570,7 @@ void Scene::setLightIntensity(const char *light, float intensity) {
 void Scene::setLightIntensity(int light, float intensity) {
 	Light &l = _lights[light];
 	l._intensity = intensity;
+	_lightsConfigured = false;
 }
 
 void Scene::setLightPosition(const char *light, Graphics::Vector3d pos) {
@@ -572,6 +578,8 @@ void Scene::setLightPosition(const char *light, Graphics::Vector3d pos) {
 		Light &l = _lights[i];
 		if (l._name == light) {
 			l._pos = pos;
+			_lightsConfigured = false;
+			return;
 		}
 	}
 }
@@ -579,6 +587,7 @@ void Scene::setLightPosition(const char *light, Graphics::Vector3d pos) {
 void Scene::setLightPosition(int light, Graphics::Vector3d pos) {
 	Light &l = _lights[light];
 	l._pos = pos;
+	_lightsConfigured = false;
 }
 
 void Scene::setSoundPosition(const char *soundName, Graphics::Vector3d pos) {

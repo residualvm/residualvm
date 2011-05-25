@@ -18,15 +18,13 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_printf
 #define FORBIDDEN_SYMBOL_EXCEPTION_chdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_getcwd
 #define FORBIDDEN_SYMBOL_EXCEPTION_getwd
+#define FORBIDDEN_SYMBOL_EXCEPTION_mkdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_unlink
 
 #include "graphics/line3d.h"
@@ -46,7 +44,7 @@ namespace Grim {
 
 int g_winX1, g_winY1, g_winX2, g_winY2;
 
-Actor::Actor(const char *actorName) :
+Actor::Actor(const Common::String &actorName) :
 		Object(), _name(actorName), _setName(""), _talkColor(g_grim->getColor(2)), _pos(0, 0, 0),
 		// Some actors don't set walk and turn rates, so we default the
 		// _turnRate so Doug at the cat races can turn and we set the
@@ -151,7 +149,7 @@ void Actor::saveState(SaveGame *savedState) const {
 
 	if (_lipSync) {
 		savedState->writeLEUint32(1);
-		savedState->writeCharString(_lipSync->getFilename());
+		savedState->writeString(_lipSync->getFilename());
 	} else {
 		savedState->writeLEUint32(0);
 	}
@@ -159,7 +157,7 @@ void Actor::saveState(SaveGame *savedState) const {
 	savedState->writeLESint32(_costumeStack.size());
 	for (Common::List<Costume *>::const_iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
 		Costume *c = *i;
-		savedState->writeCharString(c->getFilename());
+		savedState->writeString(c->getFilename());
 		Costume *pc = c->getPreviousCostume();
 		int depth = 0;
 		while (pc) {
@@ -169,7 +167,7 @@ void Actor::saveState(SaveGame *savedState) const {
 		savedState->writeLEUint32(depth);
 		pc = c->getPreviousCostume();
 		for (int j = 0; j < depth; ++j) { //save the previousCostume hierarchy
-			savedState->writeCharString(pc->getFilename());
+			savedState->writeString(pc->getFilename());
 			pc = pc->getPreviousCostume();
 		}
 		c->saveState(savedState);
@@ -183,7 +181,7 @@ void Actor::saveState(SaveGame *savedState) const {
 
 	if (_restCostume) {
 		savedState->writeLEUint32(1);
-		savedState->writeCharString(_restCostume->getFilename());
+		savedState->writeString(_restCostume->getFilename());
 	} else {
 		savedState->writeLEUint32(0);
 	}
@@ -191,7 +189,7 @@ void Actor::saveState(SaveGame *savedState) const {
 
 	if (_walkCostume) {
 		savedState->writeLEUint32(1);
-		savedState->writeCharString(_walkCostume->getFilename());
+		savedState->writeString(_walkCostume->getFilename());
 	} else {
 		savedState->writeLEUint32(0);
 	}
@@ -201,7 +199,7 @@ void Actor::saveState(SaveGame *savedState) const {
 
 	if (_turnCostume) {
 		savedState->writeLEUint32(1);
-		savedState->writeCharString(_turnCostume->getFilename());
+		savedState->writeString(_turnCostume->getFilename());
 	} else {
 		savedState->writeLEUint32(0);
 	}
@@ -213,7 +211,7 @@ void Actor::saveState(SaveGame *savedState) const {
 	for (int i = 0; i < 10; ++i) {
 		if (_talkCostume[i]) {
 			savedState->writeLEUint32(1);
-			savedState->writeCharString(_talkCostume[i]->getFilename());
+			savedState->writeString(_talkCostume[i]->getFilename());
 		} else {
 			savedState->writeLEUint32(0);
 		}
@@ -223,7 +221,7 @@ void Actor::saveState(SaveGame *savedState) const {
 
 	if (_mumbleCostume) {
 		savedState->writeLEUint32(1);
-		savedState->writeCharString(_mumbleCostume->getFilename());
+		savedState->writeString(_mumbleCostume->getFilename());
 	} else {
 		savedState->writeLEUint32(0);
 	}
@@ -240,7 +238,7 @@ void Actor::saveState(SaveGame *savedState) const {
 		// from other scenes. It happens e.g. when Membrillo calls Velasco to tell him
 		// Naranja is dead.
 		if (_setName != "") {
-			Scene *s = g_grim->findScene(_setName.c_str());
+			Scene *s = g_grim->findScene(_setName);
 			for (SectorListType::iterator j = shadow.planeList.begin(); j != shadow.planeList.end(); ++j) {
 				Sector *sec = *j;
 				for (int k = 0; k < s->getSectorCount(); ++k) {
@@ -308,29 +306,27 @@ bool Actor::restoreState(SaveGame *savedState) {
 	_talkSoundName 		= savedState->readString();
 
 	if (savedState->readLEUint32()) {
-		const char *fn = savedState->readCharString();
+		Common::String fn = savedState->readString();
 		_lipSync = g_resourceloader->getLipSync(fn);
-		delete[] fn;
 	} else {
 		_lipSync = NULL;
 	}
 
 	int32 size = savedState->readLESint32();
 	for (int32 i = 0; i < size; ++i) {
-		const char *fname = savedState->readCharString();
+		Common::String fname = savedState->readString();
 		const int depth = savedState->readLEUint32();
 		Costume *pc = NULL;
 		if (depth > 0) {	//build all the previousCostume hierarchy
-			const char **names = new const char*[depth];
+			Common::String *names = new Common::String[depth];
 			for (int j = 0; j < depth; ++j) {
-				names[j] = savedState->readCharString();
+				names[j] = savedState->readString();
 			}
 			for (int j = depth - 1; j >= 0; --j) {
 				pc = findCostume(names[j]);
 				if (!pc) {
 					pc = g_resourceloader->loadCostume(names[j], pc);
 				}
-				delete[] names[j];
 			}
 			delete[] names;
 		}
@@ -347,18 +343,16 @@ bool Actor::restoreState(SaveGame *savedState) {
 	_destPos = savedState->readVector3d();
 
 	if (savedState->readLEUint32()) {
-		const char *fname = savedState->readCharString();
+		Common::String fname = savedState->readString();
 		_restCostume = findCostume(fname);
-		delete[] fname;
 	} else {
 		_restCostume = NULL;
 	}
 	_restChore = savedState->readLESint32();
 
 	if (savedState->readLEUint32()) {
-		const char *fname = savedState->readCharString();
+		Common::String fname = savedState->readString();
 		_walkCostume = findCostume(fname);
-		delete[] fname;
 	} else {
 		_walkCostume = NULL;
 	}
@@ -368,9 +362,8 @@ bool Actor::restoreState(SaveGame *savedState) {
 	_walkedCur = savedState->readLESint32();
 
 	if (savedState->readLEUint32()) {
-		const char *fname = savedState->readCharString();
+		Common::String fname = savedState->readString();
 		_turnCostume = findCostume(fname);
-		delete[] fname;
 	} else {
 		_turnCostume = NULL;
 	}
@@ -381,9 +374,8 @@ bool Actor::restoreState(SaveGame *savedState) {
 
 	for (int i = 0; i < 10; ++i) {
 		if (savedState->readLEUint32()) {
-			const char *fname = savedState->readCharString();
+			Common::String fname = savedState->readString();
 			_talkCostume[i] = findCostume(fname);
-			delete[] fname;
 		} else {
 			_talkCostume[i] = NULL;
 		}
@@ -392,9 +384,8 @@ bool Actor::restoreState(SaveGame *savedState) {
 	_talkAnim = savedState->readLESint32();
 
 	if (savedState->readLEUint32()) {
-		const char *fname = savedState->readCharString();
+		Common::String fname = savedState->readString();
 		_mumbleCostume = findCostume(fname);
-		delete[] fname;
 	} else {
 		_mumbleCostume = NULL;
 	}
@@ -408,7 +399,7 @@ bool Actor::restoreState(SaveGame *savedState) {
 
 		size = savedState->readLESint32();
 		if (_setName != "") {
-			Scene *scene = g_grim->findScene(_setName.c_str());
+			Scene *scene = g_grim->findScene(_setName);
 			shadow.planeList.clear();
 			for (int j = 0; j < size; ++j) {
 				int32 id = savedState->readLEUint32();
@@ -472,29 +463,17 @@ void Actor::setRot(float pitchParam, float yawParam, float rollParam) {
 void Actor::setPos(Graphics::Vector3d position) {
 	_walking = false;
 	_pos = position;
+
+	// Don't allow positions outside the sectors.
+	// This is necessary after solving the tree pump puzzle, when the bone
+	// wagon returns to the signopost set.
+	if (_constrain && !_walking) {
+		g_grim->getCurrScene()->findClosestSector(_pos, NULL, &_pos);
+	}
 }
 
-// When the actor is walking report where the actor is going to and
-// not the actual current position, this fixes some scene change
-// change issues with the Bone Wagon (along with other fixes)
 Graphics::Vector3d Actor::getPos() const {
-	// NOTE: These commented out lines break the "su" set, like explained
-	// at https://github.com/residual/residual/issues/11 . According to the
-	// above comment they however fix some issues. Since i don't know what
-	// issues is it talking about, i'm commenting them anyway and we'll
-	// see what happens.
-
-// 	if (_walking)
-// 		return _destPos;
-// 	else
-		return _pos;
-}
-
-Graphics::Vector3d Actor::getDestPos() const {
-	if (_walking)
-		return _destPos;
-	else
-		return _pos;
+	return _pos;
 }
 
 void Actor::turnTo(float pitchParam, float yawParam, float rollParam) {
@@ -532,7 +511,7 @@ void Actor::walkTo(const Graphics::Vector3d &p) {
 			Common::List<Sector *> sectors;
 			for (int i = 0; i < g_grim->getCurrScene()->getSectorCount(); ++i) {
 				Sector *s = g_grim->getCurrScene()->getSectorBase(i);
-				if (s->getType() >= Sector::WalkType && s->isVisible()) {
+				if ((s->getType() == Sector::WalkType || s->getType() == Sector::HotType) && s->isVisible()) {
 					sectors.push_back(s);
 				}
 			}
@@ -581,6 +560,24 @@ void Actor::walkTo(const Graphics::Vector3d &p) {
 					if (bridges.empty())
 						continue; // The sectors are not adjacent.
 
+					Graphics::Vector3d closestPoint = s->getClosestPoint(_destPos);
+					Graphics::Vector3d best;
+					float bestDist = 1e6f;
+					Graphics::Line3d l(node->pos, closestPoint);
+					while (!bridges.empty()) {
+						Graphics::Line3d bridge = bridges.back();
+						Graphics::Vector3d pos;
+						if (!bridge.intersectLine2d(l, &pos)) {
+							pos = bridge.middle();
+						}
+						float dist = (pos - closestPoint).magnitude();
+						if (dist < bestDist) {
+							bestDist = dist;
+							best = pos;
+						}
+						bridges.pop_back();
+					}
+
 					PathNode *n = NULL;
 					for (Common::List<PathNode *>::iterator j = openList.begin(); j != openList.end(); ++j) {
 						if ((*j)->sect == s) {
@@ -589,30 +586,14 @@ void Actor::walkTo(const Graphics::Vector3d &p) {
 						}
 					}
 					if (n) {
-						float newCost = node->cost + (n->pos - node->pos).magnitude();
+						float newCost = node->cost + (best - node->pos).magnitude();
 						if (newCost < n->cost) {
 							n->cost = newCost;
 							n->parent = node;
+							n->pos = best;
+							n->dist = (n->pos - _destPos).magnitude();
 						}
 					} else {
-						Graphics::Vector3d closestPoint = s->getClosestPoint(_destPos);
-						Graphics::Vector3d best;
-						float bestDist = 1e6f;
-						Graphics::Line3d l(node->pos, closestPoint);
-						while (!bridges.empty()) {
-							Graphics::Line3d bridge = bridges.back();
-							Graphics::Vector3d pos;
-							if (!bridge.intersectLine2d(l, &pos)) {
-								pos = bridge.middle();
-							}
-							float dist = (pos - closestPoint).magnitude();
-							if (dist < bestDist) {
-								bestDist = dist;
-								best = pos;
-							}
-							bridges.pop_back();
-						}
-
 						n = new PathNode;
 						n->parent = node;
 						n->sect = s;
@@ -854,7 +835,7 @@ float Actor::getYawTo(Graphics::Vector3d p) const {
 		return atan2(-dpos.x(), dpos.y()) * (180.f / LOCAL_PI);
 }
 
-void Actor::sayLine(const char *msg, const char *msgId) {
+void Actor::sayLine(const char *msg, const char *msgId, bool background) {
 	assert(msg);
 	assert(msgId);
 
@@ -883,9 +864,11 @@ void Actor::sayLine(const char *msg, const char *msgId) {
 			shutUp();
 
 		_talkSoundName = soundName;
-		g_imuse->startVoice(_talkSoundName.c_str());
-		if (g_grim->getCurrScene()) {
-			g_grim->getCurrScene()->setSoundPosition(_talkSoundName.c_str(), _pos);
+		if (g_grim->getSpeechMode() != GrimEngine::TextOnly) {
+			g_imuse->startVoice(_talkSoundName.c_str());
+			if (g_grim->getCurrScene()) {
+				g_grim->getCurrScene()->setSoundPosition(_talkSoundName.c_str(), _pos);
+			}
 		}
 
 		// If the actor is clearly not visible then don't try to play the lip sync
@@ -895,7 +878,7 @@ void Actor::sayLine(const char *msg, const char *msgId) {
 			// For example, when reading the work order (a LIP file exists for no reason).
 			// Also, some lip sync files have no entries
 			// In these cases, revert to using the mumble chore.
-			_lipSync = g_resourceloader->getLipSync(soundLip.c_str());
+			_lipSync = g_resourceloader->getLipSync(soundLip);
 			// If there's no lip sync file then load the mumble chore if it exists
 			// (the mumble chore doesn't exist with the cat races announcer)
 			if (!_lipSync && _mumbleChore != -1)
@@ -905,18 +888,24 @@ void Actor::sayLine(const char *msg, const char *msgId) {
 		}
 	}
 
+	g_grim->setTalkingActor(this);
+
 	if (_sayLineText) {
 		g_grim->killTextObject(_sayLineText);
 		_sayLineText = NULL;
 	}
 
-	if (!g_grim->_sayLineDefaults.getFont())
+	GrimEngine::SpeechMode m = g_grim->getSpeechMode();
+	if (!g_grim->_sayLineDefaults.getFont() || m == GrimEngine::VoiceOnly || background)
 		return;
 
 	_sayLineText = new TextObject(false, true);
 	_sayLineText->setDefaults(&g_grim->_sayLineDefaults);
 	_sayLineText->setText(msg);
 	_sayLineText->setFGColor(_talkColor);
+	if (m == GrimEngine::TextOnly || g_grim->getMode() == ENGINE_MODE_SMUSH) {
+		_sayLineText->setDuration((float)strlen(msg) * 20.f / sqrt((float)g_grim->getTextSpeed() / 10.f));
+	}
 	if (g_grim->getMode() == ENGINE_MODE_SMUSH) {
 		_sayLineText->setX(640 / 2);
 		_sayLineText->setY(456);
@@ -935,14 +924,9 @@ void Actor::sayLine(const char *msg, const char *msgId) {
 
 bool Actor::isTalking() {
 	// If there's no sound file then we're obviously not talking
-	if (strlen(_talkSoundName.c_str()) == 0 || !g_imuse->getSoundStatus(_talkSoundName.c_str())) {
-		// If we're not talking and _sayLinetext exists delete it.
-		// Without this sometimes after reaping Bruno, his "nice bathrob" isn't deleted
-		// and lives through all the cutscene.
-		if (_sayLineText) {
-			g_grim->killTextObject(_sayLineText);
-			_sayLineText = NULL;
-		}
+	GrimEngine::SpeechMode m = g_grim->getSpeechMode();
+	if ((m == GrimEngine::TextOnly && (!_sayLineText || _sayLineText->getDisabled())) ||
+	    (m != GrimEngine::TextOnly && (strlen(_talkSoundName.c_str()) == 0 || !g_imuse->getSoundStatus(_talkSoundName.c_str())))) {
 		return false;
 	}
 
@@ -969,6 +953,9 @@ void Actor::shutUp() {
 	if (_sayLineText) {
 		g_grim->killTextObject(_sayLineText);
 		_sayLineText = NULL;
+	}
+	if (g_grim->getTalkingActor() == this) {
+		g_grim->setTalkingActor(NULL);
 	}
 }
 
@@ -1011,12 +998,8 @@ void Actor::popCostume() {
 			freeCostumeChore(_costumeStack.back(), _talkCostume[i], _talkChore[i]);
 		delete _costumeStack.back();
 		_costumeStack.pop_back();
-		Costume *newCost;
-		if (_costumeStack.empty())
-			newCost = NULL;
-		else
-			newCost = _costumeStack.back();
-		if (!newCost) {
+
+		if (_costumeStack.empty()) {
 			if (gDebugLevel == DEBUG_NORMAL || gDebugLevel == DEBUG_ALL)
 				printf("Popped (freed) the last costume for an actor.\n");
 		}
@@ -1042,9 +1025,9 @@ void Actor::setScale(float scale) {
 	_scale = scale;
 }
 
-Costume *Actor::findCostume(const char *n) {
+Costume *Actor::findCostume(const Common::String &n) {
 	for (Common::List<Costume *>::iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
-		if (scumm_stricmp((*i)->getFilename(), n) == 0)
+		if ((*i)->getFilename().compareToIgnoreCase(n) == 0)
 			return *i;
 	}
 
@@ -1198,7 +1181,7 @@ void Actor::update() {
 
 		// While getPosIn60HzTicks will return "-1" to indicate that the
 		// sound is no longer playing, it is more appropriate to check first
-		if (g_imuse->getSoundStatus(_talkSoundName.c_str()))
+		if (g_grim->getSpeechMode() != GrimEngine::TextOnly && g_imuse->getSoundStatus(_talkSoundName.c_str()))
 			posSound = g_imuse->getPosIn60HzTicks(_talkSoundName.c_str());
 		else
 			posSound = -1;
@@ -1221,6 +1204,11 @@ void Actor::update() {
 		Costume *c = *i;
 		c->setPosRotate(_pos, _pitch, _yaw, _roll);
 		c->update();
+	}
+
+	for (Common::List<Costume *>::iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
+		Costume *c = *i;
+		c->animate();
 	}
 
 	for (Common::List<Costume *>::iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
@@ -1294,7 +1282,7 @@ void Actor::draw() {
 
 // "Undraw objects" (handle objects for actors that may not be on screen)
 void Actor::undraw(bool /*visible*/) {
-	if (!isTalking() || !g_imuse->isVoicePlaying())
+	if (!isTalking())
 		shutUp();
 }
 
@@ -1370,7 +1358,7 @@ void Actor::putInSet(const char *setName) {
 	_setName = setName;
 }
 
-bool Actor::isInSet(const char *setName) const {
+bool Actor::isInSet(const Common::String &setName) const {
 	return _setName == setName;
 }
 

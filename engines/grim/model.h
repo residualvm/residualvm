@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #ifndef GRIM_MODEL_H
@@ -50,7 +47,7 @@ struct Sprite {
 class Model : public Object {
 public:
 	// Construct a 3D model from the given data.
-	Model(const char *filename, const char *data, int len, CMap *cmap);
+	Model(const Common::String &filename, const char *data, int len, CMap *cmap);
 	void loadBinary(const char *&data, CMap *cmap);
 	void loadText(TextSplitter *ts, CMap *cmap);
 	void loadEMI(Common::MemoryReadStream &ms);
@@ -86,8 +83,6 @@ public:
 		Graphics::Vector3d _animPos;
 		float _animPitch, _animYaw, _animRoll;
 		bool _meshVisible, _hierVisible;
-		int _priority;
-		float _totalWeight;
 		bool _initialized;
 		Graphics::Matrix4 _matrix;
 		Graphics::Matrix4 _localMatrix;

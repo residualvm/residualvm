@@ -18,9 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
- * $URL$
- * $Id$
- *
  */
 
 #include "engines/advancedDetector.h"
@@ -53,7 +50,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"grim",
 			"",
-			AD_ENTRY1s("grim.tab", "cfb333d6aec260c905151b6b98ef71e8", 362212),
+			AD_ENTRY1s("grim.tab", "cfb333d6aec260c905151b6b98ef71e8", 362164),
 			Common::EN_ANY,
 			Common::kPlatformWindows,
 			ADGF_NO_FLAGS,
@@ -62,11 +59,11 @@ static const GrimGameDescription gameDescriptions[] = {
 		GType_GRIM
 	},
 	{
-		// Grim Fandango English version (Adventure-bundle, possibly patched)
+		// Grim Fandango English version (patched)
 		{
 			"grim",
 			"",
-			AD_ENTRY1s("grim.tab", "cfb333d6aec260c905151b6b98ef71e8", 362164),
+			AD_ENTRY1s("grim.tab", "cfb333d6aec260c905151b6b98ef71e8", 362212),
 			Common::EN_ANY,
 			Common::kPlatformWindows,
 			ADGF_NO_FLAGS,
@@ -140,7 +137,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		GType_GRIM
 	},
 	{
-		// Grim Fandango patched Italian version
+		// Grim Fandango Italian version (patched)
 		{
 			"grim",
 			"",
@@ -154,6 +151,19 @@ static const GrimGameDescription gameDescriptions[] = {
 	},
 	{
 		// Grim Fandango French version
+		{
+			"grim",
+			"",
+			AD_ENTRY1s("grim.tab", "3bd00ca87214862c012ac99e1758dd83", 385763),
+			Common::FR_FRA,
+			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUIO_NONE
+		},
+		GType_GRIM
+	},
+	{
+		// Grim Fandango French version (patched)
 		{
 			"grim",
 			"",
@@ -196,7 +206,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "c66cc6b656a2b1abae373b61d3115342", 17325629),
+			AD_ENTRY1s("artAll.m4b", "61959da91d864bf5f4588daa4a5a3019", 18515664),
 			Common::EN_ANY,
 			Common::kPlatformWindows,
 			ADGF_NO_FLAGS,
@@ -209,7 +219,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "63b4724afc9d94a5aa71b46e6b1b7551", 19999850),
+			AD_ENTRY1s("artAll.m4b", "007a33881478be6b6e0228d8888536ae", 18512568),
 			Common::DE_DEU,
 			Common::kPlatformWindows,
 			ADGF_NO_FLAGS,
@@ -222,7 +232,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "d4b9659a0853e707fdb7c7a68c7604d2", 21206992),
+			AD_ENTRY1s("artAll.m4b", "d2f010c1cd1fd002eea403282a6b9a1e", 18513451),
 			Common::IT_ITA,
 			Common::kPlatformWindows,
 			ADGF_NO_FLAGS,
@@ -235,7 +245,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "0b48fba32e47f372712ed06365678c2b", 18486773),
+			AD_ENTRY1s("artAll.m4b", "0d459954031c086a0448d2eb3fa068a1", 18514404),
 			Common::ES_ESP,
 			Common::kPlatformWindows,
 			ADGF_NO_FLAGS,
@@ -248,8 +258,21 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "e75ca3a03515e009dc2e4426010d8ebb", 20044753),
+			AD_ENTRY1s("artAll.m4b", "151af0a694382af873f325fcea293bb1", 18514420),
 			Common::FR_FRA,
+			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUIO_NONE
+		},
+		GType_MONKEY4
+	},
+	{
+		// Escape from Monkey Island Portuguese
+		{
+			"monkey4",
+			"",
+			AD_ENTRY1s("artAll.m4b", "030e7637aee7886a3caad60cf102f797", 18515747),
+			Common::PT_BRA,
 			Common::kPlatformWindows,
 			ADGF_NO_FLAGS,
 			GUIO_NONE
@@ -261,7 +284,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "c03391279486f0158c75398f5117ad73", 15095808),
+			AD_ENTRY1s("artAll.m4b", "0dc9a4df0d8553f277d8dc8e23b6249d", 34593974),
 			Common::EN_ANY,
 			Common::kPlatformPS2,
 			ADGF_NO_FLAGS,
@@ -274,7 +297,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "6bdd08f3f313765c610fbbe39d18797f", 17262912),
+			AD_ENTRY1s("artAll.m4b", "5b5c7a3964c168eab44b82981db357d8", 34642186),
 			Common::DE_DEU,
 			Common::kPlatformPS2,
 			ADGF_NO_FLAGS,
@@ -287,7 +310,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "342fc0288a7d0e25a7284a04b98ede83", 18128960),
+			AD_ENTRY1s("artAll.m4b", "2de68c8fd955c1a3c50202b072bde0cb", 34642651),
 			Common::IT_ITA,
 			Common::kPlatformPS2,
 			ADGF_NO_FLAGS,
@@ -300,7 +323,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "782ca7d9357577a4c5eefc37974661cc", 15789184),
+			AD_ENTRY1s("artAll.m4b", "ff6689dcca36c249ec834a3019aeb397", 34642656),
 			Common::ES_ESP,
 			Common::kPlatformPS2,
 			ADGF_NO_FLAGS,
@@ -313,7 +336,7 @@ static const GrimGameDescription gameDescriptions[] = {
 		{
 			"monkey4",
 			"",
-			AD_ENTRY1s("voiceAll.m4b", "ef0905bc590e1afbe2eef1535bde7a6b", 16768512),
+			AD_ENTRY1s("artAll.m4b", "5ce964a19a8672944b9b62170e45ce28", 34593681),
 			Common::FR_FRA,
 			Common::kPlatformPS2,
 			ADGF_NO_FLAGS,
