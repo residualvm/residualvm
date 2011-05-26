@@ -83,8 +83,8 @@ public:
 	};
 
 	typedef Common::HashMap<int32, Bitmap *> BitmapListType;
-	typedef Common::HashMap<int32, ObjectPtr<Font>> FontListType;
-	typedef Common::HashMap<int32, ObjectPtr<Color>> ColorListType;
+	typedef Common::HashMap<int32, ObjectPtr<Font> > FontListType;
+	typedef Common::HashMap<int32, ObjectPtr<Color> > ColorListType;
 	typedef Common::HashMap<int32, ObjectState *> StateListType;
 	typedef Common::HashMap<int32, Scene *> SceneListType;
 	typedef Common::HashMap<int32, Actor *> ActorListType;

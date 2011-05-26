@@ -76,7 +76,7 @@ private:
 	typedef Common::List<Lab *> LabList;
 	LabList _labs;
 
-	Common::HashMap<Common::String, ObjectPtr<Object>> _objectCache;
+	Common::HashMap<Common::String, ObjectPtr<Object> > _objectCache;
 };
 
 extern ResourceLoader *g_resourceloader;
