@@ -41,8 +41,8 @@ void Sprite::draw() const {
 	g_driver->drawSprite(this);
 }
 
-Model::Model(const Common::String &filename, const char *data, int len, CMap *cmap) :
-		Object(), _numMaterials(0), _numGeosets(0), _cmap(cmap) {
+Model::Model(const Common::String &filename, const char *data, int len, void *cmap) :
+		Object(), _numMaterials(0), _numGeosets(0), _cmap((CMap *)cmap) {
 	_fname = filename;
 	_headNode = NULL;
 
@@ -50,10 +50,10 @@ Model::Model(const Common::String &filename, const char *data, int len, CMap *cm
 		Common::MemoryReadStream ms((const byte *)data, len);
 		loadEMI(ms);
 	} else if (len >= 4 && READ_BE_UINT32(data) == MKTAG('L','D','O','M'))
-		loadBinary(data, cmap);
+		loadBinary(data, _cmap);
 	else {
 		TextSplitter ts(data, len);
-		loadText(&ts, cmap);
+		loadText(&ts, _cmap);
 	}
 }
 
@@ -80,7 +80,7 @@ void Model::loadEMI(Common::MemoryReadStream &ms) {
 	ms.read(name, nameLength);
 
 	_numMaterials = ms.readUint32LE();
-	_materials = new MaterialPtr[_numMaterials];
+	_materials = new ObjectPtr<Material>[_numMaterials];
 	_materialNames = new char[_numMaterials][32];
 	for (int i = 0; i < _numMaterials; i++) {
 		nameLength = ms.readUint32LE();
@@ -98,7 +98,7 @@ void Model::loadEMI(Common::MemoryReadStream &ms) {
 void Model::loadBinary(const char *&data, CMap *cmap) {
 	_numMaterials = READ_LE_UINT32(data + 4);
 	data += 8;
-	_materials = new MaterialPtr[_numMaterials];
+	_materials = new ObjectPtr<Material>[_numMaterials];
 	_materialNames = new char[_numMaterials][32];
 	for (int i = 0; i < _numMaterials; i++) {
 		strcpy(_materialNames[i], data);
@@ -134,7 +134,6 @@ Model::~Model() {
 	delete[] _materialNames;
 	delete[] _geosets;
 	delete[] _rootHierNode;
-	g_resourceloader->uncacheModel(this);
 }
 
 void Model::Geoset::loadBinary(const char *&data, Material *materials[]) {
@@ -326,7 +325,7 @@ void Model::loadText(TextSplitter *ts, CMap *cmap) {
 	ts->scanString("3do %d.%d", 2, &major, &minor);
 	ts->expectString("section: modelresource");
 	ts->scanString("materials %d", 1, &_numMaterials);
-	_materials = new MaterialPtr[_numMaterials];
+	_materials = new ObjectPtr<Material>[_numMaterials];
 	_materialNames = new char[_numMaterials][32];
 	for (int i = 0; i < _numMaterials; i++) {
 		char materialName[32];

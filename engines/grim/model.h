@@ -40,14 +40,14 @@ struct Sprite {
 	float _width;
 	float _height;
 	bool _visible;
-	Material *_material;
+	ObjectPtr<Material> _material;
 	Sprite *_next;
 };
 
 class Model : public Object {
 public:
 	// Construct a 3D model from the given data.
-	Model(const Common::String &filename, const char *data, int len, CMap *cmap);
+	Model(const Common::String &filename, const char *data, int len, void *cmap);
 	void loadBinary(const char *&data, CMap *cmap);
 	void loadText(TextSplitter *ts, CMap *cmap);
 	void loadEMI(Common::MemoryReadStream &ms);

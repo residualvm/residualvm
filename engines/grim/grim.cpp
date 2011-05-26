@@ -484,7 +484,7 @@ Common::Error GrimEngine::run() {
 
 	g_driver->setupScreen(640, 480, fullscreen);
 
-	BitmapPtr splash_bm;
+	Bitmap *splash_bm = 0;
 	if (!(_gameFlags & ADGF_DEMO) && getGameType() == GType_GRIM)
 		splash_bm = g_resourceloader->loadBitmap("splash.bm");
 
@@ -789,24 +789,24 @@ void GrimEngine::handleDebugLoadResource() {
 
 	buf[i] = '\0';
 	if (strstr(buf, ".key"))
-		resource = (void *)g_resourceloader->loadKeyframe(buf);
+		resource = (void *)g_resourceloader->getKeyframe(buf);
 	else if (strstr(buf, ".zbm") || strstr(buf, ".bm"))
 		resource = (void *)g_resourceloader->loadBitmap(buf);
 	else if (strstr(buf, ".cmp"))
-		resource = (void *)g_resourceloader->loadColormap(buf);
+		resource = (void *)g_resourceloader->getColormap(buf);
 	else if (strstr(buf, ".cos"))
 		resource = (void *)g_resourceloader->loadCostume(buf, NULL);
 	else if (strstr(buf, ".lip"))
-		resource = (void *)g_resourceloader->loadLipSync(buf);
+		resource = (void *)g_resourceloader->getLipSync(buf);
 	else if (strstr(buf, ".snm"))
 		resource = (void *)g_movie->play(buf, false, 0, 0);
 	else if (strstr(buf, ".wav") || strstr(buf, ".imu")) {
 		g_imuse->startSfx(buf);
 		resource = (void *)1;
 	} else if (strstr(buf, ".mat")) {
-		CMap *cmap = g_resourceloader->loadColormap("item.cmp");
+		CMap *cmap = g_resourceloader->getColormap("item.cmp");
 		warning("Default colormap applied to resources loaded in this fashion");
-		resource = (void *)g_resourceloader->loadMaterial(buf, cmap);
+		resource = (void *)g_resourceloader->getMaterial(buf, cmap);
 	} else {
 		warning("Resource type not understood");
 	}
@@ -1362,7 +1362,7 @@ void GrimEngine::restoreFonts(SaveGame *state) {
 	for (int32 i = 0; i < size; ++i) {
 		int32 id = state->readLEUint32();
 		Common::String fname = state->readString();
-		Font *f = g_resourceloader->loadFont(fname);
+		ObjectPtr<Font> f = g_resourceloader->getFont(fname);
 		f->_id = id;
 		if (id > Object::s_id) {
 			Object::s_id = id;
@@ -1811,13 +1811,12 @@ Bitmap *GrimEngine::getBitmap(int32 id) const {
 	return NULL;
 }
 
-void GrimEngine::registerFont(Font *font) {
+void GrimEngine::registerFont(ObjectPtr<Font> font) {
 	_fonts[font->getId()] = font;
 }
 
-void GrimEngine::killFont(Font *f) {
+void GrimEngine::killFont(ObjectPtr<Font> f) {
 	_fonts.erase(f->getId());
-	delete f;
 }
 
 void GrimEngine::killFonts() {
@@ -1826,21 +1825,16 @@ void GrimEngine::killFonts() {
 	}
 }
 
-Font *GrimEngine::getFont(int32 id) const {
-	if (_fonts.contains(id)) {
-		return _fonts[id];
-	}
-
-	return NULL;
+ObjectPtr<Font> GrimEngine::getFont(int32 id) const {
+	return _fonts[id];
 }
 
-void GrimEngine::registerColor(Color *c) {
+void GrimEngine::registerColor(ObjectPtr<Color> c) {
 	_colors[c->getId()] = c;
 }
 
-void GrimEngine::killColor(Color *c) {
+void GrimEngine::killColor(ObjectPtr<Color> c) {
 	_colors.erase(c->getId());
-	delete c;
 }
 
 void GrimEngine::killColors() {
@@ -1849,12 +1843,8 @@ void GrimEngine::killColors() {
 	}
 }
 
-Color *GrimEngine::getColor(int32 id) const {
-	if (_colors.contains(id)) {
-		return _colors[id];
-	}
-
-	return NULL;
+ObjectPtr<Color> GrimEngine::getColor(int32 id) const {
+	return _colors[id];
 }
 
 void GrimEngine::registerObjectState(ObjectState *o) {

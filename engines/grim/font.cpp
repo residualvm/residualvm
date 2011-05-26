@@ -31,7 +31,7 @@
 
 namespace Grim {
 
-Font::Font(const Common::String &filename, const char *data, int len) : Object() {
+Font::Font(const Common::String &filename, const char *data, int len, void *) : Object() {
 	_filename = filename;
 	_numChars = READ_LE_UINT32(data);
 	_dataSize = READ_LE_UINT32(data + 4);
@@ -90,8 +90,6 @@ Font::~Font() {
 		delete[] _charIndex;
 		delete[] _charHeaders;
 		delete[] _fontData;
-
-		g_resourceloader->uncacheFont(this);
 	}
 }
 

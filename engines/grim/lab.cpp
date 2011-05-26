@@ -70,6 +70,7 @@ void Lab::parseGrimFileTable() {
 		_f->readUint32LE();
 
 		Common::String fname = stringTable + fnameOffset;
+		fname.toLowercase();
 
 		LabEntry entry;
 		entry.offset = start;

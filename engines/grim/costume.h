@@ -38,7 +38,7 @@ class TextSplitter;
 
 class Costume : public Object {
 public:
-	Costume(const Common::String &filename, const char *data, int len, Costume *prevCost);
+	Costume(const Common::String &filename, const char *data, int len, void *prevCost);
     Costume() : Object() { _chores = 0; }
 
 	void loadGRIM(TextSplitter &ts, Costume *prevCost);

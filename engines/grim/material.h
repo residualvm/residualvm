@@ -33,7 +33,7 @@ class Material : public Object {
 public:
 	Material() { _width = 0; }
 	// Load a texture from the given data.
-	Material(const Common::String &filename, const char *data, int len, CMap *cmap);
+	Material(const Common::String &filename, const char *data, int len, void *cmap);
 
 	// Load this texture into the GL context
 	void select() const;

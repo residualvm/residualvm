@@ -83,13 +83,13 @@ public:
 	};
 
 	typedef Common::HashMap<int32, Bitmap *> BitmapListType;
-	typedef Common::HashMap<int32, Font *> FontListType;
-	typedef Common::HashMap<int32, Color *> ColorListType;
+	typedef Common::HashMap<int32, ObjectPtr<Font> > FontListType;
+	typedef Common::HashMap<int32, ObjectPtr<Color> > ColorListType;
 	typedef Common::HashMap<int32, ObjectState *> StateListType;
-	typedef Common::HashMap<int, Scene *> SceneListType;
-	typedef Common::HashMap<int, Actor *> ActorListType;
+	typedef Common::HashMap<int32, Scene *> SceneListType;
+	typedef Common::HashMap<int32, Actor *> ActorListType;
 	typedef Common::HashMap<int32, TextObject *> TextListType;
-	typedef Common::HashMap<int, PrimitiveObject *> PrimitiveListType;
+	typedef Common::HashMap<int32, PrimitiveObject *> PrimitiveListType;
 
 	GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, Common::Platform platform, Common::Language language);
 	virtual ~GrimEngine();
@@ -201,15 +201,15 @@ public:
 	void killObjectStates();
 	ObjectState *getObjectState(int id) const;
 
-	void registerFont(Font *f);
-	void killFont(Font *f);
+	void registerFont(ObjectPtr<Font> f);
+	void killFont(ObjectPtr<Font> f);
 	void killFonts();
-	Font *getFont(int32 id) const;
+	ObjectPtr<Font> getFont(int32 id) const;
 
-	void registerColor(Color *c);
-	void killColor(Color *c);
+	void registerColor(ObjectPtr<Color> c);
+	void killColor(ObjectPtr<Color> c);
 	void killColors();
-	Color *getColor(int32 id) const;
+	ObjectPtr<Color> getColor(int32 id) const;
 
 	void savegameSave();
 	void saveActors(SaveGame *savedState);

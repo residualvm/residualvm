@@ -29,8 +29,8 @@
 
 namespace Grim {
 
-Material::Material(const Common::String &filename, const char *data, int len, CMap *cmap) :
-		Object(), _fname(filename), _cmap(cmap) {
+Material::Material(const Common::String &filename, const char *data, int len, void *cmap) :
+		Object(), _fname(filename), _cmap((CMap *)cmap) {
 	if (len < 4 || memcmp(data, "MAT ", 4) != 0)
 		error("invalid magic loading texture");
 
@@ -56,7 +56,7 @@ Material::Material(const Common::String &filename, const char *data, int len, CM
 
 	data += 84 + _numImages * 40;
 
-	g_driver->createMaterial(this, data, cmap);
+	g_driver->createMaterial(this, data, _cmap);
 }
 
 void Material::select() const {
@@ -66,8 +66,6 @@ void Material::select() const {
 }
 
 Material::~Material() {
-	if (g_resourceloader)
-		g_resourceloader->uncacheMaterial(this);
 	if (_width == 0 || _height == 0)
 		return;
 	g_driver->destroyMaterial(this);

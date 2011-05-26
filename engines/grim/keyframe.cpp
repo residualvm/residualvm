@@ -32,7 +32,7 @@
 
 namespace Grim {
 
-KeyframeAnim::KeyframeAnim(const Common::String &fname, const char *data, int len) :
+KeyframeAnim::KeyframeAnim(const Common::String &fname, const char *data, int len, void *) :
 	Object(), _fname(fname) {
 
 	if (len >= 4 && READ_BE_UINT32(data) == MKTAG('F','Y','E','K'))
@@ -146,7 +146,6 @@ KeyframeAnim::~KeyframeAnim() {
 		delete _nodes[i];
 	delete[] _nodes;
 	delete[] _markers;
-	g_resourceloader->uncacheKeyframe(this);
 }
 
 bool KeyframeAnim::animate(Model::HierNode *nodes, int num, float time, float fade, bool tagged) const {

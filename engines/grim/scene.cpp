@@ -268,7 +268,7 @@ void Scene::saveState(SaveGame *savedState) const {
 bool Scene::restoreState(SaveGame *savedState) {
 	_name = savedState->readString();
 	_numCmaps = savedState->readLESint32();
-	_cmaps = new CMapPtr[_numCmaps];
+	_cmaps = new ObjectPtr<CMap>[_numCmaps];
 	for (int i = 0; i < _numCmaps; ++i) {
 		Common::String str = savedState->readString();
 		_cmaps[i] = g_resourceloader->getColormap(str);
