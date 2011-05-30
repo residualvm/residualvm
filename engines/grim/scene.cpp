@@ -77,6 +77,17 @@ Scene::~Scene() {
 	}
 }
 
+int32 Scene::getId() {
+	return _id;
+}
+
+void Scene::setId(int32 id) {
+	if (id > s_id) {
+		s_id = id;
+	}
+	_id = id;
+}
+
 void Scene::loadText(TextSplitter &ts){
 	char tempBuf[256];
 
@@ -145,8 +156,12 @@ void Scene::loadText(TextSplitter &ts){
 	_sectors = new Sector*[_numSectors];
 	ts.setLineNumber(sectorStart);
 	for (int i = 0; i < _numSectors; i++) {
-		_sectors[i] = new Sector();
-		_sectors[i]->load(ts);
+		// Use the ids as index for the sector in the array.
+		// This way when looping they are checked from the id 0 sto the last,
+		// which seems important for sets with overlapping camera sectors, like ga.set.
+		Sector *s = new Sector();
+		s->load(ts);
+		_sectors[s->getSectorId()] = s;
 	}
 }
 
@@ -506,7 +521,7 @@ void Scene::drawBitmaps(ObjectState::Position stage) {
 	}
 }
 
-Sector *Scene::findPointSector(Graphics::Vector3d p, Sector::SectorType type) {
+Sector *Scene::findPointSector(const Graphics::Vector3d &p, Sector::SectorType type) {
 	for (int i = 0; i < _numSectors; i++) {
 		Sector *sector = _sectors[i];
 		if (sector && (sector->getType() & type) && sector->isVisible() && sector->isPointInSector(p))
@@ -515,7 +530,7 @@ Sector *Scene::findPointSector(Graphics::Vector3d p, Sector::SectorType type) {
 	return NULL;
 }
 
-void Scene::findClosestSector(Graphics::Vector3d p, Sector **sect, Graphics::Vector3d *closestPoint) {
+void Scene::findClosestSector(const Graphics::Vector3d &p, Sector **sect, Graphics::Vector3d *closestPoint) {
 	Sector *resultSect = NULL;
 	Graphics::Vector3d resultPt = p;
 	float minDist = 0.0;
@@ -573,7 +588,7 @@ void Scene::setLightIntensity(int light, float intensity) {
 	_lightsConfigured = false;
 }
 
-void Scene::setLightPosition(const char *light, Graphics::Vector3d pos) {
+void Scene::setLightPosition(const char *light, const Graphics::Vector3d &pos) {
 	for (int i = 0; i < _numLights; ++i) {
 		Light &l = _lights[i];
 		if (l._name == light) {
@@ -584,7 +599,7 @@ void Scene::setLightPosition(const char *light, Graphics::Vector3d pos) {
 	}
 }
 
-void Scene::setLightPosition(int light, Graphics::Vector3d pos) {
+void Scene::setLightPosition(int light, const Graphics::Vector3d &pos) {
 	Light &l = _lights[light];
 	l._pos = pos;
 	_lightsConfigured = false;
@@ -609,6 +624,13 @@ void Scene::setSoundPosition(const char *soundName, Graphics::Vector3d pos, int 
 
 	//TODO
 	//g_imuse->setPan(soundName, pan);
+}
+
+Sector *Scene::getSectorBase(int id) {
+	if ((_numSectors >= 0) && (id < _numSectors))
+		return _sectors[id];
+	else
+		return NULL;
 }
 
 void Scene::setSoundParameters(int minVolume, int maxVolume) {

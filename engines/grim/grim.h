@@ -86,10 +86,10 @@ public:
 	typedef Common::HashMap<int32, Font *> FontListType;
 	typedef Common::HashMap<int32, Color *> ColorListType;
 	typedef Common::HashMap<int32, ObjectState *> StateListType;
-	typedef Common::HashMap<int, Scene *> SceneListType;
-	typedef Common::HashMap<int, Actor *> ActorListType;
+	typedef Common::HashMap<int32, Scene *> SceneListType;
+	typedef Common::HashMap<int32, Actor *> ActorListType;
 	typedef Common::HashMap<int32, TextObject *> TextListType;
-	typedef Common::HashMap<int, PrimitiveObject *> PrimitiveListType;
+	typedef Common::HashMap<int32, PrimitiveObject *> PrimitiveListType;
 
 	GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, Common::Platform platform, Common::Language language);
 	virtual ~GrimEngine();
@@ -211,40 +211,8 @@ public:
 	void killColors();
 	Color *getColor(int32 id) const;
 
-	void savegameSave();
-	void saveActors(SaveGame *savedState);
-	void saveTextObjects(SaveGame *savedState);
-	void savePrimitives(SaveGame *savedState);
-	void saveScenes(SaveGame *savedState);
-	void saveObjectStates(SaveGame *savedState);
-	void saveBitmaps(SaveGame *savedState);
-	void saveFonts(SaveGame *savedState);
-	void saveColors(SaveGame *savedState);
-
-	void savegameRestore();
-	void restoreActors(SaveGame *savedState);
-	void restoreTextObjects(SaveGame *savedState);
-	void restorePrimitives(SaveGame *savedState);
-	void restoreScenes(SaveGame *savedState);
-	void restoreObjectStates(SaveGame *savedState);
-	void restoreBitmaps(SaveGame *savedState);
-	void restoreFonts(SaveGame *savedState);
-	void restoreColors(SaveGame *savedState);
-
-	void savegameCallback();
-	static void savegameReadStream(void *data, int32 size);
-	static void savegameWriteStream(void *data, int32 size);
-	static int32 savegameReadSint32();
-	static void savegameWriteSint32(int32 val);
-	static uint32 savegameReadUint32();
-	static void savegameWriteUint32(uint32 val);
-
-	void storeSaveGameImage(SaveGame *savedState);
-
-	bool _savegameLoadRequest;
-	bool _savegameSaveRequest;
-	Common::String _savegameFileName;
-	SaveGame *_savedState;
+	void saveGame(const Common::String &file);
+	void loadGame(const Common::String &file);
 
 	Common::StringArray _listFiles;
 	Common::StringArray::const_iterator _listFilesIter;
@@ -252,12 +220,33 @@ public:
 	TextObjectDefaults _sayLineDefaults, _printLineDefaults, _blastTextDefaults;
 
 private:
-
 	void handleControls(int operation, int key, int keyModifier, uint16 ascii);
 	void handleChars(int operation, int key, int keyModifier, uint16 ascii);
 	void handleUserPaint();
 	void handleExit();
 	void handlePause();
+
+	void savegameSave();
+	void saveGRIM();
+	void saveBitmaps();
+	void saveFonts();
+	template<typename T>
+	void saveObjects(Common::HashMap<int32, T *> &map, uint32 ID);
+
+	void savegameRestore();
+	void restoreGRIM();
+	void restoreBitmaps();
+	void restoreFonts();
+	template<typename T>
+	void restoreObjects(Common::HashMap<int32, T *> &map, uint32 ID);
+
+	void savegameCallback();
+	void storeSaveGameImage(SaveGame *savedState);
+
+	bool _savegameLoadRequest;
+	bool _savegameSaveRequest;
+	Common::String _savegameFileName;
+	SaveGame *_savedState;
 
 	Scene *_currScene;
 	int _mode, _previousMode;

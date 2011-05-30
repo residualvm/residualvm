@@ -52,7 +52,7 @@ public:
 	void playChoreLooping(int num);
 	void setChoreLastFrame(int num) { _chores[num].setLastFrame(); }
 	void setChoreLooping(int num, bool val) { _chores[num].setLooping(val); }
-	void stopChore(int num) { _chores[num].stop(); }
+	void stopChore(int num) { _chores[num].stop(); _playingChores.remove(&_chores[num]); }
 	void fadeChoreIn(int chore, int msecs);
 	void fadeChoreOut(int chore, int msecs);
 	Model::HierNode *getModelNodes();
@@ -67,6 +67,7 @@ public:
 	void moveHead(bool lookingMode, const Graphics::Vector3d &lookAt, float rate);
 
 	void update();
+	void animate();
 	void setupTextures();
 	void draw();
 	void setPosRotate(Graphics::Vector3d pos, float pitch, float yaw, float roll);
@@ -91,13 +92,14 @@ public:
 		virtual void setKey(int) { }
 		virtual void setMapName(char *) { }
 		virtual void update() { }
+		virtual void animate() { }
 		virtual void setupTexture() { }
 		virtual void draw() { }
 		virtual void reset() { }
 		virtual void resetColormap() { }
 		virtual void saveState(SaveGame *) { }
 		virtual void restoreState(SaveGame *) { }
-		virtual ~Component() { }
+		virtual ~Component();
 
 	protected:
 		ObjectPtr<CMap> _cmap, _previousCmap;
@@ -110,6 +112,7 @@ public:
 		Costume *_cost;
 		void setCostume(Costume *cost) { _cost = cost; }
 		void setParent(Component *newParent);
+		void removeChild(Component *child);
 
 		friend class Costume;
 	};
@@ -174,7 +177,8 @@ private:
 		bool _hasPlayed, _playing, _looping;
 		int _currTime;
 
-		int _fadeLength, _fadeCurrTime;
+		int _fadeLength;
+		float _fade;
 		FadeMode _fadeMode;
 
 		void setKeys(int startTime, int stopTime);
@@ -185,6 +189,7 @@ private:
 	ObjectPtr<CMap> _cmap;
 	int _numChores;
 	Chore *_chores;
+	Common::List<Chore*> _playingChores;
 	Graphics::Matrix4 _matrix;
 	Model::HierNode *_joint1Node;
 	Model::HierNode *_joint2Node;

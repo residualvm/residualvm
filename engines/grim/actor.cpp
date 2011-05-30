@@ -24,6 +24,7 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_chdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_getcwd
 #define FORBIDDEN_SYMBOL_EXCEPTION_getwd
+#define FORBIDDEN_SYMBOL_EXCEPTION_mkdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_unlink
 
 #include "graphics/line3d.h"
@@ -471,10 +472,6 @@ void Actor::setPos(Graphics::Vector3d position) {
 	}
 }
 
-Graphics::Vector3d Actor::getPos() const {
-	return _pos;
-}
-
 void Actor::turnTo(float pitchParam, float yawParam, float rollParam) {
 	_pitch = pitchParam;
 	_roll = rollParam;
@@ -722,10 +719,6 @@ void Actor::walkForward() {
 	setYaw(_yaw + turnAmt * turnDir);
 }
 
-void Actor::setRunning(bool running) {
-	_running = running;
-}
-
 Graphics::Vector3d Actor::getPuckVector() const {
 	float yaw_rad = _yaw * (LOCAL_PI / 180.f);
 	Graphics::Vector3d forwardVec(-sin(yaw_rad), cos(yaw_rad), 0);
@@ -755,8 +748,11 @@ void Actor::setWalkChore(int chore, Costume *cost) {
 	if (_walkCostume == cost && _walkChore == chore)
 		return;
 
-	if (_walkChore >= 0)
-		_walkCostume->stopChore(_walkChore);
+	if (_walkChore >= 0 && _walkCostume->isChoring(_walkChore, false) >= 0) {
+		_walkCostume->fadeChoreOut(_walkChore, 150);
+		if (_restChore >= 0)
+			_restCostume->fadeChoreIn(_restChore, 150);
+	}
 
 	_walkCostume = cost;
 	_walkChore = chore;
@@ -834,7 +830,7 @@ float Actor::getYawTo(Graphics::Vector3d p) const {
 		return atan2(-dpos.x(), dpos.y()) * (180.f / LOCAL_PI);
 }
 
-void Actor::sayLine(const char *msg, const char *msgId) {
+void Actor::sayLine(const char *msg, const char *msgId, bool background) {
 	assert(msg);
 	assert(msgId);
 
@@ -895,7 +891,7 @@ void Actor::sayLine(const char *msg, const char *msgId) {
 	}
 
 	GrimEngine::SpeechMode m = g_grim->getSpeechMode();
-	if (!g_grim->_sayLineDefaults.getFont() || m == GrimEngine::VoiceOnly)
+	if (!g_grim->_sayLineDefaults.getFont() || m == GrimEngine::VoiceOnly || background)
 		return;
 
 	_sayLineText = new TextObject(false, true);
@@ -1020,10 +1016,6 @@ void Actor::setHead(int joint1, int joint2, int joint3, float maxRoll, float max
 	}
 }
 
-void Actor::setScale(float scale) {
-	_scale = scale;
-}
-
 Costume *Actor::findCostume(const Common::String &n) {
 	for (Common::List<Costume *>::iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
 		if ((*i)->getFilename().compareToIgnoreCase(n) == 0)
@@ -1139,34 +1131,52 @@ void Actor::update() {
 		if (_walkedCur) {
 			if (_walkCostume->isChoring(_walkChore, false) < 0) {
 				_lastStepTime = 0;
+				_walkCostume->stopChore(_walkChore);
 				_walkCostume->playChoreLooping(_walkChore);
+				_walkCostume->fadeChoreIn(_walkChore, 150);
 			}
-			if (_restChore >= 0 && _restCostume->isChoring(_restChore, false)) {
-				_restCostume->stopChore(_restChore);
+
+			if (_restChore >= 0) {
+				_restCostume->fadeChoreOut(_restChore, 150);
 			}
 		} else {
-			if (_walkCostume->isChoring(_walkChore, false) >= 0)
-				_walkCostume->stopChore(_walkChore);
+			if (_walkedLast && _walkCostume->isChoring(_walkChore, false) >= 0) {
+				_walkCostume->fadeChoreOut(_walkChore, 150);
+
+				if (_restChore >= 0) {
+					_restCostume->fadeChoreIn(_restChore, 150);
+				}
+			}
 		}
 	}
 
 	if (_leftTurnChore >= 0) {
-		if (_walkedCur)
+		if (_walkedCur || _walkedLast)
 			_currTurnDir = 0;
-		if (_lastTurnDir != 0 && _lastTurnDir != _currTurnDir)
-			_turnCostume->stopChore(getTurnChore(_lastTurnDir));
-		if (_currTurnDir != 0 && _currTurnDir != _lastTurnDir) {
-			_turnCostume->playChore(getTurnChore(_currTurnDir));
-			if (_restChore >= 0 && _restCostume->isChoring(_restChore, false)) {
-				_restCostume->stopChore(_restChore);
+
+		if (_restChore >= 0) {
+			if (_currTurnDir != 0) {
+				if (_turnCostume->isChoring(getTurnChore(_currTurnDir), false) >= 0)
+					_restCostume->fadeChoreOut(_restChore, 500);
 			}
+			else if (_lastTurnDir != 0) {
+				if (!_walkedCur && _turnCostume->isChoring(getTurnChore(_lastTurnDir), false) >= 0)
+					_restCostume->fadeChoreIn(_restChore, 150);
+			}
+		}
+
+		if (_lastTurnDir != 0 && _lastTurnDir != _currTurnDir)
+			_turnCostume->fadeChoreOut(getTurnChore(_lastTurnDir), 150);
+		if (_currTurnDir != 0 && _currTurnDir != _lastTurnDir) {
+			_turnCostume->playChoreLooping(getTurnChore(_currTurnDir));
+			_turnCostume->fadeChoreIn(getTurnChore(_currTurnDir), 500);
 		}
 	} else
 		_currTurnDir = 0;
 
 	// The rest chore might have been stopped because of a
 	// StopActorChore(nil).  Restart it if so.
-	if (!_walkedCur && !_currTurnDir && _restChore >= 0 && _restCostume->isChoring(_restChore, false) < 0)
+	if (_restChore >= 0 && _restCostume->isChoring(_restChore, false) < 0)
 		_restCostume->playChoreLooping(_restChore);
 
 	_walkedLast = _walkedCur;
@@ -1180,7 +1190,7 @@ void Actor::update() {
 
 		// While getPosIn60HzTicks will return "-1" to indicate that the
 		// sound is no longer playing, it is more appropriate to check first
-		if (g_imuse->getSoundStatus(_talkSoundName.c_str()))
+		if (g_grim->getSpeechMode() != GrimEngine::TextOnly && g_imuse->getSoundStatus(_talkSoundName.c_str()))
 			posSound = g_imuse->getPosIn60HzTicks(_talkSoundName.c_str());
 		else
 			posSound = -1;
@@ -1203,6 +1213,11 @@ void Actor::update() {
 		Costume *c = *i;
 		c->setPosRotate(_pos, _pitch, _yaw, _roll);
 		c->update();
+	}
+
+	for (Common::List<Costume *>::iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
+		Costume *c = *i;
+		c->animate();
 	}
 
 	for (Common::List<Costume *>::iterator i = _costumeStack.begin(); i != _costumeStack.end(); ++i) {
@@ -1346,10 +1361,6 @@ void Actor::clearShadowPlanes() {
 		shadow->active = false;
 		shadow->dontNegate = false;
 	}
-}
-
-void Actor::putInSet(const char *setName) {
-	_setName = setName;
 }
 
 bool Actor::isInSet(const Common::String &setName) const {

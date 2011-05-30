@@ -588,6 +588,39 @@ void L1_IsPointInSector() {
 	lua_pushnil();
 }
 
+void L1_GetSectorOppositeEdge() {
+	lua_Object actorObj = lua_getparam(1);
+	lua_Object nameObj = lua_getparam(2);
+
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+		return;
+
+	if (!lua_isstring(nameObj)) {
+		lua_pushnil();
+		return;
+	}
+
+	Actor *actor = getactor(actorObj);
+	const char *name = lua_getstring(nameObj);
+
+	int numSectors = g_grim->getCurrScene()->getSectorCount();
+	for (int i = 0; i < numSectors; i++) {
+		Sector *sector = g_grim->getCurrScene()->getSectorBase(i);
+		if (strmatch(sector->getName(), name)) {
+			Sector::ExitInfo e;
+			sector->getExitInfo(actor->getPos(), actor->getPuckVector(), &e);
+
+			lua_pushnumber(e.exitPoint.x());
+			lua_pushnumber(e.exitPoint.y());
+			lua_pushnumber(e.exitPoint.z());
+
+			return;
+		}
+	}
+
+	lua_pushnil();
+}
+
 void L1_MakeSectorActive() {
 	lua_Object sectorObj = lua_getparam(1);
 
@@ -717,8 +750,6 @@ void L1_GetShrinkPos() {
 }
 
 void L1_FileFindDispose() {
-	if (g_grim->_listFilesIter)
-		g_grim->_listFilesIter->begin();
 	g_grim->_listFiles.clear();
 	g_grim->_listFilesIter = NULL;
 }
@@ -990,27 +1021,25 @@ void L1_GetSaveGameData() {
 void L1_Load() {
 	lua_Object fileName = lua_getparam(1);
 	if (lua_isnil(fileName)) {
-		g_grim->_savegameFileName = "";
+		g_grim->loadGame("");
 	} else if (lua_isstring(fileName)) {
-		g_grim->_savegameFileName = lua_getstring(fileName);
+		g_grim->loadGame(lua_getstring(fileName));
 	} else {
 		warning("Load() fileName is wrong");
 		return;
 	}
-	g_grim->_savegameLoadRequest = true;
 }
 
 void L1_Save() {
 	lua_Object fileName = lua_getparam(1);
 	if (lua_isnil(fileName)) {
-		g_grim->_savegameFileName = "";
+		g_grim->saveGame("");
 	} else if (lua_isstring(fileName)) {
-		g_grim->_savegameFileName = lua_getstring(fileName);
+		g_grim->saveGame(lua_getstring(fileName));
 	} else {
 		warning("Save() fileName is wrong");
 		return;
 	}
-	g_grim->_savegameSaveRequest = true;
 }
 
 void L1_Remove() {
@@ -1020,14 +1049,6 @@ void L1_Remove() {
 		lua_pushnil();
 		lua_pushstring(g_system->getSavefileManager()->getErrorDesc().c_str());
 	}
-}
-
-PointerId saveCallback(int32 /*tag*/, PointerId ptr, SaveSint32 /*savedState*/) {
-	return ptr;
-}
-
-PointerId restoreCallback(int32 /*tag*/, PointerId ptr, RestoreSint32 /*savedState*/) {
-	return ptr;
 }
 
 void L1_LockFont() {
@@ -1240,7 +1261,6 @@ STUB_FUNC(L1_SetCameraInterest)
 STUB_FUNC(L1_GetCameraPosition)
 STUB_FUNC(L1_SpewStartup)
 STUB_FUNC(L1_PreRender)
-STUB_FUNC(L1_GetSectorOppositeEdge)
 STUB_FUNC(L1_PreviousSetup)
 STUB_FUNC(L1_NextSetup)
 STUB_FUNC(L1_WorldToScreen)
@@ -1612,9 +1632,6 @@ void registerLua() {
 
 	lua_pushobject(lua_setfallback("concat", L1_concatFallback));
 	refOldConcatFallback = lua_ref(1);
-
-	saveCallbackPtr = saveCallback;
-	restoreCallbackPtr = restoreCallback;
 
 	// initialize Text globals
 	lua_pushstring("x");

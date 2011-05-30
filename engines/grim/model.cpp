@@ -246,8 +246,11 @@ Model::Face::~Face() {
 }
 
 Model::HierNode::~HierNode() {
-	if (_child)
-		_child->_parent = NULL;
+	HierNode *child = _child;
+	while (child) {
+		child->_parent = NULL;
+		child = child->_sibling;
+	}
 }
 
 void Model::HierNode::loadBinary(const char *&data, Model::HierNode *hierNodes, const Geoset *g) {
@@ -273,8 +276,6 @@ void Model::HierNode::loadBinary(const char *&data, Model::HierNode *hierNodes, 
 	_animPitch = 0;
 	_animYaw = 0;
 	_animRoll = 0;
-	_priority = -1;
-	_totalWeight = 0;
 	_sprite = NULL;
 
 	data += 184;
@@ -393,7 +394,6 @@ void Model::loadText(TextSplitter *ts, CMap *cmap) {
 		_rootHierNode[num]._pivot = Graphics::Vector3d(pivotx, pivoty, pivotz);
 		_rootHierNode[num]._meshVisible = true;
 		_rootHierNode[num]._hierVisible = true;
-		_rootHierNode[num]._totalWeight = 0;
 		_rootHierNode[num]._sprite = NULL;
 	}
 
@@ -551,18 +551,13 @@ void Model::HierNode::update() {
 	if (!_initialized)
 		return;
 
-	if (_totalWeight > 0) {
-		Graphics::Vector3d animPos = _pos + _animPos / _totalWeight;
-		float animPitch = _pitch + _animPitch / _totalWeight;
-		float animYaw = _yaw + _animYaw / _totalWeight;
-		float animRoll = _roll + _animRoll / _totalWeight;
+	Graphics::Vector3d animPos = _pos + _animPos;
+	float animPitch = _pitch + _animPitch;
+	float animYaw = _yaw + _animYaw;
+	float animRoll = _roll + _animRoll;
 
-		_localMatrix._pos.set(animPos.x(), animPos.y(), animPos.z());
-		_localMatrix._rot.buildFromPitchYawRoll(animPitch, animYaw, animRoll);
-	} else {
-		_localMatrix._pos.set(_pos.x(), _pos.y(), _pos.z());
-		_localMatrix._rot.buildFromPitchYawRoll(_pitch, _yaw, _roll);
-	}
+	_localMatrix._pos.set(animPos.x(), animPos.y(), animPos.z());
+	_localMatrix._rot.buildFromPitchYawRoll(animPitch, animYaw, animRoll);
 
 	_matrix *= _localMatrix;
 
@@ -588,7 +583,7 @@ void Model::HierNode::addSprite(Sprite *sprite) {
 void Model::HierNode::removeSprite(Sprite *sprite) {
 	Sprite* curr = _sprite;
 	Sprite* prev = NULL;
-	while (curr->_next) {
+	while (curr) {
 		if (curr == sprite) {
 			if (prev)
 				prev->_next = curr->_next;

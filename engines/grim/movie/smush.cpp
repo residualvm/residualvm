@@ -24,6 +24,7 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_chdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_getcwd
 #define FORBIDDEN_SYMBOL_EXCEPTION_getwd
+#define FORBIDDEN_SYMBOL_EXCEPTION_mkdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_unlink
 
 #include "common/endian.h"
@@ -638,7 +639,7 @@ bool zlibFile::open(const char *filename) {
 		return false;
 
 	_handle = g_resourceloader->openNewStreamFile(filename);
-	if (!_handle->isOpen()) {
+	if (!_handle || !_handle->isOpen()) {
 		if (gDebugLevel == DEBUG_SMUSH || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
 			warning("zlibFile::open() zlibFile %s not found", filename);
 		return false;
