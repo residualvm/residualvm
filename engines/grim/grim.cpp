@@ -1134,6 +1134,9 @@ void GrimEngine::savegameRestore() {
 	delete _currScene;
 	_currScene = NULL;
 
+	killTextObjects();
+	killPrimitiveObjects();
+
 	restoreObjects(_colors, 'COLR');
 	restoreBitmaps();
 	restoreFonts();
@@ -1477,6 +1480,7 @@ void GrimEngine::setScene(Scene *scene) {
 	Scene *lastScene = _currScene;
 	_currScene = scene;
 	_currScene->setSoundParameters(20, 127);
+	_currScene->setLightsDirty();
 	// should delete the old scene after setting the new one
 	if (lastScene && !lastScene->_locked) {
 		removeScene(lastScene);

@@ -52,7 +52,7 @@ public:
 	void playChoreLooping(int num);
 	void setChoreLastFrame(int num) { _chores[num].setLastFrame(); }
 	void setChoreLooping(int num, bool val) { _chores[num].setLooping(val); }
-	void stopChore(int num) { _chores[num].stop(); _playingChores.remove(&_chores[num]); }
+	void stopChore(int num);
 	void fadeChoreIn(int chore, int msecs);
 	void fadeChoreOut(int chore, int msecs);
 	Model::HierNode *getModelNodes();
@@ -62,6 +62,7 @@ public:
 	int isChoring(const char *name, bool excludeLooping);
 	int isChoring(int num, bool excludeLooping);
 	int isChoring(bool excludeLooping);
+	int getNumChores() const { return _numChores; }
 
 	void setHead(int joint1, int joint2, int joint3, float maxRoll, float maxPitch, float maxYaw);
 	void moveHead(bool lookingMode, const Graphics::Vector3d &lookAt, float rate);
