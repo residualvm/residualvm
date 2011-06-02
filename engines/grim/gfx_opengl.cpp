@@ -85,7 +85,12 @@ GfxOpenGL::~GfxOpenGL() {
 
 byte *GfxOpenGL::setupScreen(int screenW, int screenH, bool fullscreen) {
 	g_system->setupScreen(screenW, screenH, fullscreen, true);
-
+	
+	// This is not the best way to do this, IF you want the cursor to be 
+	// visible again later. But in Grim we won't.
+	if(fullscreen)
+		SDL_ShowCursor(SDL_DISABLE);
+	
 	_screenWidth = screenW;
 	_screenHeight = screenH;
 	_screenBPP = 24;
