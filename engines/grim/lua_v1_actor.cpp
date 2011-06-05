@@ -55,10 +55,11 @@ void L1_GetActorTimeScale() {
 
 void L1_SetSelectedActor() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-	// TODO there is missing some check here: else lua_pushnil()
-	g_grim->setSelectedActor(getactor(actorObj));
+	Actor *actor = getactor(actorObj);
+	if (actor)
+		g_grim->setSelectedActor(actor);
+	else
+		lua_pushnil();
 }
 
 /* Get the currently selected actor, this is used in
@@ -75,23 +76,20 @@ void L1_SetActorTalkColor() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object colorObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-	if (!lua_isuserdata(colorObj) && lua_tag(colorObj) != MKTAG('C','O','L','R'))
-		return;
 	Actor *actor = getactor(actorObj);
 	Color *color = getcolor(colorObj);
+	if (!actor || !color)
+		return;
 	actor->setTalkColor(color);
 }
 
 void L1_GetActorTalkColor() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R')) {
-		lua_pushnil();
-		return;
-	}
 	Actor *actor = getactor(actorObj);
-	lua_pushusertag(actor->getTalkColor()->getId(), MKTAG('C','O','L','R'));
+	if (actor)
+		lua_pushusertag(actor->getTalkColor()->getId(), MKTAG('C','O','L','R'));
+	else
+		lua_pushnil();
 }
 
 void L1_SetActorRestChore() {
@@ -99,20 +97,15 @@ void L1_SetActorRestChore() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 	Costume *costume;
-	int chore;
-
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			(!lua_isnumber(choreObj) && !lua_isnil(choreObj))) {
-		return;
-	}
+	int chore = -1;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor || (!lua_isnumber(choreObj) && !lua_isnil(choreObj)))
+		return;
 
-	if (lua_isnil(choreObj)) {
-		chore = -1;
-	} else {
+	if (!lua_isnil(choreObj))
 		chore = (int)lua_getnumber(choreObj);
-	}
+
 	if (!findCostume(costumeObj, actor, &costume))
 		return;
 
@@ -124,20 +117,15 @@ void L1_SetActorWalkChore() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 	Costume *costume;
-	int chore;
-
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			(!lua_isnumber(choreObj) && !lua_isnil(choreObj))) {
-		return;
-	}
+	int chore = -1;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor || (!lua_isnumber(choreObj) && !lua_isnil(choreObj)))
+		return;
 
-	if (lua_isnil(choreObj)) {
-		chore = -1;
-	} else {
+	if (!lua_isnil(choreObj))
 		chore = (int)lua_getnumber(choreObj);
-	}
+
 	if (!findCostume(costumeObj, actor, &costume))
 		return;
 
@@ -151,12 +139,10 @@ void L1_SetActorTurnChores() {
 	lua_Object costumeObj = lua_getparam(4);
 	Costume *costume;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			(!lua_isnumber(leftChoreObj) && !lua_isnumber(rightChoreObj))) {
-		return;
-	}
-
 	Actor *actor = getactor(actorObj);
+	if (!actor || (!lua_isnumber(leftChoreObj) && !lua_isnumber(rightChoreObj)))
+		return;
+
 	int leftChore = (int)lua_getnumber(leftChoreObj);
 	int rightChore = (int)lua_getnumber(rightChoreObj);
 
@@ -172,24 +158,19 @@ void L1_SetActorTalkChore() {
 	lua_Object choreObj = lua_getparam(3);
 	lua_Object costumeObj = lua_getparam(4);
 	Costume *costume;
-	int chore;
+	int chore = -1;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			!lua_isnumber(indexObj) || (!lua_isnumber(choreObj) && !lua_isnil(choreObj))) {
+	Actor *actor = getactor(actorObj);
+	if (!actor || (!lua_isnumber(choreObj) && !lua_isnil(choreObj)))
 		return;
-	}
 
 	int index = (int)lua_getnumber(indexObj);
 	if (index < 1 || index > 16)
 		return;
 
-	Actor *actor = getactor(actorObj);
-
-	if (lua_isnil(choreObj)) {
-		chore = -1;
-	} else {
+	if (!lua_isnil(choreObj))
 		chore = (int)lua_getnumber(choreObj);
-	}
+
 	if (!findCostume(costumeObj, actor, &costume))
 		return;
 
@@ -204,20 +185,15 @@ void L1_SetActorMumblechore() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 	Costume *costume;
-	int chore;
-
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			(!lua_isnumber(choreObj) && !lua_isnil(choreObj))) {
-		return;
-	}
+	int chore = -1;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor || (!lua_isnumber(choreObj) && !lua_isnil(choreObj)))
+		return;
 
-	if (lua_isnil(choreObj)) {
-		chore = -1;
-	} else {
+	if (!lua_isnil(choreObj))
 		chore = (int)lua_getnumber(choreObj);
-	}
+
 	if (!findCostume(costumeObj, actor, &costume))
 		return;
 
@@ -229,10 +205,10 @@ void L1_SetActorMumblechore() {
 
 void L1_SetActorVisibility() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	bool val = getbool(2);
 	actor->setVisibility(val);
@@ -242,10 +218,10 @@ void L1_SetActorScale() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object scaleObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	float scale = 1.f;
 
 	if (lua_isnumber(scaleObj))
@@ -259,13 +235,14 @@ void L1_PutActorAt() {
 	lua_Object xObj = lua_getparam(2);
 	lua_Object yObj = lua_getparam(3);
 	lua_Object zObj = lua_getparam(4);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
 	if (!lua_isnumber(xObj) || !lua_isnumber(yObj) || !lua_isnumber(zObj))
 		return;
 
-	Actor *actor = getactor(actorObj);
 	float x = lua_getnumber(xObj);
 	float y = lua_getnumber(yObj);
 	float z = lua_getnumber(zObj);
@@ -275,10 +252,10 @@ void L1_PutActorAt() {
 void L1_GetActorPos() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	Graphics::Vector3d pos = actor->getPos();
 	lua_pushnumber(pos.x());
 	lua_pushnumber(pos.y());
@@ -288,10 +265,10 @@ void L1_GetActorPos() {
 void L1_SetActorRot() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	lua_Object p = lua_getparam(2);
 	lua_Object y = lua_getparam(3);
 	lua_Object r = lua_getparam(4);
@@ -309,10 +286,10 @@ void L1_SetActorRot() {
 void L1_GetActorRot() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	lua_pushnumber(actor->getPitch());
 	lua_pushnumber(actor->getYaw());
 	lua_pushnumber(actor->getRoll());
@@ -321,10 +298,10 @@ void L1_GetActorRot() {
 void L1_IsActorTurning() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	pushbool(actor->isTurning());
 }
 
@@ -332,14 +309,6 @@ void L1_GetAngleBetweenActors() {
 	lua_Object actor1Obj = lua_getparam(1);
 	lua_Object actor2Obj = lua_getparam(2);
 
-	if (!lua_isuserdata(actor1Obj) || lua_tag(actor1Obj) != MKTAG('A','C','T','R')) {
-		lua_pushnil();
-		return;
-	}
-	if (!lua_isuserdata(actor2Obj) || lua_tag(actor2Obj) != MKTAG('A','C','T','R')) {
-		lua_pushnil();
-		return;
-	}
 	Actor *actor1 = getactor(actor1Obj);
 	Actor *actor2 = getactor(actor2Obj);
 
@@ -367,12 +336,12 @@ void L1_GetActorYawToPoint() {
 	lua_Object pointObj = lua_getparam(2);
 	lua_Object xObj, yObj, zObj;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R')) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
 
-	Actor *actor = getactor(actorObj);
 	if (lua_istable(pointObj)) {
 		lua_pushobject(pointObj);
 		lua_pushstring("x");
@@ -405,10 +374,9 @@ void L1_PutActorInSet() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object setObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	if (!lua_isstring(setObj) && !lua_isnil(setObj))
 		return;
@@ -441,22 +409,21 @@ void L1_SetActorWalkRate() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object rateObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-	if (!lua_isnumber(rateObj))
+	Actor *actor = getactor(actorObj);
+	if (!actor || !lua_isnumber(rateObj))
 		return;
 
-	Actor *actor = getactor(actorObj);
 	float rate = lua_getnumber(rateObj);
 	actor->setWalkRate(rate);
 }
 
 void L1_GetActorWalkRate() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
 	lua_pushnumber(actor->getWalkRate());
 }
 
@@ -464,21 +431,19 @@ void L1_SetActorTurnRate() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object rateObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-	if (!lua_isnumber(rateObj))
+	Actor *actor = getactor(actorObj);
+	if (!actor || !lua_isnumber(rateObj))
 		return;
 
-	Actor *actor = getactor(actorObj);
 	float rate = lua_getnumber(rateObj); // FIXME verify negate values of rate
 	actor->setTurnRate(rate);
 }
 
 void L1_WalkActorForward() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 	actor->walkForward();
 }
 
@@ -486,10 +451,10 @@ void L1_SetActorReflection() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object angleObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	float angle = lua_getnumber(angleObj);
 	actor->setReflection(angle);
 }
@@ -497,11 +462,6 @@ void L1_SetActorReflection() {
 void L1_GetActorPuckVector() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object addObj = lua_getparam(2);
-
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R')) {
-		lua_pushnil();
-		return;
-	}
 
 	Actor *actor = getactor(actorObj);
 	if (!actor) {
@@ -528,15 +488,15 @@ void L1_WalkActorTo() {
 	lua_Object tyObj = lua_getparam(6);
 	lua_Object tzObj = lua_getparam(7);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
 	Graphics::Vector3d destVec;
-	Actor *actor = getactor(actorObj);
 	if (!lua_isnumber(xObj)) {
-		if (!lua_isuserdata(xObj) || lua_tag(xObj) != MKTAG('A','C','T','R'))
-			return;
 		Actor *destActor = getactor(xObj);
+		if (!destActor)
+			return;
 		destVec = destActor->getPos();
 	} else {
 		float x = lua_getnumber(xObj);
@@ -557,12 +517,11 @@ void L1_WalkActorTo() {
 void L1_ActorToClean() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R')) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-
-	Actor *actor = getactor(actorObj);
 
 	// TODO: It seems this function should load/create an image to be used in place
 	// of the real actor until it is put in the set again.
@@ -572,19 +531,21 @@ void L1_ActorToClean() {
 
 void L1_IsActorMoving() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
 	pushbool(actor->isWalking());
 }
 
 void L1_IsActorResting() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
 	// FIXME verify if exist one flag for resting mode
 	pushbool(!(actor->isWalking() || actor->isTurning()));
 }
@@ -600,14 +561,9 @@ void L1_GetActorNodeLocation() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object nodeObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
-	if (!lua_isnumber(nodeObj))
-		return;
-
 	Actor *actor = getactor(actorObj);
-	if (!actor->getCurrentCostume() || !actor->getCurrentCostume()->getModelNodes())
+	if (!actor || !lua_isnumber(nodeObj) || !actor->getCurrentCostume() ||
+			!actor->getCurrentCostume()->getModelNodes())
 		return;
 
 	int nodeId = (int)lua_getnumber(nodeObj);
@@ -635,11 +591,11 @@ void L1_SetActorWalkDominate() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object modeObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
 	bool mode = lua_isnil(modeObj) != 0;
-	Actor *actor = getactor(actorObj);
 	actor->setRunning(mode);
 }
 
@@ -647,10 +603,10 @@ void L1_SetActorColormap() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object nameObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	if (lua_isstring(nameObj)) {
 		const char *name = lua_getstring(nameObj);
 		actor->setColormap(name);
@@ -664,13 +620,10 @@ void L1_TurnActor() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object dirObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
-	if (!lua_isnumber(dirObj))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor || !lua_isnumber(dirObj))
+		return;
+
 	int dir = (int)lua_getnumber(dirObj);
 	// TODO verify. need clear mode walking
 	actor->turn(dir);
@@ -680,13 +633,10 @@ void L1_PushActorCostume() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object nameObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
-	if (!lua_isstring(nameObj))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor || !lua_isstring(nameObj))
+		return;
+
 	const char *costumeName = lua_getstring(nameObj);
 	actor->pushCostume(costumeName);
 }
@@ -695,35 +645,32 @@ void L1_SetActorCostume() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object costumeObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	if (lua_isnil(costumeObj)) {
 		actor->clearCostumes();
 		pushbool(true);
-		return;
-	}
-	if (!lua_isstring(costumeObj)) {
+	} else if (!lua_isstring(costumeObj)) {
 		pushbool(false);
-		return;
+	} else {
+		const char *costumeName = lua_getstring(costumeObj);
+		actor->setCostume(costumeName);
+		pushbool(true);
 	}
-
-	const char *costumeName = lua_getstring(costumeObj);
-	actor->setCostume(costumeName);
-	pushbool(true);
 }
 
 void L1_GetActorCostume() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object costumeObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R')) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
 
-	Actor *actor = getactor(actorObj);
 	Costume *costume = actor->getCurrentCostume();
 	if (lua_isnil(costumeObj)) {
 		// dummy
@@ -741,10 +688,11 @@ void L1_GetActorCostume() {
 
 void L1_PopActorCostume() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
 	if (actor->getCurrentCostume()) {
 		lua_pushstring(actor->getCurrentCostume()->getFilename().c_str());
 		actor->popCostume();
@@ -754,12 +702,12 @@ void L1_PopActorCostume() {
 
 void L1_GetActorCostumeDepth() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R')) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
 
-	Actor *actor = getactor(actorObj);
 	lua_pushnumber(actor->getCostumeStackDepth());
 }
 
@@ -782,25 +730,19 @@ void L1_PlayActorChore() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	Costume *costume;
 	if (!findCostume(costumeObj, actor, &costume))
 		return;
 
-	if (!lua_isnumber(choreObj)) {
+	if (!lua_isnumber(choreObj) || !costume) {
 		lua_pushnil();
 		return;
 	}
 	int chore = (int)lua_getnumber(choreObj);
-
-	if (!costume) {
-		lua_pushnil();
-		return;
-	}
 
 	costume->playChore(chore);
 	pushbool(true);
@@ -811,25 +753,19 @@ void L1_CompleteActorChore() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	Costume *costume;
 	if (!findCostume(costumeObj, actor, &costume))
 		return;
 
-	if (!lua_isnumber(choreObj)) {
+	if (!lua_isnumber(choreObj) || !costume) {
 		lua_pushnil();
 		return;
 	}
 	int chore = (int)lua_getnumber(choreObj);
-
-	if (!costume) {
-		lua_pushnil();
-		return;
-	}
 
 	costume->setChoreLastFrame(chore);
 	pushbool(true);
@@ -840,25 +776,19 @@ void L1_PlayActorChoreLooping() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	Costume *costume;
 	if (!findCostume(costumeObj, actor, &costume))
 		return;
 
-	if (!lua_isnumber(choreObj)) {
+	if (!lua_isnumber(choreObj) || !costume) {
 		lua_pushnil();
 		return;
 	}
 	int chore = (int)lua_getnumber(choreObj);
-
-	if (!costume) {
-		lua_pushnil();
-		return;
-	}
 
 	costume->playChoreLooping(chore);
 	pushbool(true);
@@ -869,10 +799,9 @@ void L1_SetActorChoreLooping() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(4);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	Costume *costume;
 	if (!findCostume(costumeObj, actor, &costume))
@@ -894,10 +823,9 @@ void L1_StopActorChore() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	Costume *costume;
 	if (!findCostume(costumeObj, actor, &costume))
@@ -920,10 +848,9 @@ void L1_FadeOutChore() {
 	lua_Object choreObj = lua_getparam(3);
 	lua_Object timeObj = lua_getparam(4);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	Costume *costume;
 	if (!findCostume(costumeObj, actor, &costume))
@@ -946,10 +873,9 @@ void L1_FadeInChore() {
 	lua_Object choreObj = lua_getparam(3);
 	lua_Object timeObj = lua_getparam(4);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	Costume *costume;
 	if (!findCostume(costumeObj, actor, &costume))
@@ -971,10 +897,9 @@ void L1_IsActorChoring() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(4);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	Costume *costume;
 	if (!findCostume(costumeObj, actor, &costume))
@@ -1026,10 +951,8 @@ void L1_ActorLookAt() {
 	lua_Object zObj = lua_getparam(4);
 	lua_Object rateObj = lua_getparam(5);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 	Actor *actor = getactor(actorObj);
-	if (!actor->getCurrentCostume())
+	if (!actor || !actor->getCurrentCostume())
 		return;
 
 	if (lua_isnumber(rateObj))
@@ -1051,23 +974,18 @@ void L1_ActorLookAt() {
 			actor->setLookAtRate(lua_getnumber(yObj));
 		return;
 	} else if (lua_isnumber(xObj)) { // look at xyz
-		float fY;
-		float fZ;
+		float fY = 0.0f;
+		float fZ = 0.0f;
 
 		float fX = lua_getnumber(xObj);
 
 		if (lua_isnumber(yObj))
 			fY = lua_getnumber(yObj);
-		else
-			fY = 0.0f;
 
 		if (lua_isnumber(zObj))
 			fZ = lua_getnumber(zObj);
-		else
-			fZ = 0.0f;
 
-		Graphics::Vector3d vector;
-		vector.set(fX, fY, fZ);
+		Graphics::Vector3d vector(fX, fY, fZ);
 		actor->setLookAtVector(vector);
 
 		if (lua_isnumber(rateObj))
@@ -1099,14 +1017,14 @@ void L1_TurnActorTo() {
 	lua_Object zObj = lua_getparam(4);
 	float x, y, z;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R')) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-	Actor *actor = getactor(actorObj);
 
-	if (lua_isuserdata(xObj) && lua_tag(xObj) == MKTAG('A','C','T','R')) {
-		Actor *destActor = getactor(xObj);
+	Actor *destActor = getactor(xObj);
+	if (destActor) {
 		x = destActor->getPos().x();
 		y = destActor->getPos().y();
 		z = destActor->getPos().z();
@@ -1120,9 +1038,9 @@ void L1_TurnActorTo() {
 
 	// Find the vector pointing from the actor to the desired location
 	Graphics::Vector3d turnToVector(x, y, z);
-	Graphics::Vector3d lookVector = turnToVector - actor->getPos();
+	turnToVector -= actor->getPos();
 	// find the angle the requested position is around the unit circle
-	float yaw = lookVector.unitCircleAngle();
+	float yaw = turnToVector.unitCircleAngle();
 	// yaw is offset from forward by 90 degrees
 	yaw -= 90.0f;
 	if (yaw < 0) {
@@ -1133,7 +1051,7 @@ void L1_TurnActorTo() {
 	float diff = actor->getYaw() - yaw;
 	// Return true if the actor is still turning and its yaw is not the target one.
 	// This allows manny to have the right yaw when he exits the elevator in the garage
-	pushbool((diff > 0.005) || (diff < -0.005)); //fuzzy compare
+	pushbool(abs(diff) > 0.005); //fuzzy compare
 }
 
 void L1_PointActorAt() {
@@ -1143,14 +1061,14 @@ void L1_PointActorAt() {
 	lua_Object zObj = lua_getparam(4);
 	float x, y, z;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R')) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-	Actor *actor = getactor(actorObj);
 
-	if (lua_isuserdata(xObj) && lua_tag(xObj) == MKTAG('A','C','T','R')) {
-		Actor *destActor = getactor(xObj);
+	Actor *destActor = getactor(xObj);
+	if (destActor) {
 		x = destActor->getPos().x();
 		y = destActor->getPos().y();
 		z = destActor->getPos().z();
@@ -1164,9 +1082,9 @@ void L1_PointActorAt() {
 
 	// Find the vector pointing from the actor to the desired location
 	Graphics::Vector3d turnToVector(x, y, z);
-	Graphics::Vector3d lookVector = turnToVector - actor->getPos();
+	turnToVector -= actor->getPos();
 	// find the angle the requested position is around the unit circle
-	float yaw = lookVector.unitCircleAngle();
+	float yaw = turnToVector.unitCircleAngle();
 	// yaw is offset from forward by 90 degrees
 	yaw -= 90.0f;
 	actor->turnTo(0, yaw, 0);
@@ -1183,12 +1101,10 @@ void L1_WalkActorVector() {
 //	lua_Object zObj = lua_getparam(5);
 //	lua_Object param6Obj = lua_getparam(6);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			!lua_isuserdata(actor2Obj) || lua_tag(actor2Obj) != MKTAG('A','C','T','R'))
-		return;
-
-//	Actor *actor = static_cast<Actor *>(lua_getuserdata(actorObj));
+	Actor *actor = getactor(actorObj);
 	Actor *actor2 = getactor(actor2Obj);
+	if (!actor || !actor2)
+		return;
 
 	// TODO whole below part need rewrote to much original
 	float moveHoriz, moveVert, yaw;
@@ -1199,7 +1115,8 @@ void L1_WalkActorVector() {
 	moveVert = luaL_check_number(4);
 
 	// Get the direction the camera is pointing
-	Graphics::Vector3d cameraVector = g_grim->getCurrScene()->getCurrSetup()->_interest - g_grim->getCurrScene()->getCurrSetup()->_pos;
+	Graphics::Vector3d cameraVector = g_grim->getCurrScene()->getCurrSetup()->_interest;
+	cameraVector -= g_grim->getCurrScene()->getCurrSetup()->_pos;
 	// find the angle the camera direction is around the unit circle
 	float cameraYaw = cameraVector.unitCircleAngle();
 
@@ -1233,10 +1150,10 @@ void L1_SetActorPitch() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object pitchObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	float pitch = lua_getnumber(pitchObj);
 	actor->setRot(pitch, actor->getYaw(), actor->getRoll());
 }
@@ -1245,14 +1162,8 @@ void L1_SetActorLookRate() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object rateObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
-	if (!lua_isnumber(rateObj))
-		return;
-
 	Actor *actor = getactor(actorObj);
-	if (!actor->getCurrentCostume())
+	if (!actor || !lua_isnumber(rateObj) || !actor->getCurrentCostume())
 		return;
 
 	float rate = lua_getnumber(rateObj);
@@ -1262,10 +1173,10 @@ void L1_SetActorLookRate() {
 void L1_GetActorLookRate() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
 
-	Actor *actor = getactor(actorObj);
 	if (!actor->getCurrentCostume())
 		lua_pushnil();
 	else
@@ -1281,13 +1192,11 @@ void L1_SetActorHead() {
 	lua_Object maxPitchObj = lua_getparam(6);
 	lua_Object maxYawObj = lua_getparam(7);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-	if (!lua_isnumber(joint1Obj) || !lua_isnumber(joint2Obj) || !lua_isnumber(joint3Obj) ||
+	Actor *actor = getactor(actorObj);
+	if (!actor || !lua_isnumber(joint1Obj) || !lua_isnumber(joint2Obj) || !lua_isnumber(joint3Obj) ||
 			!lua_isnumber(maxRollObj) || !lua_isnumber(maxPitchObj) || !lua_isnumber(maxYawObj))
 		return;
 
-	Actor *actor = getactor(actorObj);
 	int joint1 = (int)lua_getnumber(joint1Obj);
 	int joint2 = (int)lua_getnumber(joint2Obj);
 	int joint3 = (int)lua_getnumber(joint3Obj);
@@ -1301,12 +1210,9 @@ void L1_SetActorHead() {
 void L1_PutActorAtInterest() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
 	Scene *scene = g_grim->getCurrScene();
-	if (!scene)
+	if (!actor || !scene)
 		return;
 
 	Graphics::Vector3d p = scene->getCurrSetup()->_interest;
@@ -1336,10 +1242,9 @@ void L1_SetActorFollowBoxes() {
 	lua_Object modeObj = lua_getparam(2);
 	bool mode = true;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	if (modeObj == LUA_NOOBJECT || lua_isnil(modeObj))
 		mode = false;
@@ -1354,8 +1259,11 @@ void L1_SetActorConstrain() {
 	lua_Object actorObj = lua_getparam(1);
 //	lua_Object constrainObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	Actor *actor = getactor(actorObj);
+	if (!actor)
 		return;
+
+	warning("SetActorConstrain() not implemented");
 
 //	Actor *actor = static_cast<Actor *>(lua_getuserdata(actorObj));
 //	bool constrain = !lua_isnil(constrainObj);
@@ -1368,14 +1276,13 @@ void L1_SetActorConstrain() {
 void L1_GetVisibleThings() {
 	lua_Object actorObj = lua_getparam(1);
 	Actor *actor = NULL;
-	if (lua_isnil(actorObj)) {
+	if (lua_isnil(actorObj))
 		actor = g_grim->getSelectedActor();
-		if (!actor)
-			return;
-	} else if (lua_isuserdata(actorObj) && lua_tag(actorObj) == MKTAG('A','C','T','R')) {
+	else
 		actor = getactor(actorObj);
-	}
-	assert(actor);
+
+	if (!actor)
+		return;
 
 	lua_Object result = lua_createtable();
 
@@ -1406,11 +1313,12 @@ void L1_SetShadowColor() {
 void L1_KillActorShadows() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R')) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-	Actor *actor = getactor(actorObj);
+
 	actor->clearShadowPlanes();
 }
 
@@ -1418,11 +1326,12 @@ void L1_SetActiveShadow() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object shadowIdObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || actorObj == LUA_NOOBJECT) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-	Actor *actor = getactor(actorObj);
+
 	int shadowId = (int)lua_getnumber(shadowIdObj);
 	actor->setActiveShadow(shadowId);
 }
@@ -1433,11 +1342,12 @@ void L1_SetActorShadowPoint() {
 	lua_Object yObj = lua_getparam(3);
 	lua_Object zObj = lua_getparam(4);
 
-	if (!lua_isuserdata(actorObj) || actorObj == LUA_NOOBJECT) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-	Actor *actor = getactor(actorObj);
+
 	float x = lua_getnumber(xObj);
 	float y = lua_getnumber(yObj);
 	float z = lua_getnumber(zObj);
@@ -1449,13 +1359,13 @@ void L1_SetActorShadowPlane() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object nameObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || actorObj == LUA_NOOBJECT) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-	Actor *actor = getactor(actorObj);
-	const char *name = lua_getstring(nameObj);
 
+	const char *name = lua_getstring(nameObj);
 	actor->setShadowPlane(name);
 }
 
@@ -1463,13 +1373,13 @@ void L1_AddShadowPlane() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object nameObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || actorObj == LUA_NOOBJECT) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-	Actor *actor = getactor(actorObj);
-	const char *name = lua_getstring(nameObj);
 
+	const char *name = lua_getstring(nameObj);
 	actor->addShadowPlane(name);
 }
 
@@ -1478,11 +1388,12 @@ void L1_ActivateActorShadow() {
 	lua_Object shadowIdObj = lua_getparam(2);
 	lua_Object stateObj = lua_getparam(3);
 
-	if (!lua_isuserdata(actorObj) || actorObj == LUA_NOOBJECT) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-	Actor *actor = getactor(actorObj);
+
 	int shadowId = (int)lua_getnumber(shadowIdObj);
 	bool state = !lua_isnil(stateObj);
 
@@ -1494,11 +1405,12 @@ void L1_SetActorShadowValid() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object numObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || actorObj == LUA_NOOBJECT) {
+	Actor *actor = getactor(actorObj);
+	if (!actor) {
 		lua_pushnil();
 		return;
 	}
-	Actor *actor = getactor(actorObj);
+
 	int valid = (int)lua_getnumber(numObj);
 
 	warning("SetActorShadowValid(%d) unknown purpose", valid);
