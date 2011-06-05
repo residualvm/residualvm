@@ -82,9 +82,6 @@ void L2_SetActorGlobalAlpha() {
 //	lua_Object alphaModeObj = lua_getparam(2);
 //	lua_Object valueObj = lua_getparam(3);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
 	if (!actor)
 		return;
@@ -120,9 +117,6 @@ void L2_ImGetMillisecondPosition() {
 void L2_RemoveActorFromOverworld() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
 	if (!actor)
 		return;
@@ -133,9 +127,6 @@ void L2_RemoveActorFromOverworld() {
 
 void L2_UnloadActor() {
 	lua_Object actorObj = lua_getparam(1);
-
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 
 	Actor *actor = getactor(actorObj);
 	if (!actor)
@@ -149,12 +140,10 @@ void L2_SetActorWalkRate() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object rateObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-	if (!lua_isnumber(rateObj))
+	Actor *actor = getactor(actorObj);
+	if (!actor || !lua_isnumber(rateObj))
 		return;
 
-	Actor *actor = getactor(actorObj);
 	float rate = lua_getnumber(rateObj);
 	// const below only differ from grim
 	actor->setWalkRate(rate * 3.279999971389771);
@@ -162,10 +151,10 @@ void L2_SetActorWalkRate() {
 
 void L2_GetActorWalkRate() {
 	lua_Object actorObj = lua_getparam(1);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 	// const below only differ from grim
 	lua_pushnumber(actor->getWalkRate() * 0.3048780560493469);
 }
@@ -242,13 +231,10 @@ void L2_SetActorSortOrder() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object modeObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
-	if (!lua_isnumber(modeObj))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor ||!lua_isnumber(modeObj))
+		return;
+
 	int mode = (int)lua_getnumber(modeObj);
 	warning("L2_SetActorSortOrder, actor: %s, mode: %d", actor->getName().c_str(), mode);
 	// FIXME: actor->func(mode);
@@ -258,9 +244,6 @@ void L2_ActorActivateShadow() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object qualityObj = lua_getparam(2);
 	lua_Object planeObj = lua_getparam(3);
-
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 
 	Actor *actor = getactor(actorObj);
 	if (!actor)
@@ -276,10 +259,9 @@ void L2_ActorActivateShadow() {
 void L2_ActorStopMoving() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	warning("L2_ActorStopMoving, actor: %s", actor->getName().c_str());
 	// FIXME: implement missing rest part of code
@@ -288,10 +270,9 @@ void L2_ActorStopMoving() {
 void L2_PutActorInOverworld() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	warning("L2_PutActorInOverworld, actor: %s", actor->getName().c_str());
 	// FIXME: implement missing func
@@ -317,10 +298,9 @@ void L2_PutActorInSet() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object setObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	if (!lua_isstring(setObj) && !lua_isnil(setObj)) {
 		lua_pushnil();
@@ -427,10 +407,9 @@ void L2_PlayActorChore() {
 	lua_Object modeObj = lua_getparam(4);
 	lua_Object paramObj = lua_getparam(5);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
 
 	if (!lua_isstring(choreObj) || !lua_isstring(costumeObj))
 		lua_pushnil();
@@ -462,9 +441,6 @@ static void L2_StopActorChores() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object paramObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	Actor *actor = getactor(actorObj);
 	if (!actor)
 		return;
@@ -478,9 +454,6 @@ static void L2_StopActorChores() {
 static void L2_SetActorLighting() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object lightModeObj = lua_getparam(2);
-
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 
 	Actor *actor = getactor(actorObj);
 	if (!actor)
