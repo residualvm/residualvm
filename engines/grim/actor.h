@@ -228,7 +228,7 @@ private:
 	int _activeShadowSlot;
 
 	static ObjectPtr<Font> _sayLineFont;
-	TextObject *_sayLineText;
+	int _sayLineText;
 
 	// Validate a yaw angle then set it appropriately
 	void setYaw(float yaw);
