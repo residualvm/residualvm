@@ -174,9 +174,7 @@ void L1_DrawPolygon() {
 		lua_pushobject(tableObj2);
 		lua_pushstring("color");
 		lua_Object colorObj = lua_gettable();
-		if (lua_isuserdata(colorObj) && lua_tag(colorObj) == MKTAG('C','O','L','R')) {
-			color = getcolor(colorObj);
-		}
+		color = getcolor(colorObj);
 		lua_pushobject(tableObj2);
 		lua_pushstring("layer");
 		lua_Object layerObj = lua_gettable();
@@ -249,9 +247,7 @@ void L1_DrawLine() {
 		lua_pushobject(tableObj);
 		lua_pushstring("color");
 		lua_Object colorObj = lua_gettable();
-		if (lua_isuserdata(colorObj) && lua_tag(colorObj) == MKTAG('C','O','L','R')) {
-			color = getcolor(colorObj);
-		}
+		color = getcolor(colorObj);
 		lua_pushobject(tableObj);
 		lua_pushstring("layer");
 		lua_Object layerObj = lua_gettable();
@@ -292,10 +288,10 @@ void L1_ChangePrimitive() {
 	lua_pushobject(tableObj);
 	lua_pushstring("color");
 	lua_Object colorObj = lua_gettable();
-	if (lua_isuserdata(colorObj) && lua_tag(colorObj) == MKTAG('C','O','L','R')) {
-		color = getcolor(colorObj);
+
+	color = getcolor(colorObj);
+	if (color)
 		pmodify->setColor(color);
-	}
 
 	lua_pushobject(tableObj);
 	lua_pushstring("layer");
@@ -396,9 +392,7 @@ void L1_DrawRectangle() {
 		lua_pushobject(tableObj);
 		lua_pushstring("color");
 		lua_Object colorObj = lua_gettable();
-		if (lua_isuserdata(colorObj) && lua_tag(colorObj) == MKTAG('C','O','L','R')) {
-			color = getcolor(colorObj);
-		}
+		color = getcolor(colorObj);
 
 		lua_pushobject(tableObj);
 		lua_pushstring("filled");
@@ -436,9 +430,7 @@ void L1_BlastRect() {
 		lua_pushobject(tableObj);
 		lua_pushstring("color");
 		lua_Object colorObj = lua_gettable();
-		if (lua_isuserdata(colorObj) && lua_tag(colorObj) == MKTAG('C','O','L','R')) {
-			color = getcolor(colorObj);
-		}
+		color = getcolor(colorObj);
 
 		lua_pushobject(tableObj);
 		lua_pushstring("filled");
