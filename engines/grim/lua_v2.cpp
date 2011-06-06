@@ -577,6 +577,72 @@ void L2_IsMoviePlaying() {
 	lua_pushnil();
 }
 
+void L2_SetActorCollisionMode() {
+	lua_Object obj = lua_getparam(1);
+	int num = (int)lua_getnumber(obj);
+	warning("L2_SetActorCollisionMode: implement opcode. Mode %d", num);
+
+	/* From _actors.lua
+	COLLISION_OFF = 0
+	COLLISION_BOX = 1
+	COLLISION_SPHERE = 2
+	*/
+}
+
+void L2_SetActorCollisionScale() {
+	lua_Object obj = lua_getparam(1);
+	float num = lua_getnumber(obj);
+	warning("L2_SetActorCollisionScale: implement opcode. Scale %f", num);
+}
+
+void L2_SetActorHeadLimits() {
+	lua_Object obj1 = lua_getparam(1);
+	lua_Object obj2 = lua_getparam(2);
+	lua_Object obj3 = lua_getparam(3);
+
+	// This is just an assumption, it may not be pitch, yaw rol.
+	int pitch, yaw, roll;
+	pitch = (int)lua_getnumber(obj1);
+	yaw = (int)lua_getnumber(obj2);
+	roll = (int)lua_getnumber(obj3);
+
+	warning("L2_SetActorHeadLimits: implement opcode. Args: %d %d %d", pitch, yaw, roll);
+}
+
+void L2_AttachActor() {
+/*	lua_Object actorObj = lua_getparam(1);
+	lua_Object obj2 = lua_getparam(2);
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+		return;
+
+	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;*/
+
+
+	warning("L2_AttachActor: implement opcode");
+}
+
+void L2_SetActorFOV() {
+	//this only seems to be called as SetActorFOV(guybrush.hActor, 120)
+	lua_Object actorObj = lua_getparam(1);
+	lua_Object fovObj = lua_getparam(2);
+
+	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
+	int fov = (int)lua_getnumber(fovObj);
+
+	warning("L2_SetActorFOV: actor %s wants fov: %d", actor->getName().c_str(), fov);
+}
+
+void L2_GetActorPuckVector() {
+	// stub this for now as the regular one crashes.
+	warning("L2_GetActorPuckVector: implement opcode");
+	lua_pushnil();
+}
+
 // Stub function for builtin functions not yet implemented
 static void stubWarning(const char *funcName) {
 	warning("Stub function: %s", funcName);
@@ -590,14 +656,12 @@ static void stubError(const char *funcName) {
 #define STUB_FUNC2(name) void name() { stubError(#name); }
 
 // Opcodes more or less differ to Grim L1_* opcodes
-STUB_FUNC2(L2_SetActorWalkChore)
 STUB_FUNC2(L2_SetActorTurnChores)
 STUB_FUNC2(L2_SetActorRestChore)
 STUB_FUNC2(L2_SetActorMumblechore)
 STUB_FUNC2(L2_SetActorTalkChore)
 STUB_FUNC2(L2_GetActorPos)
 STUB_FUNC2(L2_WalkActorVector)
-STUB_FUNC2(L2_ActorLookAt)
 STUB_FUNC2(L2_SetActorLookRate)
 STUB_FUNC2(L2_GetActorLookRate)
 STUB_FUNC2(L2_GetVisibleThings)
@@ -642,8 +706,6 @@ STUB_FUNC2(L2_IrisUp)
 STUB_FUNC2(L2_IrisDown)
 STUB_FUNC2(L2_SetActorClipPlane)
 STUB_FUNC2(L2_SetActorClipActive)
-STUB_FUNC2(L2_SetActorCollisionScale)
-STUB_FUNC2(L2_SetActorCollisionMode)
 STUB_FUNC2(L2_FlushControls)
 STUB_FUNC2(L2_ActorToClean)
 STUB_FUNC2(L2_TurnLightOn)
@@ -680,12 +742,9 @@ STUB_FUNC2(L2_ThumbnailFromFile)
 STUB_FUNC2(L2_ClearSpecialtyTexture)
 STUB_FUNC2(L2_ClearOverworld)
 STUB_FUNC2(L2_ToggleOverworld)
-STUB_FUNC2(L2_SetActorFOV)
-STUB_FUNC2(L2_SetActorHeadLimits)
 STUB_FUNC2(L2_EnableActorPuck)
 STUB_FUNC2(L2_SetActorLocalAlpha)
 STUB_FUNC2(L2_GetActorSortOrder)
-STUB_FUNC2(L2_AttachActor)
 STUB_FUNC2(L2_DetachActor)
 STUB_FUNC2(L2_IsChoreValid)
 STUB_FUNC2(L2_IsChorePlaying)
@@ -751,18 +810,18 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "Save", L1_Save },
 	{ "remove", L1_Remove },
 	{ "SetActorTimeScale", L2_SetActorTimeScale },
-	{ "SetActorWalkChore", L2_SetActorWalkChore },
-	{ "SetActorTurnChores", L2_SetActorTurnChores },
-	{ "SetActorRestChore", L2_SetActorRestChore },
-	{ "SetActorMumblechore", L2_SetActorMumblechore },
-	{ "SetActorTalkChore", L2_SetActorTalkChore },
+	{ "SetActorWalkChore", L1_SetActorWalkChore },
+	{ "SetActorTurnChores", L1_SetActorTurnChores },
+	{ "SetActorRestChore", L1_SetActorRestChore },
+	{ "SetActorMumblechore", L1_SetActorMumblechore },
+	{ "SetActorTalkChore", L1_SetActorTalkChore },
 	{ "SetActorWalkRate", L2_SetActorWalkRate },
 	{ "GetActorWalkRate", L2_GetActorWalkRate },
 	{ "SetActorTurnRate", L1_SetActorTurnRate },
 	{ "SetSelectedActor", L1_SetSelectedActor },
 	{ "LoadActor", L1_LoadActor },
 	{ "GetActorPos", L2_GetActorPos },
-	{ "GetActorPuckVector", L1_GetActorPuckVector },
+	{ "GetActorPuckVector", L2_GetActorPuckVector },
 	{ "GetActorYawToPoint", L1_GetActorYawToPoint },
 	{ "SetActorReflection", L1_SetActorReflection },
 	{ "PutActorAt", L1_PutActorAt },
@@ -771,11 +830,11 @@ struct luaL_reg monkeyMainOpcodes[] = {
 	{ "WalkActorForward", L1_WalkActorForward },
 	{ "WalkActorTo", L1_WalkActorTo },
 	{ "WalkActorToAvoiding", L2_WalkActorToAvoiding },
-	{ "ActorLookAt", L2_ActorLookAt },
+	{ "ActorLookAt", L1_ActorLookAt },
 	{ "SetActorLookRate", L2_SetActorLookRate },
 	{ "GetActorLookRate", L2_GetActorLookRate },
 	{ "GetVisibleThings", L2_GetVisibleThings },
-	{ "SetActorHead", L2_SetActorHead },
+	{ "SetActorHead", L1_SetActorHead },
 	{ "SetActorVisibility", L1_SetActorVisibility },
 	{ "SetActorFollowBoxes", L1_SetActorFollowBoxes },
 	{ "ShutUpActor", L1_ShutUpActor },
@@ -962,7 +1021,7 @@ struct luaL_reg monkeyTextOpcodes[] = {
 	{ "SetSayLineDefaults", L1_SetSayLineDefaults },
 	{ "SetActorTalkColor", L1_SetActorTalkColor },
 	{ "SayLine", L2_SayLine },
-	{ "MakeTextObject", L2_MakeTextObject },
+	{ "MakeTextObject", L1_MakeTextObject },
 	{ "GetTextObjectDimensions", L2_GetTextObjectDimensions },
 	{ "GetFontDimensions", L2_GetFontDimensions },
 	{ "ChangeTextObject", L2_ChangeTextObject },
