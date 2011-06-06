@@ -506,8 +506,6 @@ void L1_SayLine() {
 void L1_ShutUpActor() {
 	lua_Object actorObj = lua_getparam(1);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 	Actor *actor = getactor(actorObj);
 	if (actor)
 		actor->shutUp();

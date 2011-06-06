@@ -77,7 +77,10 @@ void pushbool(bool val) {
 }
 
 Actor *getactor(lua_Object obj) {
-	return g_grim->getActor(lua_getuserdata(obj));
+	Actor *actor = 0;
+	if (lua_isuserdata(obj) && lua_tag(obj) == MKTAG('A','C','T','R'))
+		actor = g_grim->getActor(lua_getuserdata(obj));
+	return actor;
 }
 
 TextObject *gettextobject(lua_Object obj) {
@@ -89,7 +92,10 @@ Font *getfont(lua_Object obj) {
 }
 
 Color *getcolor(lua_Object obj) {
-	return g_grim->getColor(lua_getuserdata(obj));
+	Color *color = 0;
+	if (lua_isuserdata(obj) && lua_tag(obj) == MKTAG('C','O','L','R'))
+		color = g_grim->getColor(lua_getuserdata(obj));
+	return color;
 }
 
 PrimitiveObject *getprimitive(lua_Object obj) {
@@ -510,12 +516,13 @@ void L1_GetActorSector() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object typeObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 	if (!lua_isnumber(typeObj))
 		return;
 
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
 	Sector::SectorType sectorType = (Sector::SectorType)(int)lua_getnumber(typeObj);
 	Graphics::Vector3d pos = actor->getPos();
 	Sector *result = g_grim->getCurrScene()->findPointSector(pos, sectorType);
@@ -531,14 +538,15 @@ void L1_GetActorSector() {
 void L1_IsActorInSector() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object nameObj = lua_getparam(2);
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
 	if (!lua_isstring(nameObj)) {
 		lua_pushnil();
 		return;
 	}
 
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
 	const char *name = lua_getstring(nameObj);
 
 	int numSectors = g_grim->getCurrScene()->getSectorCount();
@@ -592,15 +600,15 @@ void L1_GetSectorOppositeEdge() {
 	lua_Object actorObj = lua_getparam(1);
 	lua_Object nameObj = lua_getparam(2);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
-		return;
-
 	if (!lua_isstring(nameObj)) {
 		lua_pushnil();
 		return;
 	}
 
 	Actor *actor = getactor(actorObj);
+	if (!actor)
+		return;
+
 	const char *name = lua_getstring(nameObj);
 
 	int numSectors = g_grim->getCurrScene()->getSectorCount();
