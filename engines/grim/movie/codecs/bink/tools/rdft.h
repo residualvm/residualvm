@@ -8,57 +8,60 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
-
+ 
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
-
+ 
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
 
-#ifndef GRIM_BINK_PLAYER_H
-#define GRIM_BINK_PLAYER_H
+// Based upon the (I)RDFT code in FFmpeg
+// Copyright (c) 2009 Alex Converse <alex dot converse at gmail dot com>
 
-#include "common/scummsys.h"
-#include "common/file.h"
+/** @file common/rdft.h
+ *  (Inverse) Real Discrete Fourier Transform.
+ */
 
-#include "graphics/pixelformat.h"
+#ifndef COMMON_RDFT_H
+#define COMMON_RDFT_H
 
-#include "audio/mixer.h"
-#include "audio/audiostream.h"
+#include "common/types.h"
+#include "maths.h"
+#include "fft.h"
 
-#include "engines/grim/movie/movie.h"
+namespace Common {
 
-namespace GrimGraphics{
-	class BinkDecoder;
-}
-namespace Grim {
-
-class BinkPlayer : public MoviePlayer {
-private:
-	Common::File _f;
-	GrimGraphics::BinkDecoder* _binkDecoder;
-	
+/** (Inverse) Real Discrete Fourier Transform. */
+class RDFT {
 public:
-	BinkPlayer();
-	~BinkPlayer();
+	enum TransformType {
+		DFT_R2C,
+		IDFT_C2R,
+		IDFT_R2C,
+		DFT_C2R
+	};
 
-	bool play(const char *filename, bool looping, int x, int y);
-	void stop();
-	void saveState(SaveGame *state);
-	void restoreState(SaveGame *state);
+	RDFT(int bits, TransformType trans);
+	~RDFT();
+
+	void calc(float *data);
+
 private:
-	static void timerCallback(void *ptr);
-	virtual void handleFrame();
-	void init();
-	void deinit();
+	int _bits;
+	int _inverse;
+	int _signConvention;
+
+	const float *_tSin;
+	const float *_tCos;
+
+	FFT *_fft;
 };
 
-} // end of namespace Grim
+} // End of namespace Common
 
-
-#endif
+#endif // COMMON_RDFT_H
