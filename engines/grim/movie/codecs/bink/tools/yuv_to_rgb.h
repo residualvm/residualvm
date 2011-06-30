@@ -8,57 +8,29 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
-
+ 
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
-
+ 
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
 
-#ifndef GRIM_BINK_PLAYER_H
-#define GRIM_BINK_PLAYER_H
+/** @file graphics/yuv_to_rgb.h
+ *  Efficient YUV to RGB conversion.
+ */
 
-#include "common/scummsys.h"
-#include "common/file.h"
+#ifndef GRAPHICS_YUV_TO_RGB_H
+#define GRAPHICS_YUV_TO_RGB_H
 
-#include "graphics/pixelformat.h"
+namespace GrimGraphics {
 
-#include "audio/mixer.h"
-#include "audio/audiostream.h"
+void convertYUVA420ToRGBA(byte *dst, int dstPitch, const byte *ySrc, const byte *uSrc, const byte *vSrc, const byte *aSrc, int yWidth, int yHeight, int yPitch, int uvPitch);
 
-#include "engines/grim/movie/movie.h"
-
-namespace GrimGraphics{
-	class BinkDecoder;
-}
-namespace Grim {
-
-class BinkPlayer : public MoviePlayer {
-private:
-	Common::File _f;
-	GrimGraphics::BinkDecoder* _binkDecoder;
-	
-public:
-	BinkPlayer();
-	~BinkPlayer();
-
-	bool play(const char *filename, bool looping, int x, int y);
-	void stop();
-	void saveState(SaveGame *state);
-	void restoreState(SaveGame *state);
-private:
-	static void timerCallback(void *ptr);
-	virtual void handleFrame();
-	void init();
-	void deinit();
-};
-
-} // end of namespace Grim
-
+} // End of namespace Graphics
 
 #endif
