@@ -31,6 +31,9 @@ namespace GrimGraphics {
 
 void convertYUVA420ToRGBA(byte *dst, int dstPitch, const byte *ySrc, const byte *uSrc, const byte *vSrc, const byte *aSrc, int yWidth, int yHeight, int yPitch, int uvPitch);
 
+void convertBGRAtoRGB565(byte *&dst, int width, int height);
+void flipHorizontally(byte *dst, int width, int height);
+
 } // End of namespace Graphics
 
 #endif

@@ -238,4 +238,37 @@ void convertYUVA420ToRGBA(byte *dst, int dstPitch, const byte *ySrc, const byte 
 	}
 }
 
+// Convert BGRA to RGB565, since the backends don't have BGRA-32-support yet.	
+void convertBGRAtoRGB565(byte *&dst, int width, int height){
+	byte red = 0, green = 0, blue = 0, alpha = 0;
+	unsigned int size = height * width * 4;
+	byte* tempStore = dst;
+	byte* newStore = new byte[size];
+	uint16 *to = reinterpret_cast<uint16 *>(newStore);
+	for(int j = 0; j < size;j += 4, to++){
+		blue = (tempStore[j] >> 3) & 0x1f;
+		green = (tempStore[j + 1] >> 2) & 0x3f;
+		red = (tempStore[j + 2] >> 3) &0x1f;
+		*to = (red << 11) | (green << 5) | blue;
+	}
+	delete[] tempStore;
+	dst = newStore;
+}
+
+// Really not needed, as we could simply draw backwards in backend.
+void flipHorizontally(byte *dst, int width, int height){
+	int lineLen = width * 2;
+	byte *temp = new byte[lineLen];
+	byte *top = dst;
+	byte *bottom = dst+lineLen*(height-1);
+	for(int i = 0;i < height/2; i++){
+		memcpy(temp,top,lineLen);
+		memcpy(top,bottom,lineLen);
+		memcpy(bottom,temp,lineLen);
+		top+=lineLen;
+		bottom-=lineLen;
+	}
+	delete[] temp;
+}
+	
 } // End of namespace Graphics

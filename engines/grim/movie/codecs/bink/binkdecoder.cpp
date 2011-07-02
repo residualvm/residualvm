@@ -267,6 +267,10 @@ void BinkDecoder::videoPacket(VideoFrame &video) {
 	// And swap the planes with the reference planes
 	for (int i = 0; i < 4; i++)
 		SWAP(_curPlanes[i], _oldPlanes[i]);
+	
+	// FIXME: We really should support BGRA in the gfx-backend instead of converting every frame to RGB565
+	convertBGRAtoRGB565(_data, _width, _height);
+	flipHorizontally(_data, _width, _height);
 }
 
 void BinkDecoder::decodePlane(VideoFrame &video, int planeIdx, bool isChroma) {
