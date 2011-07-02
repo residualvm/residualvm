@@ -8,57 +8,41 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
-
+ 
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
-
+ 
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
 
-#ifndef GRIM_BINK_PLAYER_H
-#define GRIM_BINK_PLAYER_H
+/** @file common/maths.cpp
+ *  Mathematical helpers.
+ */
 
-#include "common/scummsys.h"
-#include "common/file.h"
+#include <cassert>
 
-#include "graphics/pixelformat.h"
+#include "maths.h"
 
-#include "audio/mixer.h"
-#include "audio/audiostream.h"
+#include "sinetables.h"
+#include "cosinetables.h"
 
-#include "engines/grim/movie/movie.h"
+namespace Common {
 
-namespace GrimGraphics{
-	class BinkDecoder;
+const float *getSineTable(int bits) {
+	assert((bits >= 4) && (bits <= 16));
+
+	return sinTables[bits];
 }
-namespace Grim {
 
-class BinkPlayer : public MoviePlayer {
-private:
-	Common::File _f;
-	GrimGraphics::BinkDecoder* _binkDecoder;
-	
-public:
-	BinkPlayer();
-	~BinkPlayer();
+const float *getCosineTable(int bits) {
+	assert((bits >= 4) && (bits <= 16));
 
-	bool play(const char *filename, bool looping, int x, int y);
-	void stop();
-	void saveState(SaveGame *state);
-	void restoreState(SaveGame *state);
-private:
-	static void timerCallback(void *ptr);
-	virtual void handleFrame();
-	void init();
-	void deinit();
-};
+	return cosTables[bits];
+}
 
-} // end of namespace Grim
-
-
-#endif
+} // End of namespace Common

@@ -42,11 +42,14 @@
 
 #include "engines/grim/grim.h"
 #include "engines/grim/colormap.h"
+#include "engines/grim/movie/codecs/bink/binkdecoder.h"
 
-#define MWIDTH 640
-#define MHEIGHT 400
 
 namespace Grim {
+	
+const int MWIDTH = 640;
+const int MHEIGHT = 480;
+const int MDEPTH = 4;
 
 MoviePlayer *CreateBinkPlayer() {
 	return new BinkPlayer();
@@ -58,6 +61,7 @@ void BinkPlayer::timerCallback(void *) {
 
 BinkPlayer::BinkPlayer() : MoviePlayer() {
 	g_movie = this;
+	_binkDecoder = 0;
 	_speed = 50;
 }
 
@@ -74,10 +78,13 @@ void BinkPlayer::init() {
 
 	assert(!_externalBuffer);
 
-	_externalBuffer = new byte[_width * _height * 2];
-
+	_externalBuffer = new byte[MWIDTH*MHEIGHT*MDEPTH];
+	
 	warning("Trying to play %s",_fname.c_str());
-	//_videoBase->init(_fname.c_str());
+	
+	_videoPause = false;
+	_videoFinished = false;
+
 	g_system->getTimerManager()->installTimerProc(&timerCallback, _speed, NULL);
 }
 
@@ -95,7 +102,10 @@ void BinkPlayer::deinit() {
 		g_system->getMixer()->stopHandle(_soundHandle);
 	}
 	_videoPause = false;
+	if(_binkDecoder)
+		delete _binkDecoder;
 }
+	
 
 void BinkPlayer::handleFrame() {
 	if (_videoPause)
@@ -105,7 +115,15 @@ void BinkPlayer::handleFrame() {
 		_videoPause = true;
 		return;
 	}
+	
+	if(!_binkDecoder->hasTime()){
+		_binkDecoder->update();
+		_frame = _binkDecoder->getCurFrame();
+		_updateNeeded = true;
+	}
+		_binkDecoder->renderToArray(_externalBuffer, MWIDTH*MHEIGHT*MDEPTH);
 
+	
 	return;
 }
 
@@ -117,6 +135,15 @@ void BinkPlayer::stop() {
 bool BinkPlayer::play(const char *filename, bool looping, int x, int y) {
 	deinit();
 	_fname = filename;
+	_fname += ".bik";
+	
+	//Unsure if this leaks
+	Common::File* file = new Common::File();
+	
+	if(!file->open(_fname))
+		error("BINK: Couldnt find file %s.",_fname.c_str());
+	
+	_binkDecoder = new GrimGraphics::BinkDecoder(file);
 
 	if (gDebugLevel == DEBUG_SMUSH)
 		printf("Playing video '%s'.\n", filename);
