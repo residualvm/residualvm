@@ -110,7 +110,9 @@ void BinkPlayer::deinit() {
 void BinkPlayer::handleFrame() {
 	if (_videoPause)
 		return;
-
+	
+	_videoFinished = !_binkDecoder->isPlaying();
+	
 	if (_videoFinished) {
 		_videoPause = true;
 		return;
