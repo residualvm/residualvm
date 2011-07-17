@@ -80,6 +80,15 @@ int16 ModularBackend::getWidth() {
 	return _graphicsManager->getWidth();
 }
 
+Graphics::Surface *ModularBackend::lockScreen() {
+	return _graphicsManager->lockScreen();
+}
+
+void ModularBackend::unlockScreen() {
+	_graphicsManager->unlockScreen();
+}
+
+
 void ModularBackend::updateScreen() {
 	_graphicsManager->updateScreen();
 }

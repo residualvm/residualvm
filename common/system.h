@@ -312,7 +312,30 @@ public:
 	 * @return the currently set virtual screen width
 	 */
 	virtual int16 getWidth() = 0;
-
+	
+	/**
+	 * Lock the active screen framebuffer and return a Graphics::Surface
+	 * representing it. The caller can then perform arbitrary graphics
+	 * transformations on the framebuffer (blitting, scrolling, etc.).
+	 * Must be followed by matching call to unlockScreen(). Calling code
+	 * should make sure to only lock the framebuffer for the briefest
+	 * periods of time possible, as the whole system is potentially stalled
+	 * while the lock is active.
+	 * Returns 0 if an error occurred. Otherwise a surface with the pixel
+	 * format described by getScreenFormat is returned.
+	 *
+	 * The returned surface must *not* be deleted by the client code.
+	 *
+	 * @see getScreenFormat
+	 */
+	virtual Graphics::Surface *lockScreen() = 0;
+	
+	/**
+	 * Unlock the screen framebuffer, and mark it as dirty (i.e. during the
+	 * next updateScreen() call, the whole screen will be updated.
+	 */
+	virtual void unlockScreen() = 0;
+	
 	/**
 	 * Flush the whole screen, that is render the current content of the screen
 	 * framebuffer to the display.

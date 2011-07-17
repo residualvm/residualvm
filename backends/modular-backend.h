@@ -67,6 +67,8 @@ public:
 
 	virtual int16 getHeight();
 	virtual int16 getWidth();
+	virtual Graphics::Surface *lockScreen();
+	virtual void unlockScreen();
 	virtual void updateScreen();
 
 	virtual void showOverlay();
