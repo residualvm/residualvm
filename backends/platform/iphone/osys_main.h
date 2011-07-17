@@ -28,7 +28,6 @@
 #include "audio/mixer_intern.h"
 #include "backends/fs/posix/posix-fs-factory.h"
 #include "graphics/colormasks.h"
-#include "graphics/palette.h"
 
 #include <AudioToolbox/AudioQueue.h>
 
@@ -50,11 +49,10 @@ typedef struct AQCallbackStruct {
     AudioStreamBasicDescription dataFormat;
 } AQCallbackStruct;
 
-class OSystem_IPHONE : public EventsBaseBackend, public PaletteManager {
-	//class OSystem_IPHONE : public ModularBackend, public PaletteManager {
+class OSystem_IPHONE : public EventsBaseBackend {
+
 protected:
 
-	static const OSystem::GraphicsMode s_supportedGraphicsModes[];
 	static AQCallbackStruct s_AudioQueue;
 	static SoundProc s_soundCallback;
 	static void *s_soundParam;
@@ -123,24 +121,12 @@ public:
 	virtual bool hasFeature(Feature f);
 	virtual void setFeatureState(Feature f, bool enable);
 	virtual bool getFeatureState(Feature f);
-	virtual const GraphicsMode *getSupportedGraphicsModes() const;
-	virtual int getDefaultGraphicsMode() const;
-	bool setGraphicsMode(const char *name);
-	virtual bool setGraphicsMode(int mode);
-	virtual int getGraphicsMode() const;
 	virtual void launcherInitSize(uint w, uint h);
 	virtual byte *setupScreen(int screenW, int screenH, bool fullscreen, bool accel3d);
 	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format);
 	virtual int16 getHeight();
 	virtual int16 getWidth();
 
-	virtual PaletteManager *getPaletteManager() { return this; }
-protected:
-	// PaletteManager API
-	virtual void setPalette(const byte *colors, uint start, uint num);
-	virtual void grabPalette(byte *colors, uint start, uint num);
-
-public:
 	virtual void copyRectToScreen(const byte *buf, int pitch, int x, int y, int w, int h);
 	virtual void updateScreen();
 	virtual Graphics::Surface *lockScreen();

@@ -48,9 +48,9 @@
 #include "osys_main.h"
 
 
-const OSystem::GraphicsMode OSystem_IPHONE::s_supportedGraphicsModes[] = {
+/*const OSystem::GraphicsMode OSystem_IPHONE::s_supportedGraphicsModes[] = {
 	{0, 0, 0}
-};
+};*/
 
 AQCallbackStruct OSystem_IPHONE::s_AudioQueue;
 SoundProc OSystem_IPHONE::s_soundCallback = NULL;
@@ -266,8 +266,8 @@ void OSystem_IPHONE::logMessage(LogMessageType::Type type, const char *message) 
 
 byte *OSystem_IPHONE::setupScreen(int screenW, int screenH, bool fullscreen, bool accel3d){
 	// We don't really care right now, as RGB565 is what we want and get.
-	Graphics::PixelFormat *pixFormat = new Graphics::PixelFormat();
-	initSize(screenW, screenH, pixFormat);
+	Graphics::PixelFormat pixFormat = Graphics::createPixelFormat<565>();
+	initSize(screenW, screenH, &pixFormat);
 	return (byte*)_offscreen;
 }
 

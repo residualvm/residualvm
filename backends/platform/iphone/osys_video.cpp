@@ -25,27 +25,6 @@
 
 #include "osys_main.h"
 
-const OSystem::GraphicsMode* OSystem_IPHONE::getSupportedGraphicsModes() const {
-	return s_supportedGraphicsModes;
-}
-
-
-int OSystem_IPHONE::getDefaultGraphicsMode() const {
-	return -1;
-}
-
-bool OSystem_IPHONE::setGraphicsMode(const char *mode) {
-	return true;
-}
-
-bool OSystem_IPHONE::setGraphicsMode(int mode) {
-	return true;
-}
-
-int OSystem_IPHONE::getGraphicsMode() const {
-	return -1;
-}
-
 void OSystem_IPHONE::initSize(uint width, uint height, const Graphics::PixelFormat *format) {
 	//printf("initSize(%i, %i)\n", width, height);
 
@@ -91,28 +70,6 @@ int16 OSystem_IPHONE::getHeight() {
 
 int16 OSystem_IPHONE::getWidth() {
 	return _screenWidth;
-}
-
-void OSystem_IPHONE::setPalette(const byte *colors, uint start, uint num) {
-	assert(start + num <= 256);
-	const byte *b = colors;
-
-	for (uint i = start; i < start + num; ++i) {
-		_palette[i] = Graphics::RGBToColor<Graphics::ColorMasks<565> >(b[0], b[1], b[2]);
-		b += 3;
-	}
-
-	dirtyFullScreen();
-}
-
-void OSystem_IPHONE::grabPalette(byte *colors, uint start, uint num) {
-	assert(start + num <= 256);
-	byte *b = colors;
-
-	for (uint i = start; i < start + num; ++i) {
-		Graphics::colorToRGB<Graphics::ColorMasks<565> >(_palette[i], b[0], b[1], b[2]);
-		b += 3;
-	}
 }
 
 void OSystem_IPHONE::copyRectToScreen(const byte *buf, int pitch, int x, int y, int w, int h) {
