@@ -212,6 +212,9 @@ void GfxTinyGL::clearScreen() {
 }
 
 void GfxTinyGL::flipBuffer() {
+#ifdef IPHONE
+	g_system->unlockScreen();
+#endif
 	g_system->updateScreen();
 }
 
