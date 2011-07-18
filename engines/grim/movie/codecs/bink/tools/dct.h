@@ -8,57 +8,67 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
-
+ 
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
-
+ 
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
 
-#ifndef GRIM_BINK_PLAYER_H
-#define GRIM_BINK_PLAYER_H
+// Based upon the (I)DCT code in FFmpeg
+// Copyright (c) 2009 Peter Ross <pross@xvid.org>
+// Copyright (c) 2010 Alex Converse <alex.converse@gmail.com>
+// Copyright (c) 2010 Vitor Sessak
 
-#include "common/scummsys.h"
-#include "common/file.h"
+/** @file common/dct.h
+ *  (Inverse) Discrete Cosine Transforms.
+ */
 
-#include "graphics/pixelformat.h"
+#ifndef COMMON_DCT_H
+#define COMMON_DCT_H
 
-#include "audio/mixer.h"
-#include "audio/audiostream.h"
+#include "common/types.h"
+#include "maths.h"
+#include "rdft.h"
 
-#include "engines/grim/movie/movie.h"
+namespace Common {
 
-namespace GrimGraphics{
-	class BinkDecoder;
-}
-namespace Grim {
-
-class BinkPlayer : public MoviePlayer {
-private:
-	Common::File _f;
-	GrimGraphics::BinkDecoder* _binkDecoder;
-	
+/** (Inverse) Discrete Cosine Transforms. */
+class DCT {
 public:
-	BinkPlayer();
-	~BinkPlayer();
+	enum TransformType {
+		DCT_II,
+		DCT_III,
+		DCT_I,
+		DST_I
+	};
 
-	bool play(const char *filename, bool looping, int x, int y);
-	void stop();
-	void saveState(SaveGame *state);
-	void restoreState(SaveGame *state);
+	DCT(int bits, TransformType trans);
+	~DCT();
+
+	void calc(float *data);
+
 private:
-	static void timerCallback(void *ptr);
-	virtual void handleFrame();
-	void init();
-	void deinit();
+	int _bits;
+	TransformType _trans;
+
+	const float *_tCos;
+
+	float *_csc2;
+
+	RDFT *_rdft;
+
+	void calcDCTI  (float *data);
+	void calcDCTII (float *data);
+	void calcDCTIII(float *data);
+	void calcDSTI  (float *data);
 };
 
-} // end of namespace Grim
+} // End of namespace Common
 
-
-#endif
+#endif // COMMON_DCT_H

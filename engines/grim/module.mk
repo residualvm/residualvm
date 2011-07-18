@@ -32,6 +32,16 @@ MODULE_OBJS := \
 	lua/lundump.o \
 	lua/lvm.o \
 	lua/lzio.o \
+	movie/codecs/bink/decoder.o \
+	movie/codecs/bink/binkdecoder.o \
+	movie/codecs/bink/tools/bitstream.o \
+	movie/codecs/bink/tools/dct.o \
+	movie/codecs/bink/tools/fft.o \
+	movie/codecs/bink/tools/huffman.o \
+	movie/codecs/bink/tools/maths.o \
+	movie/codecs/bink/tools/rdft.o \
+	movie/codecs/bink/tools/yuv_to_rgb.o \
+	movie/codecs/bink/audiodecoders/pcm.o \
 	movie/codecs/blocky8.o \
 	movie/codecs/blocky16.o \
 	movie/codecs/vima.o \
