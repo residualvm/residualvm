@@ -95,6 +95,7 @@ void OptionsDialog::init() {
 	_renderModePopUp = 0;
 	_renderModePopUpDesc = 0;
 	_fullscreenCheckbox = 0;
+	_softRendererCheckbox = 0;
 	_aspectCheckbox = 0;
 	_disableDitheringCheckbox = 0;
 	_enableAudioSettings = false;
@@ -161,6 +162,25 @@ void OptionsDialog::open() {
 		_guioptions = parseGameGUIOptions(_guioptionsString);
 	}
 
+	// Graphic options
+	if (_fullscreenCheckbox) {
+						
+#ifdef SMALL_SCREEN_DEVICE
+		_fullscreenCheckbox->setState(true);
+		_fullscreenCheckbox->setEnabled(false);
+#else // !SMALL_SCREEN_DEVICE
+	  // Fullscreen setting
+		_fullscreenCheckbox->setState(ConfMan.getBool("fullscreen", _domain));
+#endif // SMALL_SCREEN_DEVICE
+#ifdef USE_OPENGL
+		_softRendererCheckbox->setState(ConfMan.getBool("soft_renderer", _domain));
+#else
+		_softRendererCheckbox->setState(true);
+		_softRendererCheckbox->setEnabled(false);
+#endif
+	}
+
+	
 	// Audio options
 	if (!loadMusicDeviceSetting(_midiPopUp, "music_driver"))
 		_midiPopUp->setSelected(0);
@@ -232,6 +252,24 @@ void OptionsDialog::open() {
 
 void OptionsDialog::close() {
 	if (getResult()) {
+		// Graphic options
+		bool graphicsModeChanged = false;
+		if (_fullscreenCheckbox) {
+			if (_enableGraphicSettings) {
+				if (ConfMan.getBool("fullscreen", _domain) != _fullscreenCheckbox->getState())
+					graphicsModeChanged = true;
+				if (ConfMan.getBool("soft_renderer", _domain) != _softRendererCheckbox->getState())
+					graphicsModeChanged = true;
+				
+				ConfMan.setBool("fullscreen", _fullscreenCheckbox->getState(), _domain);
+				ConfMan.setBool("soft_renderer", _softRendererCheckbox->getState(), _domain);
+				
+			} else {
+				ConfMan.removeKey("fullscreen", _domain);
+				ConfMan.removeKey("soft_renderer", _domain);
+			}
+		}
+
 		// Volume options
 		if (_musicVolumeSlider) {
 			if (_enableVolumeSettings) {
@@ -366,8 +404,12 @@ void OptionsDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 data
 
 void OptionsDialog::setGraphicSettingsState(bool enabled) {
 	_enableGraphicSettings = enabled;
-
+#ifdef USE_OPENGL
+	_softRendererCheckbox->setEnabled(enabled);
+#endif
 #ifndef SMALL_SCREEN_DEVICE
+
+	_fullscreenCheckbox->setEnabled(enabled);
 #endif
 }
 
@@ -476,6 +518,10 @@ void OptionsDialog::setSubtitleSettingsState(bool enabled) {
 
 void OptionsDialog::addGraphicControls(GuiObject *boss, const Common::String &prefix) {
 
+	// Fullscreen checkbox
+	_fullscreenCheckbox = new CheckboxWidget(boss, prefix + "grFullscreenCheckbox", _("Fullscreen mode"));
+	_softRendererCheckbox = new CheckboxWidget(boss, prefix + "grSoftRendererCheckbox", _("Software-Rendering"));
+	
 	_enableGraphicSettings = true;
 }
 
