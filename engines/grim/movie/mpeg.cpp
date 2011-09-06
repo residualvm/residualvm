@@ -147,7 +147,7 @@ bool MpegPlayer::play(const char *filename, bool looping, int x, int y) {
 	deinit();
 	_fname = filename;
 
-	if (gDebugLevel == DEBUG_SMUSH)
+	if (DebugSmush())
 		printf("Playing video '%s'.\n", filename);
 
 	init();

@@ -555,7 +555,7 @@ int GrimEngine::bundle_dofile(const char *filename) {
 		delete b;
 		// Don't print warnings on Scripts\foo.lua,
 		// d:\grimFandango\Scripts\foo.lua
-		if (!strstr(filename, "Scripts\\") && (gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL))
+		if (!strstr(filename, "Scripts\\") && DebugWarn())
 			warning("Cannot find script %s", filename);
 
 		return 2;
@@ -571,7 +571,7 @@ int GrimEngine::single_dofile(const char *filename) {
 
 	if (!f->open(filename)) {
 		delete f;
-		if (gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
+		if (DebugWarn())
 			warning("Cannot find script %s", filename);
 
 		return 2;
@@ -1500,7 +1500,7 @@ void GrimEngine::setSceneLock(const char *name, bool lockStatus) {
 	Scene *scene = findScene(name);
 
 	if (!scene) {
-		if (gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
+		if (DebugWarn())
 			warning("Scene object '%s' not found in list", name);
 		return;
 	}

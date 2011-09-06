@@ -143,7 +143,7 @@ void L1_new_dofile() {
 // Debugging message functions
 
 void L1_PrintDebug() {
-	if (gDebugLevel == DEBUG_NORMAL || gDebugLevel == DEBUG_ALL) {
+	if (DebugNormal()) {
 		Common::String msg("Debug: ");
 		lua_Object strObj = lua_getparam(1);
 		if (lua_isnil(strObj))
@@ -156,7 +156,7 @@ void L1_PrintDebug() {
 }
 
 void L1_PrintError() {
-	if (gDebugLevel == DEBUG_ERROR || gDebugLevel == DEBUG_ALL) {
+	if (DebugError()) {
 		Common::String msg("Error: ");
 		lua_Object strObj = lua_getparam(1);
 		if (lua_isnil(strObj))
@@ -169,7 +169,7 @@ void L1_PrintError() {
 }
 
 void L1_PrintWarning() {
-	if (gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL) {
+	if (DebugWarn()) {
 		Common::String msg("Warning: ");
 		lua_Object strObj = lua_getparam(1);
 		if (lua_isnil(strObj))
@@ -683,7 +683,7 @@ void L1_MakeCurrentSet() {
 	}
 
 	const char *name = lua_getstring(nameObj);
-	if (gDebugLevel == DEBUG_NORMAL || gDebugLevel == DEBUG_ALL)
+	if (DebugNormal())
 		printf("Entered new scene '%s'.\n", name);
 	g_grim->setScene(name);
 }
@@ -1169,12 +1169,12 @@ void L1_LightMgrStartup() {
 }
 
 void L1_JustLoaded() {
-	if (gDebugLevel == DEBUG_ERROR || gDebugLevel == DEBUG_ALL)
+	if (DebugError())
 		error("OPCODE USAGE VERIFICATION: JustLoaded");
 }
 
 void L1_SetEmergencyFont() {
-	if (gDebugLevel == DEBUG_ERROR || gDebugLevel == DEBUG_ALL)
+	if (DebugError())
 		error("OPCODE USAGE VERIFICATION: SetEmergencyFont");
 }
 

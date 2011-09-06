@@ -67,7 +67,7 @@ void MaterialData::initGrim(const Common::String &filename, const char *data, in
 		t->_height = READ_LE_UINT32(data + 4);
 		t->_hasAlpha = READ_LE_UINT32(data + 8);
 		if (t->_width == 0 || t->_height == 0) {
-			if (gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
+			if (DebugWarn())
 				warning("skip load texture: bad texture size (%dx%d) for texture %d of material %s",
 						t->_width, t->_height, i, _fname.c_str());
 			break;

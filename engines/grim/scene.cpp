@@ -377,10 +377,10 @@ void Scene::Setup::load(TextSplitter &ts) {
 	ts.scanString(" background %256s", 1, buf);
 	_bkgndBm = g_resourceloader->loadBitmap(buf);
 	if (!_bkgndBm) {
-		if (gDebugLevel == DEBUG_BITMAPS || gDebugLevel == DEBUG_ERROR || gDebugLevel == DEBUG_ALL)
+		if (DebugBitmaps() || DebugError())
 			warning("Unable to load scene bitmap: %s\n", buf);
 	} else {
-		if (gDebugLevel == DEBUG_BITMAPS || gDebugLevel == DEBUG_NORMAL || gDebugLevel == DEBUG_ALL)
+		if (DebugBitmaps() || DebugError())
 			warning("Loaded scene bitmap: %s\n", buf);
 	}
 
@@ -391,7 +391,7 @@ void Scene::Setup::load(TextSplitter &ts) {
 		// Don't even try to load if it's the "none" bitmap
 		if (strcmp(buf, "<none>.lbm") != 0) {
 			_bkgndZBm = g_resourceloader->loadBitmap(buf);
-			if (gDebugLevel == DEBUG_BITMAPS || gDebugLevel == DEBUG_NORMAL || gDebugLevel == DEBUG_ALL)
+			if (DebugBitmaps() || DebugNormal())
 				printf("Loading scene z-buffer bitmap: %s\n", buf);
 		}
 	}
@@ -594,7 +594,7 @@ ObjectState *Scene::findState(const char *filename) {
 		if (file == filename)
 			return *i;
 		if (file.compareToIgnoreCase(filename) == 0) {
-			if (gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
+			if (DebugWarn())
 				warning("State object request '%s' matches object '%s' but is the wrong case", filename, file.c_str());
 			return *i;
 		}

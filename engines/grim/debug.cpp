@@ -8,53 +8,33 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- *
+
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- *
+
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
 
-#ifndef GRIM_DEBUG_H
-#define GRIM_DEBUG_H
-
-#include "common/debug.h"
+#include "engines/grim/debug.h"
 
 namespace Grim {
 
-enum enDebugLevels {
-	DEBUG_NONE = 0,
-	DEBUG_NORMAL = 1,
-	DEBUG_WARN = 2,
-	DEBUG_ERROR = 4,
-	DEBUG_LUA = 8,
-	DEBUG_BITMAPS = 16,
-	DEBUG_MODEL = 32,
-	DEBUG_STUB = 64,
-	DEBUG_SMUSH = 128,
-	DEBUG_IMUSE = 256,
-	DEBUG_CHORES = 512,
-	DEBUG_ALL = DEBUG_NORMAL | DEBUG_WARN | DEBUG_ERROR | DEBUG_LUA | DEBUG_BITMAPS |
-	            DEBUG_MODEL | DEBUG_STUB | DEBUG_SMUSH | DEBUG_IMUSE | DEBUG_CHORES
-};
-
-bool DebugNormal();
-bool DebugWarn();
-bool DebugError();
-bool DebugLua();
-bool DebugBitmaps();
-bool DebugModel();
-bool DebugStub();
-bool DebugSmush();
-bool DebugImuse();
-bool DebugChores();
-bool DebugAll();
+#define DEBUG_CHECK(level) return (gDebugLevel & (DEBUG_##level))
+bool DebugNormal() { DEBUG_CHECK(NORMAL); }
+bool DebugWarn() { DEBUG_CHECK(WARN); }
+bool DebugError() { DEBUG_CHECK(ERROR); }
+bool DebugLua() { DEBUG_CHECK(LUA); }
+bool DebugBitmaps() { DEBUG_CHECK(BITMAPS); }
+bool DebugModel() { DEBUG_CHECK(MODEL); }
+bool DebugStub() { DEBUG_CHECK(STUB); }
+bool DebugSmush() { DEBUG_CHECK(SMUSH); }
+bool DebugImuse() { DEBUG_CHECK(IMUSE); }
+bool DebugChores() { DEBUG_CHECK(CHORES); }
+bool DebugAll() { DEBUG_CHECK(ALL); }
 
 }
-
-#endif
