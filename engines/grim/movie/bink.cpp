@@ -158,7 +158,7 @@ bool BinkPlayer::play(const char *filename, bool looping, int x, int y) {
 	if (!_binkDecoder->loadFile(_fname))
 		return false;
 
-	if (gDebugLevel == DEBUG_SMUSH)
+	if (DebugSmush())
 		printf("Playing video '%s'.\n", filename);
 
 	init();

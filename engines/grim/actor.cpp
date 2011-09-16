@@ -1007,11 +1007,11 @@ void Actor::popCostume() {
 		_costumeStack.pop_back();
 
 		if (_costumeStack.empty()) {
-			if (gDebugLevel == DEBUG_NORMAL || gDebugLevel == DEBUG_ALL)
+			if (DebugNormal())
 				printf("Popped (freed) the last costume for an actor.\n");
 		}
 	} else {
-		if (gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
+		if (DebugWarn())
 			warning("Attempted to pop (free) a costume when the stack is empty!");
 	}
 }

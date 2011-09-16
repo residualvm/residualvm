@@ -158,7 +158,7 @@ int Animation::update(int time) {
 				_time = animLength;
 				break;
 			default:
-				if (gDebugLevel == DEBUG_MODEL || gDebugLevel == DEBUG_WARN || gDebugLevel == DEBUG_ALL)
+				if (DebugModel() || DebugWarn())
 					warning("Unknown repeat mode %d for keyframe %s", _repeatMode, _keyframe->getFilename().c_str());
 		}
 	}

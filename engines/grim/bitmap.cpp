@@ -117,7 +117,7 @@ BitmapData::BitmapData(const Common::String &fname, const char *data, int len) {
 		loadTile(data, len);
 		return;
 	} else if (len < 8 || memcmp(data, "BM  F\0\0\0", 8) != 0) {
-		if (gDebugLevel == DEBUG_BITMAPS || gDebugLevel == DEBUG_ERROR || gDebugLevel == DEBUG_ALL)
+		if (DebugBitmaps() || DebugError())
 			error("Invalid magic loading bitmap");
 	}
 
@@ -166,7 +166,7 @@ BitmapData::BitmapData(const Common::String &fname, const char *data, int len) {
 BitmapData::BitmapData(const char *data, int w, int h, int bpp, const char *fname) {
 	_fname = fname;
 	_refCount = 1;
-	if (gDebugLevel == DEBUG_BITMAPS || gDebugLevel == DEBUG_NORMAL || gDebugLevel == DEBUG_ALL)
+	if (DebugBitmaps() || DebugNormal())
 		printf("New bitmap loaded: %s\n", fname);
 	_numImages = 1;
 	_x = 0;

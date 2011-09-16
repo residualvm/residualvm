@@ -45,6 +45,7 @@ MODULE_OBJS := \
 	costume.o \
 	color.o \
 	colormap.o \
+	debug.o \
 	detection.o \
 	font.o \
 	gfx_base.o \

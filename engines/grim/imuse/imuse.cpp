@@ -334,7 +334,7 @@ void Imuse::switchToNextRegion(Track *track) {
 	assert(track);
 
 	if (track->trackId >= MAX_IMUSE_TRACKS) {
-		if (gDebugLevel == DEBUG_IMUSE || gDebugLevel == DEBUG_ALL)
+		if (DebugImuse())
 			printf("Imuse::switchToNextRegion(): fadeTrack end: soundName:%s\n", track->soundName);
 		flushTrack(track);
 		return;
@@ -343,7 +343,7 @@ void Imuse::switchToNextRegion(Track *track) {
 	int numRegions = _sound->getNumRegions(track->soundDesc);
 
 	if (++track->curRegion == numRegions) {
-		if (gDebugLevel == DEBUG_IMUSE || gDebugLevel == DEBUG_ALL)
+		if (DebugImuse())
 			printf("Imuse::switchToNextRegion(): end of tracks: soundName:%s\n", track->soundName);
 		flushTrack(track);
 		return;
@@ -354,7 +354,7 @@ void Imuse::switchToNextRegion(Track *track) {
 	if (jumpId == -1)
 		jumpId = _sound->getJumpIdByRegionAndHookId(soundDesc, track->curRegion, 0);
 	if (jumpId != -1) {
-		if (gDebugLevel == DEBUG_IMUSE || gDebugLevel == DEBUG_ALL)
+		if (DebugImuse())
 			printf("Imuse::switchToNextRegion(): JUMP: soundName:%s\n", track->soundName);
 		int region = _sound->getRegionIdByJumpId(soundDesc, jumpId);
 		assert(region != -1);
@@ -377,7 +377,7 @@ void Imuse::switchToNextRegion(Track *track) {
 				track->curHookId = 0;
 	}
 
-	if (gDebugLevel == DEBUG_IMUSE || gDebugLevel == DEBUG_ALL)
+	if (DebugImuse())
 		printf("Imuse::switchToNextRegion(): REGION %d: soundName:%s\n", (int)track->curRegion, track->soundName);
 	track->dataOffset = _sound->getRegionOffset(soundDesc, track->curRegion);
 	track->regionOffset = 0;
