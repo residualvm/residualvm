@@ -233,6 +233,7 @@ static void io_writeto() {
 		setreturn(id, FOUTPUT);
 	} else {
 		const char *s = luaL_check_string(FIRSTARG);
+		s = Common::lastPathComponent(s, '\\').c_str();
 		if (Common::String(s).hasSuffix("\\bino.txt")) {
 			pushresult(0);
 			return;
@@ -254,6 +255,7 @@ static void io_writeto() {
 
 static void io_appendto() {
 	const char *s = luaL_check_string(FIRSTARG);
+	s = Common::lastPathComponent(s, '\\').c_str();
 	Common::SeekableReadStream *inFile = NULL;
 	Common::SaveFileManager *saveFileMan = g_system->getSavefileManager();
 	inFile = saveFileMan->openForLoading(s);
