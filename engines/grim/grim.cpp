@@ -455,6 +455,7 @@ GrimEngine::~GrimEngine() {
 Common::Error GrimEngine::run() {
 	g_resourceloader = new ResourceLoader();
 	g_localizer = new Localizer();
+	bool demo = g_grim->getGameFlags() & ADGF_DEMO;
 	if (getGameType() == GType_GRIM)
 		g_movie = CreateSmushPlayer();
 	else if (getGameType() == GType_MONKEY4) {
@@ -463,7 +464,7 @@ Common::Error GrimEngine::run() {
 		else
 			g_movie = CreateBinkPlayer();
 	}
-	g_imuse = new Imuse(20);
+	g_imuse = new Imuse(20, demo);
 
 	bool fullscreen = (tolower(g_registry->get("fullscreen", "false")[0]) == 't');
 

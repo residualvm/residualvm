@@ -45,6 +45,8 @@
 #include "engines/grim/resource.h"
 #include "engines/grim/savegame.h"
 
+#include "engines/grim/movie/codecs/vima.h"
+
 #ifdef USE_SMUSH
 
 namespace Grim {

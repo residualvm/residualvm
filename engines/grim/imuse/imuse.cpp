@@ -26,11 +26,13 @@
 
 #include "common/timer.h"
 
-#include "engines/grim/grim.h"
 #include "engines/grim/savegame.h"
 #include "engines/grim/debug.h"
 
 #include "engines/grim/imuse/imuse.h"
+
+#include "engines/grim/movie/codecs/vima.h"
+
 
 #include "audio/audiostream.h"
 #include "audio/mixer.h"
@@ -51,9 +53,9 @@ void Imuse::timerHandler(void *refCon) {
 	imuse->callback();
 }
 
-Imuse::Imuse(int fps) {
+Imuse::Imuse(int fps, bool demo) : _demo(demo) {
 	_pause = false;
-	_sound = new ImuseSndMgr();
+	_sound = new ImuseSndMgr(_demo);
 	assert(_sound);
 	_callbackFps = fps;
 	resetState();
@@ -64,7 +66,7 @@ Imuse::Imuse(int fps) {
 		_track[l]->trackId = l;
 	}
 	vimaInit(imuseDestTable);
-	if (g_grim->getGameFlags() & ADGF_DEMO) {
+	if (_demo) {
 		_stateMusicTable = grimDemoStateMusicTable;
 		_seqMusicTable = grimDemoSeqMusicTable;
 	} else {

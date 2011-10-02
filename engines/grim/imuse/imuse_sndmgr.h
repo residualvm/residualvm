@@ -81,7 +81,7 @@ public:
 	};
 
 private:
-
+	bool _demo;
 	SoundDesc _sounds[MAX_IMUSE_SOUNDS];
 
 	bool checkForProperHandle(SoundDesc *soundDesc);
@@ -91,7 +91,7 @@ private:
 
 public:
 
-	ImuseSndMgr();
+	ImuseSndMgr(bool demo);
 	~ImuseSndMgr();
 
 	SoundDesc *openSound(const char *soundName, int volGroupId);
