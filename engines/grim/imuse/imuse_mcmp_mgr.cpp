@@ -24,6 +24,7 @@
 
 #include "engines/grim/resource.h"
 
+#include "engines/grim/movie/codecs/vima.h"
 #include "engines/grim/imuse/imuse_mcmp_mgr.h"
 #include "engines/grim/movie/codecs/vima.h"
 
