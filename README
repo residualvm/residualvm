@@ -157,6 +157,9 @@ some of them might make residual crash, or behave in weird ways.
 |fullscreen         |[true/false] | If true, then Residual will attempt to run in       |
 |                   |             | fullscreen-mode, otherwise it will use a window.    |
 |-------------------|-------------|-----------------------------------------------------|
+|antialiasing       |[samples]    | If set, antialiasing will be used in HW-rendering.  |
+|                   |             | Valid number of samples are usually powers of two.  |
+|-------------------|-------------|-----------------------------------------------------|
 |show_fps           |[true/false] | If true, then Residual will show the current        |
 |                   |             | FPS-rate, while you play                            |
 |-------------------|-------------|-----------------------------------------------------|
