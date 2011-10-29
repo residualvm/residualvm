@@ -1530,28 +1530,37 @@ void Costume::animate() {
 	}
 }
 
+/** Returns the scalar 'val' animated towards zero, at most by the given maximum step.
+	If val is nearer to zero than maxStep, 0 is returned.
+	Note: The angle is in degrees, but assuming here that it is nicely in the range [-180, 180],
+	or otherwise the shortest route to zero angle wouldn't be like animated here. */
+static Math::Angle moveTowardsZero(Math::Angle val, float maxStep)
+{
+	if (val > maxStep)
+		return val - maxStep;
+	if (val < -maxStep)
+		return val + maxStep;
+	return 0;
+}
+
+/** Animates the head of the character to move towards a target.
+	@param lookingMode If false, the character isn't looking at any target, and this function
+		will animate the head to return to the "identity" position, looking straight ahead.
+		If true, the head will be animated to look towards the given lookAt point.
+	@param lookAt A point in world space the character should rotate its head to face at. */
 void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rate) {
 	if (_joint1Node) {
 		float step = g_grim->getPerSecond(rate);
 		float yawStep = step;
 		float pitchStep = step / 3.f;
 		if (!lookingMode) {
-			//animate yaw
-			if (_headYaw > yawStep) {
-				_headYaw -= yawStep;
-			} else if (_headYaw < -yawStep) {
-				_headYaw += yawStep;
-			} else {
-				_headYaw = 0;
-			}
-			//animate pitch
-			if (_headPitch > pitchStep) {
-				_headPitch -= pitchStep;
-			} else if (_headPitch < -pitchStep) {
-				_headPitch += pitchStep;
-			} else {
-				_headPitch = 0;
-			}
+
+			// The character isn't looking at a target.
+			// Animate _headYaw and _headPitch slowly towards zero
+			// so that the character will turn to look straight ahead.
+			_headYaw = moveTowardsZero(_headYaw, yawStep);
+			_headPitch = moveTowardsZero(_headPitch, pitchStep);
+
 			_joint1Node->_animYaw = _headYaw;
 			Math::Angle pi = _headPitch / 3.f;
 			_joint1Node->_animPitch += pi;
