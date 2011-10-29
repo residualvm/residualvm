@@ -221,7 +221,7 @@ MoviePlayer *CreateMpegPlayer() {
 #endif
 
 #ifndef USE_SMUSH
-MoviePlayer *CreateSmushPlayer() {
+MoviePlayer *CreateSmushPlayer(bool) {
 	return new NullPlayer("SMUSH");
 }
 #endif
