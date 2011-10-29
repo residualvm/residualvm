@@ -1530,6 +1530,15 @@ void Costume::animate() {
 	}
 }
 
+// Subtracts off extra multiples of the given angle in degrees, and returns 
+// the same angle represented in the [-180, 180] range.
+static Math::Angle to180Range(Math::Angle angle)
+{
+	float deg = angle.getDegrees(-180.f);
+	angle.setDegrees(deg);
+	return angle;
+}
+
 /** Returns the scalar 'val' animated towards zero, at most by the given maximum step.
 	If val is nearer to zero than maxStep, 0 is returned.
 	Note: The angle is in degrees, but assuming here that it is nicely in the range [-180, 180],
@@ -1541,6 +1550,17 @@ static Math::Angle moveTowardsZero(Math::Angle val, float maxStep)
 	if (val < -maxStep)
 		return val + maxStep;
 	return 0;
+}
+
+/** Returns val clamped to range [-mag, mag]. */
+static Math::Angle clampMagnitude(Math::Angle val, float mag)
+{
+	val = to180Range(val);
+	if (val.getDegrees() >= mag)
+		return mag;
+	if (val.getDegrees() <= -mag)
+		return -mag;
+	return val;
 }
 
 /** Animates the head of the character to move towards a target.
@@ -1568,14 +1588,11 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 			_joint3Node->_animPitch += pi;
 			_joint1Node->_animRoll = (_joint1Node->_animYaw.getDegrees() / 20.f) *
 										_headPitch.getDegrees() / -5.f;
-
-			if (_joint1Node->_animRoll > _head.maxRoll)
-				_joint1Node->_animRoll = _head.maxRoll;
-			if (_joint1Node->_animRoll < -_head.maxRoll)
-				_joint1Node->_animRoll = -_head.maxRoll;
+			_joint1Node->_animRoll = clampMagnitude(_joint1Node->_animRoll, _head.maxRoll);
 			return;
 		}
 
+		// Make sure we have up-to-date world transform matrices computed for every bone node of this character.
 		ModelNode *p = _joint3Node;
 		while (p->_parent) {
 			p = p->_parent;
@@ -1583,6 +1600,7 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		p->setMatrix(_matrix);
 		p->update();
 
+		// v is the world space direction vector this character should be looking towards.
 		Math::Vector3d v =  lookAt - _joint3Node->_matrix.getPosition();
 		if (v.isZero()) {
 			return;
@@ -1603,18 +1621,7 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 			p = p->_parent;
 		}
 
-		_joint1Node->_animYaw = (- 90 + yaw - bodyYaw);
-		if (_joint1Node->_animYaw < -180.) {
-			_joint1Node->_animYaw += 360;
-		}
-		if (_joint1Node->_animYaw > 180.) {
-			_joint1Node->_animYaw -= 360;
-		}
-
-		if (_joint1Node->_animYaw > _head.maxYaw)
-			_joint1Node->_animYaw = _head.maxYaw;
-		if (_joint1Node->_animYaw < -_head.maxYaw)
-			_joint1Node->_animYaw = -_head.maxYaw;
+		_joint1Node->_animYaw = clampMagnitude(- 90 + yaw - bodyYaw, _head.maxYaw);
 
 		float sqLenght = v.x() * v.x() + v.y() * v.y();
 		float h;
