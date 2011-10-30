@@ -1785,6 +1785,12 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		// This matrix is the head orientation with respect to parent-with-keyframe-animation space.
 		lookAtTM.buildFromPitchYawRoll(pt, y, r);
 
+		// What follows is a hack: Since translateObject(ModelNode *node, bool reset) in this file,
+		// and GfxOpenGL/GfxTinyGL::drawHierachyNode concatenate transforms incorrectly, by summing up
+		// euler angles, do a hack here where we do the proper transform here already, and *subtract off*
+		// the YPR scalars from the animYPR scalars to cancel out the values that those pieces of code 
+		// will later accumulate. After those pieces of code have been fixed, the following lines can
+		// be deleted, and this function can simply output the contents of pt, y and r variables above. 
 		lookAtTM = animFrame * lookAtTM;
 
 		extractEulerZXY(lookAtTM, y, pt, r);
@@ -1792,6 +1798,7 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		_joint1Node->_animPitch = pt;
 		_joint1Node->_animRoll = r;
 
+		// hack hack:
 		_joint1Node->_animYaw -= _joint1Node->_yaw;
 		_joint1Node->_animPitch -= _joint1Node->_pitch;
 		_joint1Node->_animRoll -= _joint1Node->_roll;
