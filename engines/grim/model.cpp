@@ -657,13 +657,19 @@ void ModelNode::update() {
 		return;
 
 	if (_hierVisible) {
-		Math::Vector3d animPos = _pos + _animPos;
-		Math::Angle animPitch = _pitch + _animPitch;
-		Math::Angle animYaw = _yaw + _animYaw;
-		Math::Angle animRoll = _roll + _animRoll;
 
-		_localMatrix.setPosition(animPos);
-		_localMatrix.buildFromPitchYawRoll(animPitch, animYaw, animRoll);
+		// The initial bind pose transform (as parent).
+		Math::Matrix4 t;
+		t.setPosition(_pos);
+		t.buildFromPitchYawRoll(_pitch, _yaw, _roll);
+
+		// The difference animation we have applied on top of the bind pose (as child).
+		Math::Matrix4 t2;
+		t2.setPosition(_animPos);
+		t2.buildFromPitchYawRoll(_animPitch, _animYaw, _animRoll);
+
+		// Concatenate the transformation for this joint.
+		_localMatrix = t * t2;
 
 		_matrix = _matrix * _localMatrix;
 
