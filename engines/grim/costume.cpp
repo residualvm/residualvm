@@ -1688,6 +1688,7 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		float step = g_grim->getPerSecond(rate);
 		float yawStep = step;
 		float pitchStep = step / 3.f;
+		float rollStep = step / 3.f;
 
 		// Make sure we have up-to-date world transform matrices computed for every bone node of this character.
 		ModelNode *p = _joint3Node;
@@ -1701,6 +1702,22 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		if (this->_fname.compareTo("gunar_meshes.cos") == 0 || this->_fname.compareTo("slisko_meshes.cos") == 0)
 			yFront = false; // For these characters, the head coordinate frame is: -Z front, -X up, +Y right.
 
+		Math::Vector3d localFront; // Character front direction vector in local space.
+		Math::Vector3d localUp; // Character up direction vector in local space.
+		Math::Vector3d frontDir; // Character front facing direction vector in world space (global scene coordinate space)
+		if (yFront)
+		{
+			frontDir = Math::Vector3d(_joint3Node->_matrix(0,1), _joint3Node->_matrix(1,1), _joint3Node->_matrix(2,1)); // Look straight ahead. (+Y)
+			localFront = Math::Vector3d(0,1,0);
+			localUp = Math::Vector3d(0,0,1);
+		}
+		else
+		{
+			frontDir = Math::Vector3d(-_joint3Node->_matrix(0,2), -_joint3Node->_matrix(1,2), -_joint3Node->_matrix(2,2)); // Look straight ahead. (-Z)
+			localFront = Math::Vector3d(0,0,-1);
+			localUp = Math::Vector3d(-1,0,0);
+		}
+
 		// yFront == true for about every character in the game.
 		// yFront == false for those two revolutionistas in Blue Casket. Perhaps the artist wanted to be 
 		//                 a revolutionist as well ;) OR, there is a bug in the way how transform hierarchies
@@ -1709,12 +1726,7 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		// v is the world space direction vector this character should be looking towards.
 		Math::Vector3d v = lookAt - _joint3Node->_pivotMatrix.getPosition();
 		if (!lookingMode)
-		{
-			if (yFront)
-				v = Math::Vector3d(_joint3Node->_matrix(0,1), _joint3Node->_matrix(1,1), _joint3Node->_matrix(2,1)); // Look straight ahead. (+Y)
-			else
-				v = Math::Vector3d(-_joint3Node->_matrix(0,2), -_joint3Node->_matrix(1,2), -_joint3Node->_matrix(2,2)); // Look straight ahead. (-Z)
-		}
+			v = frontDir;
 		if (v.isZero())
 			return;
 		v.normalize();
@@ -1722,10 +1734,12 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		// The vector v is in world space, so generate the world space lookat matrix for the desired head facing
 		// orientation.
 		Math::Matrix4 lookAtTM;
-		if (yFront)
-			lookAtTM = lookAtMatrix(Math::Vector3d(0,1,0), v, Math::Vector3d(0,0,1), Math::Vector3d(0,0,1));
+		const Math::Vector3d worldUp(0,0,1); // The Residual scene convention: +Z is world space up.
+		if (fabs(Math::Vector3d::dotProduct(v, Math::Vector3d(0,0,1))) >= 0.98f) // Avoid singularity if trying to look straight up.
+			lookAtTM = lookAtMatrix(localFront, v, localUp, -frontDir); // Instead of orienting head towards scene up, orient head towards character "back",
+		                                                                // i.e. when you look straight up, your head up vector tilts/arches to point straight backwards.
 		else
-			lookAtTM = lookAtMatrix(Math::Vector3d(0,0,-1), v, Math::Vector3d(-1,0,0), Math::Vector3d(0,0,1));
+			lookAtTM = lookAtMatrix(localFront, v, localUp, worldUp);
 		// The above specifies the world space orientation of this bone, but we need to output
 		// the orientation in parent space (as yaw/pitch/roll). 
 
@@ -1755,9 +1769,21 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		// Constrain the maximum head movement, as desired by the game LUA scripts.
 		y = clampMagnitude(y, _head.maxYaw);
 		pt = clampMagnitude(pt, _head.maxPitch);
-		r = clampMagnitude(r, _head.maxRoll);
+		// NOTE: By default, the _head.maxRoll for Manny's head is constrained to 165 degrees, which 
+		// comes in from the orignal Lua data scripts. (also, maxYaw == 80, maxPitch == 28).
+		// The very small maxPitch angle, and a very large maxRoll angle causes problems when Manny
+		// is trying to look straight up to an object, in which case the euler roll angles vary
+		// wildly compared to the pitch angles, which get clamped to a much smaller interval. Therefore,
+		// restrict the maximum roll angle to a smaller value than 165 degrees to avoid this behavior.
+		// If you want to change this, good places to test are:
+		// A) Year 1, outside the Department of Death, run/walk up & down the stairs, there's a sign
+		//    right above the stairs, and Manny looks dead up.
+		// B) Year 3, when Manny and Meche are imprisoned in the vault. Walk inside the room where Meche
+		//    is in, to look straight up to the sprinklers.
+		r = clampMagnitude(r, 30);
+//		r = clampMagnitude(r, _head.maxRoll); // For original, use this.
 
-		// Also limit yaw and pitch to make at most a movement as large as yawStep/pitchStep during this frame.
+		// Also limit yaw, pitch and roll to make at most a movement as large as the given max step size during this frame.
 		// This will produce a slow head-turning animation instead of immediately snapping to the
 		// target lookat orientation.
 		if (y - _headYaw > yawStep)
@@ -1770,9 +1796,15 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		if (_headPitch - pt > pitchStep)
 			pt = _headPitch - pitchStep;
 
+		if (r - _headRoll > rollStep)
+			r = _headRoll + rollStep;
+		if (_headRoll - r > rollStep)
+			r = _headRoll - rollStep;
+
 		// Remember how far we animated the head this frame, and we'll continue from here the next frame.
 		_headPitch = pt;
 		_headYaw = y;
+		_headRoll = r;
 
 		// Assemble ypr back to a matrix.
 		// This matrix is the head orientation with respect to parent-with-keyframe-animation space.

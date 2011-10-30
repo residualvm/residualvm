@@ -202,6 +202,7 @@ private:
 
 	Math::Angle _headPitch;
 	Math::Angle _headYaw;
+	Math::Angle _headRoll;
 };
 
 } // end of namespace Grim
