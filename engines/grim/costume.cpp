@@ -1545,19 +1545,6 @@ static Math::Angle to180Range(Math::Angle angle)
 	return angle;
 }
 
-/** Returns the scalar 'val' animated towards zero, at most by the given maximum step.
-	If val is nearer to zero than maxStep, 0 is returned.
-	Note: The angle is in degrees, but assuming here that it is nicely in the range [-180, 180],
-	or otherwise the shortest route to zero angle wouldn't be like animated here. */
-static Math::Angle moveTowardsZero(Math::Angle val, float maxStep)
-{
-	if (val > maxStep)
-		return val - maxStep;
-	if (val < -maxStep)
-		return val + maxStep;
-	return 0;
-}
-
 /** Returns val clamped to range [-mag, mag]. */
 static Math::Angle clampMagnitude(Math::Angle val, float mag)
 {
@@ -1705,7 +1692,7 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		p->update();
 
 		// v is the world space direction vector this character should be looking towards.
-		Math::Vector3d v =  lookAt - _joint1Node->_matrix.getPosition();
+		Math::Vector3d v =  lookAt - _joint3Node->_pivotMatrix.getPosition();
 		if (!lookingMode)
 			v = Math::Vector3d(_joint1Node->_matrix(0,1), _joint1Node->_matrix(1,1), _joint1Node->_matrix(2,1)); // Look straight ahead.
 		if (v.isZero()) {
@@ -1730,8 +1717,7 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		// properly. So, compute the coordinate frame of this bone in the keyframe animation.
 		Math::Matrix4 animFrame;
 		animFrame.buildFromPitchYawRoll(_joint1Node->_pitch, _joint1Node->_yaw, _joint1Node->_roll);
-		animFrame.setPosition(Math::Vector3d(0,0,0)); // NOTE: Could take _joint1Node->_pos into account here, but the 
-		                                              // vector v would need to be fixed accordingly above.
+		animFrame.setPosition(Math::Vector3d(0,0,0));
 		parentWorldTM = parentWorldTM * animFrame;
 		invertAffineOrthonormal(parentWorldTM);
 
