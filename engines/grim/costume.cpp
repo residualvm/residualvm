@@ -1696,24 +1696,6 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		float yawStep = step;
 		float pitchStep = step / 3.f;
 
-		if (!lookingMode) {
-			// The character isn't looking at a target.
-			// Animate _headYaw and _headPitch slowly towards zero
-			// so that the character will turn to look straight ahead.
-			_headYaw = moveTowardsZero(_headYaw, yawStep);
-			_headPitch = moveTowardsZero(_headPitch, pitchStep);
-
-			_joint1Node->_animYaw = _headYaw;
-			Math::Angle pi = _headPitch / 3.f;
-			_joint1Node->_animPitch += pi;
-			_joint2Node->_animPitch += pi;
-			_joint3Node->_animPitch += pi;
-			_joint1Node->_animRoll = (_joint1Node->_animYaw.getDegrees() / 20.f) *
-										_headPitch.getDegrees() / -5.f;
-			_joint1Node->_animRoll = clampMagnitude(_joint1Node->_animRoll, _head.maxRoll);
-			return;
-		}
-
 		// Make sure we have up-to-date world transform matrices computed for every bone node of this character.
 		ModelNode *p = _joint3Node;
 		while (p->_parent) {
@@ -1724,6 +1706,8 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 
 		// v is the world space direction vector this character should be looking towards.
 		Math::Vector3d v =  lookAt - _joint1Node->_matrix.getPosition();
+		if (!lookingMode)
+			v = Math::Vector3d(_joint1Node->_matrix(0,1), _joint1Node->_matrix(1,1), _joint1Node->_matrix(2,1)); // Look straight ahead.
 		if (v.isZero()) {
 			return;
 		}
