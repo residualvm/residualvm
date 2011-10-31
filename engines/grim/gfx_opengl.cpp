@@ -790,6 +790,7 @@ void GfxOpenGL::destroyBitmap(BitmapData *bitmap) {
 	if (textures) {
 		glDeleteTextures(bitmap->_numTex * bitmap->_numImages, textures);
 		delete[] textures;
+		bitmap->_texIds = 0;
 	}
 }
 
