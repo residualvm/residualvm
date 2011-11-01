@@ -658,20 +658,28 @@ void ModelNode::update() {
 
 	if (_hierVisible) {
 
-		/** @bug Concatenating Euler angles like this does not compute
-			the proper parent-child transformation. The reason this might seem to work
-			is that the oftern either _yaw/_pitch/_roll combination is zero, or
-			_animYaw/_animPitch/_animRoll combination is zero. Proper concatenation
-			converts the parent and child ypr to matrices, multiplies them, and decomposes
-			the resulting matrix back to ypr, if needed. */
+		/**
+		 * @bug Concatenating Euler angles like this does not compute
+		 * the proper parent-child transformation. The reason this might seem to work
+		 * is that often either _yaw/_pitch/_roll combination is zero, or
+		 * _animYaw/_animPitch/_animRoll combination is zero. Proper concatenation
+		 * converts the parent and child ypr to matrices, multiplies them, and decomposes
+		 * the resulting matrix back to ypr, if needed.
+		 */
 		Math::Vector3d animPos = _pos + _animPos;
 		Math::Angle animPitch = _pitch + _animPitch;
 		Math::Angle animYaw = _yaw + _animYaw;
 		Math::Angle animRoll = _roll + _animRoll;
 
-		/* To do parent-child concatenations of Euler rotations, one would do the following
-			But for some reason, this does not work, but the above does? (test with
-			the revolutionist characters in Blue Casket for reference)
+		/** 
+		 * @note To do parent-child concatenations of Euler rotations, one would do as shown below:
+		 * But for some reason, this does not work, but the above does. (test with
+		 * the revolutionist characters in Blue Casket for reference)
+		 * If the above method is desired in this case, investigate and replace this note with
+		 * a comment explaining why it is so.
+		 */
+
+		/*
 		// The initial bind pose transform (as parent).
 		Math::Matrix4 t;
 		t.setPosition(_pos);
