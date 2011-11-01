@@ -67,7 +67,9 @@ GfxBase *CreateGfxOpenGL() {
 // Simple ARB fragment program that writes the value from a texture to the Z-buffer.
 static char fragSrc[] =
 	"!!ARBfp1.0\n\
-	TEX result.depth, fragment.texcoord[0], texture[0], 2D;\n\
+	TEMP d;\n\
+	TEX d, fragment.texcoord[0], texture[0], 2D;\n\
+	MOV result.depth, d.r;\n\
 	END\n";
 
 GfxOpenGL::GfxOpenGL() {
@@ -154,6 +156,7 @@ void GfxOpenGL::initExtensions()
 		glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &errorPos);
 		if (errorPos != -1) {
 			warning("Error compiling fragment program:\n%s", glGetString(GL_PROGRAM_ERROR_STRING_ARB));
+			_useDepthShader = false;
 		}
 	}
 #endif
