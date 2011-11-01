@@ -483,10 +483,8 @@ static bool decompress_codec3(const char *compressed, char *result, int maxBytes
 	int byteIndex = 0;
 	for (;;) {
 		GET_BIT;
-		if (bit == 1)
-		{
-			if (byteIndex >= maxBytes)
-			{
+		if (bit == 1) {
+			if (byteIndex >= maxBytes) {
 				warning("Buffer overflow when decoding image: decompress_codec3 walked past the input buffer!");
 				return false;
 			}
@@ -514,13 +512,11 @@ static bool decompress_codec3(const char *compressed, char *result, int maxBytes
 				}
 			}
 			while (copy_len > 0) {
-				if (byteIndex >= maxBytes)
-				{
+				if (byteIndex >= maxBytes) {
 					warning("Buffer overflow when decoding image: decompress_codec3 walked past the input buffer!");
 					return false;
 				}
-				else
-				{
+				else {
 					assert(byteIndex + copy_offset >= 0);
 					assert(byteIndex + copy_offset < maxBytes);
 					*result = result[copy_offset];

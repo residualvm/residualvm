@@ -1536,18 +1536,20 @@ void Costume::animate() {
 	}
 }
 
-// Subtracts off extra multiples of the given angle in degrees, and returns 
-// the same angle represented in the [-180, 180] range.
-static Math::Angle to180Range(Math::Angle angle)
-{
+/**
+ * Subtracts off extra multiples of the given angle in degrees, and returns 
+ * the same angle represented in the [-180, 180] range.
+ */ 
+static Math::Angle to180Range(Math::Angle angle) {
 	float deg = angle.getDegrees(-180.f);
 	angle.setDegrees(deg);
 	return angle;
 }
 
-/** Returns val clamped to range [-mag, mag]. */
-static Math::Angle clampMagnitude(Math::Angle val, float mag)
-{
+/** 
+ * Returns val clamped to range [-mag, mag].
+ */
+static Math::Angle clampMagnitude(Math::Angle val, float mag) {
 	val = to180Range(val);
 	if (val.getDegrees() >= mag)
 		return mag;
@@ -1556,27 +1558,26 @@ static Math::Angle clampMagnitude(Math::Angle val, float mag)
 	return val;
 }
 
-void setCol(Math::Matrix4 &m, int col, const Math::Vector3d &vec)
-{
+void setCol(Math::Matrix4 &m, int col, const Math::Vector3d &vec) {
 	m.setValue(0, col, vec.x());
 	m.setValue(1, col, vec.y());
 	m.setValue(2, col, vec.z());
 	m.setValue(3, col, col == 3 ? 1.f : 0.f);
 }
 
-void setRow(Math::Matrix4 &m, int row, const Math::Vector3d &vec)
-{
+void setRow(Math::Matrix4 &m, int row, const Math::Vector3d &vec) {
 	m.setValue(row, 0, vec.x());
 	m.setValue(row, 1, vec.y());
 	m.setValue(row, 2, vec.z());
 	m.setValue(row, 3, row == 3 ? 1.f : 0.f);
 }
 
-/** Generates a lookat matrix with position at origin. For reference, see 
-	http://clb.demon.fi/MathGeoLib/docs/float3x3_LookAt.php */
+/** 
+ * Generates a lookat matrix with position at origin. For reference, see 
+ * http://clb.demon.fi/MathGeoLib/docs/float3x3_LookAt.php
+ */
 Math::Matrix4 lookAtMatrix(const Math::Vector3d &localForward, const Math::Vector3d &targetDirection, 
-                           const Math::Vector3d &localUp, const Math::Vector3d &worldUp)
-{
+                           const Math::Vector3d &localUp, const Math::Vector3d &worldUp) {
 	Math::Vector3d localRight = Math::Vector3d::crossProduct(localUp, localForward);
 	localRight.normalize();
 	Math::Vector3d worldRight = Math::Vector3d::crossProduct(worldUp, targetDirection);
@@ -1599,35 +1600,32 @@ Math::Matrix4 lookAtMatrix(const Math::Vector3d &localForward, const Math::Vecto
 	return m1 * m2;
 }
 
-/** Decomposes the matrix M to form M = R_z * R_x * R_y (R_D being the cardinal rotation 
-	matrix about the axis +D), and outputs the angles of rotation in parameters Z, X and Y.
-	In the convention of the coordinate system used in Grim Fandango characters:
-		+Z is the yaw rotation (up axis)
-		+X is the pitch rotation (right axis)
-		+Y is the roll rotation (forward axis)
-	This function was adapted from http://www.geometrictools.com/Documentation/EulerAngles.pdf
-	The matrix M must be orthonormal. */
-void extractEulerZXY(const Math::Matrix4 &m, Math::Angle &Z, Math::Angle &X, Math::Angle &Y)
-{
+/** 
+ * Decomposes the matrix M to form M = R_z * R_x * R_y (R_D being the cardinal rotation 
+ * matrix about the axis +D), and outputs the angles of rotation in parameters Z, X and Y.
+ * In the convention of the coordinate system used in Grim Fandango characters:
+ * +Z is the yaw rotation (up axis)
+ * +X is the pitch rotation (right axis)
+ * +Y is the roll rotation (forward axis)
+ * This function was adapted from http://www.geometrictools.com/Documentation/EulerAngles.pdf
+ * The matrix M must be orthonormal.
+ */
+void extractEulerZXY(const Math::Matrix4 &m, Math::Angle &Z, Math::Angle &X, Math::Angle &Y) {
 	float x,y,z;
-	if (m.getValue(2, 1) < 1.f)
-	{
-		if (m.getValue(2, 1) > -1.f)
-		{
+	if (m.getValue(2, 1) < 1.f) {
+		if (m.getValue(2, 1) > -1.f) {
 			x = asin(m.getValue(2, 1));
 			z = atan2(-m.getValue(0, 1), m.getValue(1, 1));
 			y = atan2(-m.getValue(2, 0), m.getValue(2, 2));
 		}
-		else
-		{
+		else {
 			// Not a unique solution. Pick an arbitrary one.
 			x = -3.141592654f/2.f;
 			z = -atan2(-m.getValue(0, 2), m.getValue(0, 0));
 			y = 0;
 		}
 	}
-	else
-	{
+	else {
 		// Not a unique solution. Pick an arbitrary one.
 		x = 3.141592654f/2.f;
 		z = atan2(m.getValue(0, 2), m.getValue(0, 0));
@@ -1638,13 +1636,14 @@ void extractEulerZXY(const Math::Matrix4 &m, Math::Angle &Z, Math::Angle &X, Mat
 	Z = Math::Angle::fromRadians(z);
 }
 
-/** Inverts a matrix in place.
-	This function avoid having to do generic Gaussian elimination on the matrix
-	by assuming that the top-left 3x3 part of the matrix is orthonormal
-	(columns and rows 0, 1 and 2 orthogonal and unit length).
-	See e.g. Eric Lengyel's Mathematics for 3D Game Programming and Computer Graphics, p. 82. */
-void invertAffineOrthonormal(Math::Matrix4 &m)
-{
+/**
+ * Inverts a matrix in place.
+ * This function avoid having to do generic Gaussian elimination on the matrix
+ * by assuming that the top-left 3x3 part of the matrix is orthonormal
+ * (columns and rows 0, 1 and 2 orthogonal and unit length).
+ * See e.g. Eric Lengyel's Mathematics for 3D Game Programming and Computer Graphics, p. 82.
+ */
+void invertAffineOrthonormal(Math::Matrix4 &m) {
 	Math::Matrix4 m2;
 	m2.setValue(0, 0, m.getValue(0, 0));
 	m2.setValue(0, 1, m.getValue(1, 0));
@@ -1696,15 +1695,13 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 		Math::Vector3d localUp; // Character up direction vector in local space.
 		Math::Vector3d frontDir; // Character front facing direction vector in world space (global scene coordinate space)
 
-		if (this->_fname.compareTo("gunar_meshes.cos") == 0 || this->_fname.compareTo("slisko_meshes.cos") == 0)
-		{
+		if (this->_fname.compareTo("gunar_meshes.cos") == 0 || this->_fname.compareTo("slisko_meshes.cos") == 0) {
 			// For these characters, the head coordinate frame is: -Z front, -X up, +Y right.
 			frontDir = Math::Vector3d(-_joint3Node->_matrix(0,2), -_joint3Node->_matrix(1,2), -_joint3Node->_matrix(2,2)); // Look straight ahead. (-Z)
 			localFront = Math::Vector3d(0,0,-1);
 			localUp = Math::Vector3d(-1,0,0);
 		}
-		else if (this->_fname.compareTo("meche_island.cos") == 0)
-		{
+		else if (this->_fname.compareTo("meche_island.cos") == 0) {
 			// For Meche inside her office, the head coordinate frame is: -Y forward, +Z up, -X right.
 			// NOTE: I suspect that the above is not strictly correct, but that the coordinate frame here
 			// is the same as for most of the characters (the case below), but it seems that the LUA scripts
@@ -1715,8 +1712,7 @@ void Costume::moveHead(bool lookingMode, const Math::Vector3d &lookAt, float rat
 			localFront = Math::Vector3d(0,-1,0);
 			localUp = Math::Vector3d(0,0,1);
 		}
-		else
-		{   // the character head coordinate frame is: +Y forward, +Z up, +X right.
+		else {   // the character head coordinate frame is: +Y forward, +Z up, +X right.
 			frontDir = Math::Vector3d(_joint3Node->_matrix(0,1), _joint3Node->_matrix(1,1), _joint3Node->_matrix(2,1)); // Look straight ahead. (+Y)
 			localFront = Math::Vector3d(0,1,0);
 			localUp = Math::Vector3d(0,0,1);
