@@ -152,10 +152,19 @@ public:
 
 	char _name[64];
 	Mesh *_mesh;
-	int _flags, _type;
+	// A value of 0x100 (256) specifies that when animating this node, keyframes should not be
+	// interpolated (lerped), but instead the transition from source to target is to occur
+	// discretely.
+	int _flags;
+	// Each KeyFrameAnim has a type identifier. This type field is a bitmask which is ANDed againts
+	// the type in the KeyFrameAnim to control which KeyFrameAnims animate on which nodes of the character.
+	// This enables selectively controlling the animations to act only on certain bones.
+	int _type;
 	int _depth, _numChildren;
 	ModelNode *_parent, *_child, *_sibling;
 	Math::Vector3d _pos, _pivot;
+	// Specifies the bind pose YPR values for this node. This data
+	// is read from the model file and never altered (could be const).
 	Math::Angle _pitch, _yaw, _roll;
 	Math::Vector3d _animPos;
 	Math::Angle _animPitch, _animYaw, _animRoll;
