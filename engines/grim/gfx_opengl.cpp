@@ -503,6 +503,14 @@ void GfxOpenGL::translateViewpointFinish() {
 
 void GfxOpenGL::drawHierachyNode(const ModelNode *node, int *x1, int *y1, int *x2, int *y2) {
 	Math::Vector3d animPos = node->_pos + node->_animPos;
+	/**
+	 * @bug Concatenating Euler angles like this does not compute
+	 * the proper parent-child transformation. The reason this might seem to work
+	 * is that often either _yaw/_pitch/_roll combination is zero, or
+	 * _animYaw/_animPitch/_animRoll combination is zero. Proper concatenation
+	 * converts the parent and child ypr to matrices, multiplies them, and decomposes
+	 * the resulting matrix back to ypr, if needed.
+	 */
 	Math::Angle animPitch = node->_pitch + node->_animPitch;
 	Math::Angle animYaw = node->_yaw + node->_animYaw;
 	Math::Angle animRoll = node->_roll + node->_animRoll;
@@ -790,6 +798,7 @@ void GfxOpenGL::destroyBitmap(BitmapData *bitmap) {
 	if (textures) {
 		glDeleteTextures(bitmap->_numTex * bitmap->_numImages, textures);
 		delete[] textures;
+		bitmap->_texIds = 0;
 	}
 }
 
