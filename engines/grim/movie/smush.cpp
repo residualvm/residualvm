@@ -43,7 +43,7 @@ SmushPlayer::SmushPlayer(bool demo) : MoviePlayer(), _demo(demo) {
 
 bool SmushPlayer::loadFile(Common::String filename) {
 	if (!_demo)
-		return _videoDecoder->loadStream(g_resourceloader->openNewSubStreamFile(filename.c_str()));
+		return _videoDecoder->loadStream(g_resourceloader->openNewStreamFile(filename.c_str()));
 	else
 		return _videoDecoder->loadFile(filename);
 }
