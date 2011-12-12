@@ -44,7 +44,7 @@ ResourceLoader::ResourceLoader() {
 	_cacheDirty = false;
 	_cacheMemorySize = 0;
 
-	Lab *l;
+	LabArchive *l;
 	Common::ArchiveMemberList files;
 
 	SearchMan.listMatchingMembers(files, "*.lab");
@@ -55,7 +55,7 @@ ResourceLoader::ResourceLoader() {
 
 	for (Common::ArchiveMemberList::const_iterator x = files.begin(); x != files.end(); ++x) {
 		const Common::String filename = (*x)->getName();
-		l = new Lab();
+		l = new LabArchive();
 
 		if (l->open(filename)) {
 			if (filename.equalsIgnoreCase("datausr.lab")) {
@@ -83,7 +83,7 @@ ResourceLoader::ResourceLoader() {
 
 		for (Common::ArchiveMemberList::const_iterator x = files.begin(); x != files.end(); ++x) {
 			const Common::String filename = (*x)->getName();
-			l = new Lab();
+			l = new LabArchive();
 
 			if (l->open(filename)) {
 				_labs.push_back(l);
@@ -117,9 +117,9 @@ ResourceLoader::~ResourceLoader() {
 	clearList(_lipsyncs);
 }
 
-const Lab *ResourceLoader::getLab(const Common::String &filename) const {
+const LabArchive *ResourceLoader::getLab(const Common::String &filename) const {
 	for (LabList::const_iterator i = _labs.begin(); i != _labs.end(); ++i)
-		if ((*i)->getFileExists(filename))
+		if ((*i)->hasFile(filename))
 			return *i;
 
 	return NULL;
@@ -157,7 +157,7 @@ bool ResourceLoader::getFileExists(const Common::String &filename) const {
 }
 
 Block *ResourceLoader::getFileBlock(const Common::String &filename) const {
-	const Lab *l = getLab(filename);
+	const LabArchive *l = getLab(filename);
 	if (!l)
 		return NULL;
 	else
@@ -179,34 +179,28 @@ Block *ResourceLoader::getBlock(const Common::String &filename) {
 }
 
 LuaFile *ResourceLoader::openNewStreamLuaFile(const char *filename) const {
-	const Lab *l = getLab(filename);
+	const LabArchive *l = getLab(filename);
 
 	if (!l)
 		return NULL;
-	else
-		return l->openNewStreamLua(filename);
-}
 
-Common::File *ResourceLoader::openNewStreamFile(const char *filename) const {
-	const Lab *l = getLab(filename);
+	LuaFile *filehandle = new LuaFile();
+	filehandle->_in = l->createReadStreamForMember(filename);
 
-	if (!l)
-		return NULL;
-	else
-		return l->openNewStreamFile(filename);
+	return filehandle;
 }
 
 Common::SeekableReadStream *ResourceLoader::openNewSubStreamFile(const char *filename) const {
-	const Lab *l = getLab(filename);
+	const LabArchive *l = getLab(filename);
 
 	if (!l)
 		return NULL;
 	else
-		return l->openNewSubStreamFile(filename);
+		return l->createReadStreamForMember(filename);
 }
 
 int ResourceLoader::getFileLength(const char *filename) const {
-	const Lab *l = getLab(filename);
+	const LabArchive *l = getLab(filename);
 	if (l)
 		return l->getFileLength(filename);
 	else

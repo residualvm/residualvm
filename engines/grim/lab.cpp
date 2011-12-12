@@ -23,23 +23,49 @@
 #include "common/endian.h"
 #include "common/file.h"
 #include "common/substream.h"
+#include "common/memstream.h"
 
 #include "engines/grim/grim.h"
 #include "engines/grim/lab.h"
-#include "engines/grim/lua/lua.h"
-#include "engines/grim/colormap.h"
 
 namespace Grim {
 
-bool Lab::open(const Common::String &filename) {
+LabEntry::LabEntry()
+	: _name(Common::String()), _offset(0), _len(0), _parent(NULL) {
+}
+
+LabEntry::LabEntry(Common::String name, uint32 offset, uint32 len, LabArchive *parent)
+	: _name(name), _offset(offset), _len(len), _parent(parent) {
+}
+
+Common::SeekableReadStream *LabEntry::createReadStream() const {
+	return _parent->createReadStreamForMember(_name);
+}
+
+bool LabArchive::open(const Block *lab) {
+	_f = (Common::SeekableReadStream *)(new Common::MemoryReadStream((byte *)lab->getData(), lab->getLen()));
+	_labFileName = "";
+	_memLab = lab;
+
+	return loadLab();
+}
+
+bool LabArchive::open(const Common::String &filename) {
 	_labFileName = filename;
 
 	close();
 
-	_f = new Common::File();
-	if (!_f->open(filename))
+	Common::File *file = new Common::File();
+	if (!file->open(filename)) {
+		delete file;
 		return false;
+	}
 
+	_f = (Common::SeekableReadStream *)file;
+	return loadLab();
+}
+
+bool LabArchive::loadLab() {
 	if (_f->readUint32BE() != MKTAG('L','A','B','N')) {
 		close();
 		return false;
@@ -55,7 +81,7 @@ bool Lab::open(const Common::String &filename) {
 	return true;
 }
 
-void Lab::parseGrimFileTable() {
+void LabArchive::parseGrimFileTable() {
 	uint32 entryCount = _f->readUint32LE();
 	uint32 stringTableSize = _f->readUint32LE();
 
@@ -72,17 +98,14 @@ void Lab::parseGrimFileTable() {
 
 		Common::String fname = stringTable + fnameOffset;
 
-		LabEntry entry;
-		entry.offset = start;
-		entry.len = size;
-
-		_entries[fname] = entry;
+		LabEntry *entry = new LabEntry(fname, start, size, this);
+		_entries[fname] = LabEntryPtr(entry);
 	}
 
 	delete[] stringTable;
 }
 
-void Lab::parseMonkey4FileTable() {
+void LabArchive::parseMonkey4FileTable() {
 	uint32 entryCount = _f->readUint32LE();
 	uint32 stringTableSize = _f->readUint32LE();
 	uint32 stringTableOffset = _f->readUint32LE() - 0x13d0f;
@@ -112,82 +135,92 @@ void Lab::parseMonkey4FileTable() {
 		}
 		Common::String fname = str;
 
-		LabEntry entry;
-		entry.offset = start;
-		entry.len = size;
-
-		_entries[fname] = entry;
+		LabEntry *entry = new LabEntry(fname, start, size, this);
+		_entries[fname] = LabEntryPtr(entry);
 	}
 
 	delete[] stringTable;
 }
 
-bool Lab::getFileExists(const Common::String &filename) const {
+bool LabArchive::hasFile(const Common::String &filename) {
 	return _entries.contains(filename);
 }
 
-bool Lab::isOpen() const {
-	return _f && _f->isOpen();
+bool LabArchive::hasFile(const Common::String &filename) const {
+	return _entries.contains(filename);
 }
 
-Block *Lab::getFileBlock(const Common::String &filename) const {
-	if (!getFileExists(filename))
-		return 0;
+int LabArchive::listMembers(Common::ArchiveMemberList &list) {
+	int count = 0;
 
-	const LabEntry &i = _entries[filename];
+	for (LabMap::const_iterator i = _entries.begin(); i != _entries.end(); ++i) {
+		list.push_back(Common::ArchiveMemberList::value_type(i->_value));
+		++count;
+	}
 
-	_f->seek(i.offset, SEEK_SET);
-	char *data = new char[i.len];
-	_f->read(data, i.len);
-	return new Block(data, i.len);
+	return count;
 }
 
-LuaFile *Lab::openNewStreamLua(const Common::String &filename) const {
-	if (!getFileExists(filename))
+Common::ArchiveMemberPtr LabArchive::getMember(const Common::String &name) {
+	if (!hasFile(name))
+		return Common::ArchiveMemberPtr();
+
+	return _entries[name];
+}
+
+Block *LabArchive::getFileBlock(const Common::String &filename) const {
+	if (!hasFile(filename))
 		return 0;
+
+	LabEntryPtr i = _entries[filename];
+	Block *blockData;
+
+	/*If the whole Lab has been loaded into ram, we return a pointer
+	of requested data directly, without copying them. Otherwise read them
+	from the disk.*/
+	if(_memLab) {
+		const char *data = _memLab->getData() + i->_offset;
+		blockData = new Block(data, i->_len, DisposeAfterUse::NO);
+	} else {
+		_f->seek(i->_offset, SEEK_SET);
+		char *data = new char[i->_len];
+		_f->read(data, i->_len);
+		blockData = new Block(data, i->_len, DisposeAfterUse::YES);
+	}
+
+	return blockData;
+}
+
+Common::SeekableReadStream *LabArchive::createReadStreamForMember(const Common::String &filename) const {
+	if (!hasFile(filename))
+		return 0;
+
+	LabEntryPtr i = _entries[filename];
+
+	/*If the whole Lab has been loaded into ram, we return a MemoryReadStream
+	that map requested data directly, without copying them. Otherwise open a new
+	stream from disk.*/
+	if(_memLab)
+		return new Common::MemoryReadStream((byte*)(_memLab->getData() + i->_offset), i->_len, DisposeAfterUse::NO);
 
 	Common::File *file = new Common::File();
 	file->open(_labFileName);
-	file->seek(_entries[filename].offset, SEEK_SET);
-
-	LuaFile *filehandle = new LuaFile();
-	filehandle->_in = file;
-
-	return filehandle;
+	return new Common::SeekableSubReadStream(file, i->_offset, i->_offset + i->_len, DisposeAfterUse::YES );
 }
 
-Common::File *Lab::openNewStreamFile(const Common::String &filename) const {
-	if (!getFileExists(filename))
+uint32 LabArchive::getFileLength(const Common::String &filename) const {
+	if(!hasFile(filename))
 		return 0;
 
-	Common::File *file = new Common::File();
-	file->open(_labFileName);
-	file->seek(_entries[filename].offset, SEEK_SET);
-
-	return file;
-}
-// SubStream, for usage with GZipReadStream
-Common::SeekableReadStream *Lab::openNewSubStreamFile(const Common::String &filename) const {
-	if (!getFileExists(filename))
-		return 0;
-
-	Common::File *file = new Common::File();
-	file->open(_labFileName);
-	Common::SeekableSubReadStream *substream;
-	substream = new Common::SeekableSubReadStream(file, _entries[filename].offset, _entries[filename].offset + _entries[filename].len, DisposeAfterUse::YES );
-	return substream;
+	return _entries[filename]->_len;
 }
 
-int Lab::getFileLength(const Common::String &filename) const {
-	if (!getFileExists(filename))
-		return -1;
-
-	return _entries[filename].len;
-}
-
-void Lab::close() {
+void LabArchive::close() {
 	delete _f;
 	_f = NULL;
+
+	if(_memLab)
+		delete _memLab;
 
 	_entries.clear();
 }
