@@ -165,6 +165,7 @@ protected:
 	ModelNode *_hier;
 	Math::Matrix4 _matrix;
 	AnimManager *_animation;
+	bool _animationShared;
 	Component *_prevComp;
 };
 
@@ -331,7 +332,7 @@ void SpriteComponent::restoreState(SaveGame *state) {
 
 ModelComponent::ModelComponent(Costume::Component *p, int parentID, const char *filename, Costume::Component *prevComponent, tag32 t) :
 		Costume::Component(p, parentID, t), _filename(filename),
-		_obj(NULL), _hier(NULL), _animation(NULL) {
+		_obj(NULL), _hier(NULL), _animation(NULL), _animationShared(false) {
 	const char *comma = strchr(filename, ',');
 
 	// Can be called with a comma and a numeric parameter afterward, but
@@ -441,6 +442,9 @@ ModelComponent::~ModelComponent() {
 	}
 
 	delete[] _hier;
+	if (!_animationShared) {
+		delete _animation;
+	}
 }
 
 void ModelComponent::translateObject(ModelNode *node, bool reset) {
@@ -500,6 +504,7 @@ MainModelComponent::MainModelComponent(Costume::Component *p, int parentID, cons
 
 		if (mmc && mmc->_filename == filename) {
 			_animation = mmc->_animation;
+			_animationShared = true;
 			_obj = mmc->_obj;
 			_hier = mmc->_hier;
 			_hierShared = true;
