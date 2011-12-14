@@ -43,7 +43,7 @@ Common::SeekableReadStream *LabEntry::createReadStream() const {
 }
 
 bool LabArchive::open(const Block *lab) {
-	_f = (Common::SeekableReadStream *)(new Common::MemoryReadStream((byte *)lab->getData(), lab->getLen()));
+	_f = new Common::MemoryReadStream((byte *)lab->getData(), lab->getLen());
 	_labFileName = "";
 	_memLab = lab;
 
