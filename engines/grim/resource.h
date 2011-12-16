@@ -27,6 +27,7 @@
 #include "common/file.h"
 
 #include "engines/grim/object.h"
+#include "engines/grim/lua/lua.h"
 
 namespace Grim {
 
@@ -42,7 +43,7 @@ class TrackedObject;
 class SaveGame;
 class Block;
 class LuaFile;
-class Lab;
+class LabArchive;
 
 typedef ObjectPtr<Material> MaterialPtr;
 typedef ObjectPtr<Bitmap> BitmapPtr;
@@ -67,7 +68,6 @@ public:
 	LipSync *loadLipSync(const Common::String &fname);
 	Block *getFileBlock(const Common::String &filename) const;
 	Block *getBlock(const Common::String &filename);
-	Common::File *openNewStreamFile(const char *filename) const;
 	Common::SeekableReadStream *openNewSubStreamFile(const char *filename) const;
 	LuaFile *openNewStreamLuaFile(const char *filename) const;
 	void uncache(const char *fname);
@@ -89,12 +89,12 @@ public:
 	};
 
 private:
-	const Lab *getLab(const Common::String &filename) const;
+	const LabArchive *getLab(const Common::String &filename) const;
 	Block *getFileFromCache(const Common::String &filename);
 	ResourceLoader::ResourceCache *getEntryFromCache(const Common::String &filename);
 	void putIntoCache(const Common::String &fname, Block *res);
 
-	typedef Common::List<Lab *> LabList;
+	typedef Common::List<LabArchive *> LabList;
 	LabList _labs;
 	Common::SearchSet _files;
 

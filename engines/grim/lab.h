@@ -26,57 +26,70 @@
 #include "common/hashmap.h"
 #include "common/hash-str.h"
 #include "common/str.h"
-
-namespace Common {
-	class File;
-}
+#include "common/archive.h"
+#include "common/file.h"
+#include "common/types.h"
 
 namespace Grim {
 
-class LuaFile;
-
+//TODO: Move in resource
 class Block {
 public:
-	Block(const char *dataPtr, int length) : _data(dataPtr), _len(length) {}
+	Block(const char *dataPtr, uint32 length, DisposeAfterUse::Flag disposeMemory = DisposeAfterUse::YES) :
+		_data(dataPtr), _len(length), _disposeMemory(disposeMemory) {}
 	const char *getData() const { return _data; }
 	int getLen() const { return _len; }
-
-	~Block() { delete[] _data; }
+	~Block() { if(_disposeMemory) delete[] _data; }
 
 private:
-	Block();
 	const char *_data;
-	int _len;
+	uint32 _len;
+	DisposeAfterUse::Flag _disposeMemory;
 };
 
-class Lab {
+class LabArchive;
+
+class LabEntry : public Common::ArchiveMember {
+	LabArchive *_parent;
+	Common::String _name;
+	uint32 _offset, _len;
 public:
-	Lab() : _f(NULL) { }
+	LabEntry();
+	LabEntry(Common::String name, uint32 offset, uint32 len, LabArchive *parent);
+	Common::String getName() const { return _name; }
+	Common::SeekableReadStream *createReadStream() const;
+	friend class LabArchive;
+};
+
+class LabArchive : public Common::Archive {
+public:
+	LabArchive() : _f(NULL), _memLab(NULL) { }
+	~LabArchive() { close(); }
 
 	bool open(const Common::String &filename);
-	bool isOpen() const;
+	bool open(const Block *lab);
 	void close();
-	bool getFileExists(const Common::String &filename) const;
-	Block *getFileBlock(const Common::String &filename) const;
-	Common::File *openNewStreamFile(const Common::String &filename) const;
-	Common::SeekableReadStream *openNewSubStreamFile(const Common::String &filename) const;
-	LuaFile *openNewStreamLua(const Common::String &filename) const;
-	int getFileLength(const Common::String &filename) const;
+	Block *getFileBlock(const Common::String &filename) const; //TODO: Move in resource
+	uint32 getFileLength(const Common::String &filename) const; //TODO: Remove
 
-	~Lab() { close(); }
-
-	struct LabEntry {
-		int offset, len;
-	};
+	// Common::Archive implementation
+	virtual bool hasFile(const Common::String &name); //TODO: Remove at next scummvm sync
+	virtual bool hasFile(const Common::String &name) const;
+	virtual int listMembers(Common::ArchiveMemberList &list);
+	virtual Common::ArchiveMemberPtr getMember(const Common::String &name);
+	virtual Common::SeekableReadStream *createReadStreamForMember(const Common::String &name) const;
 
 private:
+	bool loadLab();
 	void parseGrimFileTable();
 	void parseMonkey4FileTable();
 
-	Common::File *_f;
-	typedef Common::HashMap<Common::String, LabEntry, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo> LabMap;
-	LabMap _entries;
+	Common::SeekableReadStream *_f;
+	const Block *_memLab;
 	Common::String _labFileName;
+	typedef Common::SharedPtr<LabEntry> LabEntryPtr;
+	typedef Common::HashMap<Common::String, LabEntryPtr, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo> LabMap;
+	LabMap _entries;
 };
 
 } // end of namespace Grim
