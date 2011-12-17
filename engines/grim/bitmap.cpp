@@ -127,6 +127,7 @@ BitmapData::BitmapData(const Common::String &fname, Common::SeekableReadStream *
 			Debug::error(Debug::Bitmaps, "Invalid magic loading bitmap");
 			break;
 	}
+	delete data;
 }
 
 
