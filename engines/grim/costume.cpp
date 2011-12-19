@@ -105,7 +105,7 @@ namespace Grim {
 // along setKey requests to the actual bitmap object.
 
 Costume::Costume(const Common::String &fname, const char *data, int len, Costume *prevCost) :
-		Object(), _head(new Head()) {
+		Object(), _head(0) {
 
 	_fname = fname;
 	_lookAtRate = 200;
@@ -561,10 +561,15 @@ void Costume::animate() {
 }
 
 void Costume::moveHead(bool entering, const Math::Vector3d &lookAt) {
-	_head->lookAt(entering, lookAt, _lookAtRate, _matrix);
+	if (_head) {
+		_head->lookAt(entering, lookAt, _lookAtRate, _matrix);
+	}
 }
 
 void Costume::setHead(int joint1, int joint2, int joint3, float maxRoll, float maxPitch, float maxYaw) {
+	if (!_head) {
+		_head = new Head();
+	}
 	_head->setJoints(joint1, joint2, joint3);
 	_head->loadJoints(getModelNodes());
 	_head->setMaxAngles(maxPitch, maxYaw, maxRoll);
@@ -625,7 +630,10 @@ void Costume::saveState(SaveGame *state) const {
 	}
 
 	state->writeFloat(_lookAtRate);
-	_head->saveState(state);
+	state->writeBool(_head!=0);
+	if (_head) {
+		_head->saveState(state);
+	}
 
 }
 
@@ -660,9 +668,13 @@ bool Costume::restoreState(SaveGame *state) {
 	}
 
 	_lookAtRate = state->readFloat();
-	_head->restoreState(state);
-	_head->loadJoints(getModelNodes());
-
+	if (state->readBool()) {
+		if (!_head) {
+			_head = new Head();
+		}
+		_head->restoreState(state);
+		_head->loadJoints(getModelNodes());
+	}
 	return true;
 }
 
