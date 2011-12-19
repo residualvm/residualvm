@@ -594,26 +594,26 @@ Costume *Costume::getPreviousCostume() const {
 
 void Costume::saveState(SaveGame *state) const {
 	if (_cmap) {
-		state->writeLEUint32(1);
+		state->writeBool(true);
 		state->writeString(_cmap->getFilename());
 	} else {
-		state->writeLEUint32(0);
+		state->writeBool(false);
 	}
 
 	for (int i = 0; i < _numChores; ++i) {
 		Chore &c = _chores[i];
 
-		state->writeLESint32(c._hasPlayed);
-		state->writeLESint32(c._playing);
-		state->writeLESint32(c._looping);
-		state->writeLESint32(c._currTime);
+		state->writeBool(c._hasPlayed);
+		state->writeBool(c._playing);
+		state->writeBool(c._looping);
+		state->writeBool(c._currTime);
 	}
 
 	for (int i = 0; i < _numComponents; ++i) {
 		Component *c = _components[i];
 
 		if (c) {
-			state->writeLESint32(c->_visible);
+			state->writeBool(c->_visible);
 			state->writeVector3d(c->_matrix.getPosition());
 			c->saveState(state);
 		}
@@ -624,13 +624,13 @@ void Costume::saveState(SaveGame *state) const {
 		state->writeLESint32((*i)->_id);
 	}
 
-	// FIXME: Decomment this!!
-// 	state.writeFloat(_lookAtRate);
+	state->writeFloat(_lookAtRate);
 	_head->saveState(state);
+
 }
 
 bool Costume::restoreState(SaveGame *state) {
-	if (state->readLEUint32()) {
+	if (state->readBool()) {
 		Common::String str = state->readString();
 		setColormap(str);
 	}
@@ -638,16 +638,16 @@ bool Costume::restoreState(SaveGame *state) {
 	for (int i = 0; i < _numChores; ++i) {
 		Chore &c = _chores[i];
 
-		c._hasPlayed = state->readLESint32();
-		c._playing = state->readLESint32();
-		c._looping = state->readLESint32();
-		c._currTime = state->readLESint32();
+		c._hasPlayed = state->readBool();
+		c._playing = state->readBool();
+		c._looping = state->readBool();
+		c._currTime = state->readBool();
 	}
 	for (int i = 0; i < _numComponents; ++i) {
 		Component *c = _components[i];
 
 		if (c) {
-			c->_visible = state->readLESint32();
+			c->_visible = state->readBool();
 			c->_matrix.setPosition(state->readVector3d());
 			c->restoreState(state);
 		}
@@ -659,8 +659,7 @@ bool Costume::restoreState(SaveGame *state) {
 		_playingChores.push_back(&_chores[id]);
 	}
 
-	// FIXME: Decomment this!!
-// 	_lookAtRate = state->readFloat();
+	_lookAtRate = state->readFloat();
 	_head->restoreState(state);
 	_head->loadJoints(getModelNodes());
 

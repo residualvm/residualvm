@@ -81,7 +81,7 @@ void Iris::update(int frameTime) {
 void Iris::saveState(SaveGame *state) const {
 	state->beginSection('IRIS');
 
-	state->writeLEBool(_playing);
+	state->writeBool(_playing);
 	state->writeLEUint32((uint32)_direction);
 	state->writeLEUint32(_x1);
 	state->writeLEUint32(_y1);
@@ -96,7 +96,7 @@ void Iris::saveState(SaveGame *state) const {
 void Iris::restoreState(SaveGame *state) {
 	state->beginSection('IRIS');
 
-	_playing = state->readLEBool();
+	_playing = state->readBool();
 	_direction = (Direction)state->readLEUint32();
 	_x1 = state->readLEUint32();
 	_y1 = state->readLEUint32();

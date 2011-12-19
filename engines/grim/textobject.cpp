@@ -76,8 +76,8 @@ void TextObject::saveState(SaveGame *state) const {
 	state->writeLESint32(_numberLines);
 	state->writeLESint32(_duration);
 
-	state->writeLESint32(_blastDraw);
-	state->writeLESint32(_isSpeech);
+	state->writeBool(_blastDraw);
+	state->writeBool(_isSpeech);
 	state->writeLESint32(_elapsedTime);
 
 	state->writeLEUint32(_font->getId());
@@ -96,8 +96,8 @@ bool TextObject::restoreState(SaveGame *state) {
 	_numberLines  = state->readLESint32();
 	_duration     = state->readLESint32();
 
-	_blastDraw    = state->readLESint32();
-	_isSpeech     = state->readLESint32();
+	_blastDraw    = state->readBool();
+	_isSpeech     = state->readBool();
 	_elapsedTime  = state->readLESint32();
 
 	_font = Font::getPool().getObject(state->readLEUint32());

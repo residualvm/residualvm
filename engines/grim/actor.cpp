@@ -134,13 +134,13 @@ void Actor::saveState(SaveGame *savedState) const {
 	savedState->writeFloat(_roll.getDegrees());
 	savedState->writeFloat(_walkRate);
 	savedState->writeFloat(_turnRate);
-	savedState->writeLESint32(_constrain);
+	savedState->writeBool(_constrain);
 	savedState->writeFloat(_reflectionAngle);
-	savedState->writeLESint32(_visible);
-	savedState->writeLESint32(_lookingMode),
+	savedState->writeBool(_visible);
+	savedState->writeBool(_lookingMode),
 	savedState->writeFloat(_scale);
 	savedState->writeFloat(_timeScale);
-	savedState->writeLEBool(_puckOrient);
+	savedState->writeBool(_puckOrient);
 
 	savedState->writeString(_talkSoundName);
 
@@ -148,10 +148,10 @@ void Actor::saveState(SaveGame *savedState) const {
 	savedState->writeFloat(_collisionScale);
 
 	if (_lipSync) {
-		savedState->writeLEUint32(1);
+		savedState->writeBool(true);
 		savedState->writeString(_lipSync->getFilename());
 	} else {
-		savedState->writeLEUint32(0);
+		savedState->writeBool(false);
 	}
 
 	savedState->writeLESint32(_costumeStack.size());
@@ -173,17 +173,17 @@ void Actor::saveState(SaveGame *savedState) const {
 		c->saveState(savedState);
 	}
 
-	savedState->writeLESint32(_turning);
+	savedState->writeBool(_turning);
 	savedState->writeFloat(_destYaw.getDegrees());
 
-	savedState->writeLESint32(_walking);
+	savedState->writeBool(_walking);
 	savedState->writeVector3d(_destPos);
 
 	_restChore.saveState(savedState);
 
 	_walkChore.saveState(savedState);
-	savedState->writeLESint32(_walkedLast);
-	savedState->writeLESint32(_walkedCur);
+	savedState->writeBool(_walkedLast);
+	savedState->writeBool(_walkedCur);
 
 	_leftTurnChore.saveState(savedState);
 	_rightTurnChore.saveState(savedState);
@@ -215,16 +215,14 @@ void Actor::saveState(SaveGame *savedState) const {
 
 		savedState->writeLESint32(shadow.shadowMaskSize);
 		savedState->write(shadow.shadowMask, shadow.shadowMaskSize);
-		savedState->writeLESint32(shadow.active);
-		savedState->writeLESint32(shadow.dontNegate);
+		savedState->writeBool(shadow.active);
+		savedState->writeBool(shadow.dontNegate);
 	}
 	savedState->writeLESint32(_activeShadowSlot);
 
 	savedState->writeLEUint32(_sayLineText);
 
 	savedState->writeVector3d(_lookAtVector);
-	// FIXME Remove this!!
-	savedState->writeFloat(0);
 
 	savedState->writeLESint32(_path.size());
 	for (Common::List<Math::Vector3d>::const_iterator i = _path.begin(); i != _path.end(); ++i) {
@@ -250,20 +248,20 @@ bool Actor::restoreState(SaveGame *savedState) {
 	_roll               = savedState->readFloat();
 	_walkRate           = savedState->readFloat();
 	_turnRate           = savedState->readFloat();
-	_constrain          = savedState->readLESint32();
+	_constrain          = savedState->readBool();
 	_reflectionAngle    = savedState->readFloat();
-	_visible            = savedState->readLESint32();
-	_lookingMode        = savedState->readLESint32();
+	_visible            = savedState->readBool();
+	_lookingMode        = savedState->readBool();
 	_scale              = savedState->readFloat();
 	_timeScale          = savedState->readFloat();
-	_puckOrient         = savedState->readLEBool();
+	_puckOrient         = savedState->readBool();
 
 	_talkSoundName 		= savedState->readString();
 
 	_collisionMode      = (CollisionMode)savedState->readLEUint32();
 	_collisionScale     = savedState->readFloat();
 
-	if (savedState->readLEUint32()) {
+	if (savedState->readBool()) {
 		Common::String fn = savedState->readString();
 		_lipSync = g_resourceloader->getLipSync(fn);
 	} else {
@@ -294,17 +292,17 @@ bool Actor::restoreState(SaveGame *savedState) {
 		_costumeStack.push_back(c);
 	}
 
-	_turning = savedState->readLESint32();
+	_turning = savedState->readBool();
 	_destYaw = savedState->readFloat();
 
-	_walking = savedState->readLESint32();
+	_walking = savedState->readBool();
 	_destPos = savedState->readVector3d();
 
 	_restChore.restoreState(savedState, this);
 
 	_walkChore.restoreState(savedState, this);
-	_walkedLast = savedState->readLESint32();
-	_walkedCur = savedState->readLESint32();
+	_walkedLast = savedState->readBool();
+	_walkedCur = savedState->readBool();
 
 	_leftTurnChore.restoreState(savedState, this);
 	_rightTurnChore.restoreState(savedState, this);
@@ -348,16 +346,14 @@ bool Actor::restoreState(SaveGame *savedState) {
 		} else {
 			shadow.shadowMask = NULL;
 		}
-		shadow.active = savedState->readLESint32();
-		shadow.dontNegate = savedState->readLESint32();
+		shadow.active = savedState->readBool();
+		shadow.dontNegate = savedState->readBool();
 	}
 	_activeShadowSlot = savedState->readLESint32();
 
 	_sayLineText = savedState->readLEUint32();
 
 	_lookAtVector = savedState->readVector3d();
-	// FIXME: Remove this!!
-	savedState->readFloat();
 
 	size = savedState->readLESint32();
 	for (int i = 0; i < size; ++i) {
