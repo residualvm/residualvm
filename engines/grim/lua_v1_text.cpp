@@ -138,7 +138,7 @@ void Lua_V1::GetTextObjectDimensions() {
 void Lua_V1::ExpireText() {
 	// Expire all the text objects
 	foreach (TextObject *t, TextObject::getPool()) {
-		t->setDisabled(true);
+		delete t;
 	}
 
 	// Cleanup actor references to deleted text objects
