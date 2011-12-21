@@ -35,7 +35,9 @@ LabEntry::LabEntry()
 }
 
 LabEntry::LabEntry(Common::String name, uint32 offset, uint32 len, Lab *parent)
-	: _name(name), _offset(offset), _len(len), _parent(parent) {
+	: _offset(offset), _len(len), _parent(parent) {
+	_name = name;
+	_name.toLowercase();
 }
 
 Common::SeekableReadStream *LabEntry::createReadStream() const {
@@ -97,6 +99,7 @@ void Lab::parseGrimFileTable() {
 		_f->readUint32LE();
 
 		Common::String fname = stringTable + fnameOffset;
+		fname.toLowercase();
 
 		LabEntry *entry = new LabEntry(fname, start, size, this);
 		_entries[fname] = LabEntryPtr(entry);
@@ -134,6 +137,7 @@ void Lab::parseMonkey4FileTable() {
 				str[l] = '/';
 		}
 		Common::String fname = str;
+		fname.toLowercase();
 
 		LabEntry *entry = new LabEntry(fname, start, size, this);
 		_entries[fname] = LabEntryPtr(entry);
@@ -143,11 +147,15 @@ void Lab::parseMonkey4FileTable() {
 }
 
 bool Lab::hasFile(const Common::String &filename) {
-	return _entries.contains(filename);
+	Common::String fname(filename);
+	fname.toLowercase();
+	return _entries.contains(fname);
 }
 
 bool Lab::hasFile(const Common::String &filename) const {
-	return _entries.contains(filename);
+	Common::String fname(filename);
+	fname.toLowercase();
+	return _entries.contains(fname);
 }
 
 int Lab::listMembers(Common::ArchiveMemberList &list) {
@@ -165,14 +173,18 @@ Common::ArchiveMemberPtr Lab::getMember(const Common::String &name) {
 	if (!hasFile(name))
 		return Common::ArchiveMemberPtr();
 
-	return _entries[name];
+	Common::String fname(name);
+	fname.toLowercase();
+	return _entries[fname];
 }
 
 Common::SeekableReadStream *Lab::createReadStreamForMember(const Common::String &filename) const {
 	if (!hasFile(filename))
 		return 0;
 
-	LabEntryPtr i = _entries[filename];
+	Common::String fname(filename);
+	fname.toLowercase();
+	LabEntryPtr i = _entries[fname];
 
 	/*If the whole Lab has been loaded into ram, we return a MemoryReadStream
 	that map requested data directly, without copying them. Otherwise open a new
