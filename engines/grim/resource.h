@@ -41,7 +41,6 @@ class Model;
 class LipSync;
 class TrackedObject;
 class SaveGame;
-class Block;
 class Lab;
 
 typedef ObjectPtr<Material> MaterialPtr;
