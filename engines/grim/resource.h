@@ -65,12 +65,9 @@ public:
 	Material *loadMaterial(const Common::String &fname, CMap *c);
 	Model *loadModel(const Common::String &fname, CMap *c, Model *parent = NULL);
 	LipSync *loadLipSync(const Common::String &fname);
-	Block *getFileBlock(const Common::String &filename) const;
-	Block *getBlock(const Common::String &filename);
-	Common::SeekableReadStream *openNewStreamFile(const char *filename) const;
+	Common::SeekableReadStream *openNewStreamFile(const char *filename, bool cache = false);
 	void uncache(const char *fname);
 	bool getFileExists(const Common::String &filename) const;
-	int getFileLength(const char *filename) const;
 
 	ModelPtr getModel(const Common::String &fname, CMap *c);
 	CMapPtr getColormap(const Common::String &fname);
@@ -83,14 +80,16 @@ public:
 
 	struct ResourceCache {
 		char *fname;
-		Block *resPtr;
+		byte *resPtr;
+		uint32 len;
 	};
 
 private:
 	const Lab *getLab(const Common::String &filename) const;
-	Block *getFileFromCache(const Common::String &filename);
+	Common::SeekableReadStream *loadFile(Common::String &filename) const;
+	Common::SeekableReadStream *getFileFromCache(const Common::String &filename);
 	ResourceLoader::ResourceCache *getEntryFromCache(const Common::String &filename);
-	void putIntoCache(const Common::String &fname, Block *res);
+	void putIntoCache(const Common::String &fname, byte *res, uint32 len);
 
 	typedef Common::List<Lab *> LabList;
 	LabList _labs;

@@ -328,7 +328,7 @@ void Bitmap::restoreState(SaveGame *state) {
 	freeData();
 
 	Common::String fname = state->readString();
-	Common::SeekableReadStream *data = g_resourceloader->openNewStreamFile(fname.c_str());
+	Common::SeekableReadStream *data = g_resourceloader->openNewStreamFile(fname.c_str(), true);
 	_data = BitmapData::getBitmapData(fname, data);
 
 	_currImage = state->readLESint32();
