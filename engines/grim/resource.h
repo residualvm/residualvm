@@ -66,7 +66,7 @@ public:
 	LipSync *loadLipSync(const Common::String &fname);
 	Common::SeekableReadStream *openNewStreamFile(const char *filename, bool cache = false);
 	void uncache(const char *fname);
-	bool getFileExists(const Common::String &filename) const;
+	bool getFileExists(const Common::String &filename);  //TODO: make it const again at next scummvm sync
 
 	ModelPtr getModel(const Common::String &fname, CMap *c);
 	CMapPtr getColormap(const Common::String &fname);
@@ -84,14 +84,11 @@ public:
 	};
 
 private:
-	const Lab *getLab(const Common::String &filename) const;
-	Common::SeekableReadStream *loadFile(Common::String &filename) const;
+	Common::SeekableReadStream *loadFile(Common::String &filename);  //TODO: make it const again at next scummvm sync
 	Common::SeekableReadStream *getFileFromCache(const Common::String &filename);
 	ResourceLoader::ResourceCache *getEntryFromCache(const Common::String &filename);
 	void putIntoCache(const Common::String &fname, byte *res, uint32 len);
 
-	typedef Common::List<Lab *> LabList;
-	LabList _labs;
 	Common::SearchSet _files;
 
 	Common::Array<ResourceCache> _cache;
