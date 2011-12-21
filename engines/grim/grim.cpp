@@ -146,7 +146,6 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 	_printLineDefaults.setFGColor(c);
 	_printLineDefaults.setFont(NULL);
 	_printLineDefaults.setJustify(TextObject::LJUSTIFY);
-	_printLineDefaults.setDisabled(false);
 
 	_sayLineDefaults.setX(0);
 	_sayLineDefaults.setY(100);
@@ -155,7 +154,6 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 	_sayLineDefaults.setFGColor(c);
 	_sayLineDefaults.setFont(NULL);
 	_sayLineDefaults.setJustify(TextObject::CENTER);
-	_sayLineDefaults.setDisabled(false);
 
 	_blastTextDefaults.setX(0);
 	_blastTextDefaults.setY(200);
@@ -164,7 +162,6 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 	_blastTextDefaults.setFGColor(c);
 	_blastTextDefaults.setFont(NULL);
 	_blastTextDefaults.setJustify(TextObject::LJUSTIFY);
-	_blastTextDefaults.setDisabled(false);
 
 	const Common::FSNode gameDataDir(ConfMan.get("path"));
 	SearchMan.addSubDirectoryMatching(gameDataDir, "movies"); // Add 'movies' subdirectory for the demo
@@ -777,7 +774,6 @@ void GrimEngine::restoreGRIM() {
 	_talkingActor = Actor::getPool().getObject(_savedState->readLEUint32());
 
 	//TextObject stuff
-	_sayLineDefaults.setDisabled(_savedState->readLESint32());
 	_sayLineDefaults.setFGColor(PoolColor::getPool().getObject(_savedState->readLEUint32()));
 	_sayLineDefaults.setFont(Font::getPool().getObject(_savedState->readLEUint32()));
 	_sayLineDefaults.setHeight(_savedState->readLESint32());
@@ -914,7 +910,6 @@ void GrimEngine::saveGRIM() {
 	}
 
 	//TextObject stuff
-	_savedState->writeLESint32(_sayLineDefaults.getDisabled());
 	_savedState->writeLEUint32(_sayLineDefaults.getFGColor()->getId());
 	_savedState->writeLEUint32(_sayLineDefaults.getFont()->getId());
 	_savedState->writeLESint32(_sayLineDefaults.getHeight());

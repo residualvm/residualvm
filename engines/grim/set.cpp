@@ -199,7 +199,7 @@ void Set::saveState(SaveGame *savedState) const {
 		savedState->writeString(_cmaps[i]->getFilename());
 	}
 	savedState->writeLEUint32(_currSetup - _setups); // current setup id
-	savedState->writeLEUint32(_locked);
+	savedState->writeBool(_locked);
 	savedState->writeLEUint32(_enableLights);
 	savedState->writeLEUint32(_minVolume);
 	savedState->writeLEUint32(_maxVolume);
@@ -252,7 +252,7 @@ void Set::saveState(SaveGame *savedState) const {
 
 		//name
 		savedState->writeString(l._name);
-		savedState->writeLEBool(l._enabled);
+		savedState->writeBool(l._enabled);
 
 		//type
 		savedState->writeString(l._type);
@@ -278,7 +278,7 @@ bool Set::restoreState(SaveGame *savedState) {
 	}
 
 	int32 currSetupId = savedState->readLEUint32();
-	_locked           = savedState->readLEUint32();
+	_locked           = savedState->readBool();
 	_enableLights     = savedState->readLEUint32();
 	_minVolume        = savedState->readLEUint32();
 	_maxVolume        = savedState->readLEUint32();
@@ -329,7 +329,7 @@ bool Set::restoreState(SaveGame *savedState) {
 		Light &l = _lights[i];
 
 		l._name = savedState->readString();
-		l._enabled = savedState->readLEBool();
+		l._enabled = savedState->readBool();
 		l._type = savedState->readString();
 
 		l._pos           = savedState->readVector3d();

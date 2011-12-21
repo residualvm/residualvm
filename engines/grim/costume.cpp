@@ -105,7 +105,7 @@ namespace Grim {
 // along setKey requests to the actual bitmap object.
 
 Costume::Costume(const Common::String &fname, const char *data, int len, Costume *prevCost) :
-		Object(), _head(new Head()) {
+		Object(), _head(0) {
 
 	_fname = fname;
 	_lookAtRate = 200;
@@ -561,10 +561,15 @@ void Costume::animate() {
 }
 
 void Costume::moveHead(bool entering, const Math::Vector3d &lookAt) {
-	_head->lookAt(entering, lookAt, _lookAtRate, _matrix);
+	if (_head) {
+		_head->lookAt(entering, lookAt, _lookAtRate, _matrix);
+	}
 }
 
 void Costume::setHead(int joint1, int joint2, int joint3, float maxRoll, float maxPitch, float maxYaw) {
+	if (!_head) {
+		_head = new Head();
+	}
 	_head->setJoints(joint1, joint2, joint3);
 	_head->loadJoints(getModelNodes());
 	_head->setMaxAngles(maxPitch, maxYaw, maxRoll);
@@ -594,26 +599,26 @@ Costume *Costume::getPreviousCostume() const {
 
 void Costume::saveState(SaveGame *state) const {
 	if (_cmap) {
-		state->writeLEUint32(1);
+		state->writeBool(true);
 		state->writeString(_cmap->getFilename());
 	} else {
-		state->writeLEUint32(0);
+		state->writeBool(false);
 	}
 
 	for (int i = 0; i < _numChores; ++i) {
 		Chore &c = _chores[i];
 
-		state->writeLESint32(c._hasPlayed);
-		state->writeLESint32(c._playing);
-		state->writeLESint32(c._looping);
-		state->writeLESint32(c._currTime);
+		state->writeBool(c._hasPlayed);
+		state->writeBool(c._playing);
+		state->writeBool(c._looping);
+		state->writeBool(c._currTime);
 	}
 
 	for (int i = 0; i < _numComponents; ++i) {
 		Component *c = _components[i];
 
 		if (c) {
-			state->writeLESint32(c->_visible);
+			state->writeBool(c->_visible);
 			state->writeVector3d(c->_matrix.getPosition());
 			c->saveState(state);
 		}
@@ -624,13 +629,16 @@ void Costume::saveState(SaveGame *state) const {
 		state->writeLESint32((*i)->_id);
 	}
 
-	// FIXME: Decomment this!!
-// 	state.writeFloat(_lookAtRate);
-	_head->saveState(state);
+	state->writeFloat(_lookAtRate);
+	state->writeBool(_head!=0);
+	if (_head) {
+		_head->saveState(state);
+	}
+
 }
 
 bool Costume::restoreState(SaveGame *state) {
-	if (state->readLEUint32()) {
+	if (state->readBool()) {
 		Common::String str = state->readString();
 		setColormap(str);
 	}
@@ -638,16 +646,16 @@ bool Costume::restoreState(SaveGame *state) {
 	for (int i = 0; i < _numChores; ++i) {
 		Chore &c = _chores[i];
 
-		c._hasPlayed = state->readLESint32();
-		c._playing = state->readLESint32();
-		c._looping = state->readLESint32();
-		c._currTime = state->readLESint32();
+		c._hasPlayed = state->readBool();
+		c._playing = state->readBool();
+		c._looping = state->readBool();
+		c._currTime = state->readBool();
 	}
 	for (int i = 0; i < _numComponents; ++i) {
 		Component *c = _components[i];
 
 		if (c) {
-			c->_visible = state->readLESint32();
+			c->_visible = state->readBool();
 			c->_matrix.setPosition(state->readVector3d());
 			c->restoreState(state);
 		}
@@ -659,11 +667,14 @@ bool Costume::restoreState(SaveGame *state) {
 		_playingChores.push_back(&_chores[id]);
 	}
 
-	// FIXME: Decomment this!!
-// 	_lookAtRate = state->readFloat();
-	_head->restoreState(state);
-	_head->loadJoints(getModelNodes());
-
+	_lookAtRate = state->readFloat();
+	if (state->readBool()) {
+		if (!_head) {
+			_head = new Head();
+		}
+		_head->restoreState(state);
+		_head->loadJoints(getModelNodes());
+	}
 	return true;
 }
 

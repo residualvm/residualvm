@@ -76,7 +76,7 @@ void ObjectState::draw() {
 }
 
 void ObjectState::saveState(SaveGame *savedState) const {
-	savedState->writeLESint32(_visibility);
+	savedState->writeBool(_visibility);
 	savedState->writeLEUint32(_setupID);
 	savedState->writeLEUint32(_pos);
 
@@ -96,7 +96,7 @@ void ObjectState::saveState(SaveGame *savedState) const {
 }
 
 bool ObjectState::restoreState(SaveGame *savedState) {
-	_visibility = savedState->readLEUint32();
+	_visibility = savedState->readBool();
 	_setupID    = savedState->readLEUint32();
 	_pos        = (Position) savedState->readLEUint32();
 
