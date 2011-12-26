@@ -84,7 +84,6 @@ public:
 	};
 
 private:
-	const Lab *getLab(const Common::String &filename) const;
 	Common::SeekableReadStream *loadFile(Common::String &filename);  //TODO: make it const again at next scummvm sync
 	Common::SeekableReadStream *getFileFromCache(const Common::String &filename);
 	ResourceLoader::ResourceCache *getEntryFromCache(const Common::String &filename);

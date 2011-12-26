@@ -34,10 +34,27 @@
 #include "engines/grim/model.h"
 #include "engines/grim/inputdialog.h"
 #include "engines/grim/debug.h"
+#include "common/algorithm.h"
+#include "gui/message.h"
 
 namespace Grim {
 
 ResourceLoader *g_resourceloader = NULL;
+
+class LabListComperator {
+	const Common::String _labName;
+public:
+	LabListComperator() {}
+	LabListComperator(const Common::String &ln) : _labName(ln) {}
+
+	bool operator()(const Common::ArchiveMemberPtr &l) {
+		return _labName.compareToIgnoreCase(l->getName()) == 0;
+	}
+
+	bool operator()(const Common::ArchiveMemberPtr &l, const Common::ArchiveMemberPtr &r) {
+		return (l->getName().compareToIgnoreCase(r->getName()) > 0);
+	}
+};
 
 ResourceLoader::ResourceLoader() {
 	_cacheDirty = false;
@@ -59,13 +76,19 @@ ResourceLoader::ResourceLoader() {
 			SearchMan.listMatchingMembers(files, "year?mus.lab");
 			SearchMan.listMatchingMembers(files, "local.lab");
 			SearchMan.listMatchingMembers(files, "credits.lab");
-			if (SearchMan.hasFile("datausr.lab")) {
+
+			//Sort the archives in order to ensure that they are loaded with the correct order
+			Common::sort(files.begin(), files.end(), LabListComperator());
+
+			//Check the presence of datausr.lab and ask the user if he wants to load it.
+			//In this case put it in the top of the list
+			Common::ArchiveMemberList::iterator datausr_it = Common::find_if(files.begin(), files.end(), LabListComperator("datausr.lab"));
+			if (datausr_it != files.end()) {
 				Grim::InputDialog d("User-patch detected, the Residual-team\n provides no support for using such patches.\n Click OK to load, or Cancel\n to skip the patch.", "OK", false);
 				int res = d.runModal();
-				if (res) {
-					warning("Loading datausr.lab");
-					SearchMan.listMatchingMembers(files, "datausr.lab");
-				}
+				if (res == GUI::kMessageOK)
+					files.push_front(*datausr_it);
+				files.erase(datausr_it);
 			}
 		}
 	}
@@ -76,21 +99,17 @@ ResourceLoader::ResourceLoader() {
 	if (files.empty())
 		error("Cannot find game data - check configuration file");
 
+	int priority = files.size();
 	for (Common::ArchiveMemberList::const_iterator x = files.begin(); x != files.end(); ++x) {
 		Common::String filename = (*x)->getName();
 		filename.toLowercase();
 
 		l = new Lab();
 		if (l->open(filename))
-			_files.add(filename, l, 0, true);
+			_files.add(filename, l, priority--, true);
 		else
 			delete l;
 	}
-
-	if (_files.hasArchive("data005.lab"))
-		_files.setPriority("data005.lab", 1);
-	if (_files.hasArchive("datausr.lab"))
-		_files.setPriority("datausr.lab", 2);
 
 	files.clear();
 }
