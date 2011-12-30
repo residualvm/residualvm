@@ -27,6 +27,7 @@
 #include "common/file.h"
 
 #include "engines/grim/object.h"
+#include "engines/grim/lua/lua.h"
 
 namespace Grim {
 
@@ -41,8 +42,6 @@ class EMIModel;
 class LipSync;
 class TrackedObject;
 class SaveGame;
-class Block;
-class LuaFile;
 class Lab;
 
 typedef ObjectPtr<Material> MaterialPtr;
@@ -67,14 +66,9 @@ public:
 	Model *loadModel(const Common::String &fname, CMap *c, Model *parent = NULL);
 	EMIModel *loadModelEMI(const Common::String &fname, EMIModel *parent = NULL);
 	LipSync *loadLipSync(const Common::String &fname);
-	Block *getFileBlock(const Common::String &filename) const;
-	Block *getBlock(const Common::String &filename);
-	Common::SeekableReadStream *openNewStreamFile(const char *filename) const;
-	Common::SeekableReadStream *openNewSubStreamFile(const char *filename) const;
-	LuaFile *openNewStreamLuaFile(const char *filename) const;
+	Common::SeekableReadStream *openNewStreamFile(const char *filename, bool cache = false);
 	void uncache(const char *fname);
-	bool getFileExists(const Common::String &filename) const;
-	int getFileLength(const char *filename) const;
+	bool getFileExists(const Common::String &filename);  //TODO: make it const again at next scummvm sync
 
 	ModelPtr getModel(const Common::String &fname, CMap *c);
 	CMapPtr getColormap(const Common::String &fname);
@@ -87,17 +81,16 @@ public:
 
 	struct ResourceCache {
 		char *fname;
-		Block *resPtr;
+		byte *resPtr;
+		uint32 len;
 	};
 
 private:
-	const Lab *getLab(const Common::String &filename) const;
-	Block *getFileFromCache(const Common::String &filename);
+	Common::SeekableReadStream *loadFile(Common::String &filename);  //TODO: make it const again at next scummvm sync
+	Common::SeekableReadStream *getFileFromCache(const Common::String &filename);
 	ResourceLoader::ResourceCache *getEntryFromCache(const Common::String &filename);
-	void putIntoCache(const Common::String &fname, Block *res);
+	void putIntoCache(const Common::String &fname, byte *res, uint32 len);
 
-	typedef Common::List<Lab *> LabList;
-	LabList _labs;
 	Common::SearchSet _files;
 
 	Common::Array<ResourceCache> _cache;
