@@ -8,6 +8,7 @@
 
 IDI_ICON               ICON    DISCARDABLE     "icons/residual.ico"
 
+residual-grim-patch.lab        FILE    "patches/residual-grim-patch.lab"
 modern.zip        FILE    "gui/themes/modern.zip"
 #ifdef USE_TRANSLATION
 translations.dat       FILE    "gui/themes/translations.dat"
