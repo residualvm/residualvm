@@ -23,7 +23,7 @@
 /* Portions of this file are part of libmspack.
  * (C) 2003-2004 Stuart Caie.
  *
- * This source code is adopted and striped for ResidualVM project.
+ * This source code is adapted and stripped for ResidualVM project.
  *
  * libmspack is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License (LGPL) version 2.1
