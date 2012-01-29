@@ -850,95 +850,95 @@ struct TextObjectData {
 };
 
 void GfxTinyGL::createTextObject(TextObject *text) {
-	int numLines = text->getNumLines();
-	const Common::String *lines = text->getLines();
-	const Font *font = text->getFont();
-	const Color &fgColor = text->getFGColor();
-	TextObjectData *userData = new TextObjectData[numLines];
-	text->setUserData(userData);
-	for (int j = 0; j < numLines; j++) {
-		const Common::String &currentLine = lines[j];
-
-		int width = font->getStringLength(currentLine) + 1;
-		int height = font->getHeight();
-
-		uint8 *_textBitmap = new uint8[height * width];
-		memset(_textBitmap, 0, height * width);
-
-		// Fill bitmap
-		int startOffset = 0;
-		for (unsigned int d = 0; d < currentLine.size(); d++) {
-			int ch = currentLine[d];
-			int8 startingLine = font->getCharStartingLine(ch) + font->getBaseOffsetY();
-			int32 charDataWidth = font->getCharDataWidth(ch);
-			int32 charWidth = font->getCharWidth(ch);
-			int8 startingCol = font->getCharStartingCol(ch);
-			for (int line = 0; line < font->getCharDataHeight(ch); line++) {
-				int offset = startOffset + (width * (line + startingLine));
-				for (int r = 0; r < charDataWidth; r++) {
-					const byte pixel = *(font->getCharData(ch) + r + (charDataWidth * line));
-					byte *dst = _textBitmap + offset + startingCol + r;
-					if (*dst == 0 && pixel != 0)
-						_textBitmap[offset + startingCol + r] = pixel;
-				}
-				if (line + startingLine >= font->getHeight())
-					break;
-			}
-			startOffset += charWidth;
-		}
-
-		Graphics::PixelBuffer buf(_pixelFormat, width * height, DisposeAfterUse::NO);
-
-		uint8 *bitmapData = _textBitmap;
-		uint8 r = fgColor.getRed();
-		uint8 g = fgColor.getGreen();
-		uint8 b = fgColor.getBlue();
-		uint32 color = _zb->cmode.RGBToColor(r, g, b);
-
-		if (color == 0xf81f)
-			color = 0xf81e;
-
-		int txData = 0;
-		for (int i = 0; i < width * height; i++, txData++, bitmapData++) {
-			byte pixel = *bitmapData;
-			if (pixel == 0x00) {
-				buf.setPixelAt(txData, 0xf81f);
-			} else if (pixel == 0x80) {
-				buf.setPixelAt(txData, 0);
-			} else if (pixel == 0xFF) {
-				buf.setPixelAt(txData, color);
-			}
-		}
-
-		userData[j].width = width;
-		userData[j].height = height;
-		userData[j].data = buf.getRawBuffer();
-		userData[j].x = text->getLineX(j);
-		userData[j].y = text->getLineY(j);
-
-		delete[] _textBitmap;
-	}
+// 	int numLines = text->getNumLines();
+// 	const Common::String *lines = text->getLines();
+// 	const Font *font = text->getFont();
+// 	const Color &fgColor = text->getFGColor();
+// 	TextObjectData *userData = new TextObjectData[numLines];
+// 	text->setUserData(userData);
+// 	for (int j = 0; j < numLines; j++) {
+// 		const Common::String &currentLine = lines[j];
+//
+// 		int width = font->getStringLength(currentLine) + 1;
+// 		int height = font->getHeight();
+//
+// 		uint8 *_textBitmap = new uint8[height * width];
+// 		memset(_textBitmap, 0, height * width);
+//
+// 		// Fill bitmap
+// 		int startOffset = 0;
+// 		for (unsigned int d = 0; d < currentLine.size(); d++) {
+// 			int ch = currentLine[d];
+// 			int8 startingLine = font->getCharStartingLine(ch) + font->getBaseOffsetY();
+// 			int32 charDataWidth = font->getCharDataWidth(ch);
+// 			int32 charWidth = font->getCharWidth(ch);
+// 			int8 startingCol = font->getCharStartingCol(ch);
+// 			for (int line = 0; line < font->getCharDataHeight(ch); line++) {
+// 				int offset = startOffset + (width * (line + startingLine));
+// 				for (int r = 0; r < charDataWidth; r++) {
+// 					const byte pixel = *(font->getCharData(ch) + r + (charDataWidth * line));
+// 					byte *dst = _textBitmap + offset + startingCol + r;
+// 					if (*dst == 0 && pixel != 0)
+// 						_textBitmap[offset + startingCol + r] = pixel;
+// 				}
+// 				if (line + startingLine >= font->getHeight())
+// 					break;
+// 			}
+// 			startOffset += charWidth;
+// 		}
+//
+// 		Graphics::PixelBuffer buf(_pixelFormat, width * height, DisposeAfterUse::NO);
+//
+// 		uint8 *bitmapData = _textBitmap;
+// 		uint8 r = fgColor.getRed();
+// 		uint8 g = fgColor.getGreen();
+// 		uint8 b = fgColor.getBlue();
+// 		uint32 color = _zb->cmode.RGBToColor(r, g, b);
+//
+// 		if (color == 0xf81f)
+// 			color = 0xf81e;
+//
+// 		int txData = 0;
+// 		for (int i = 0; i < width * height; i++, txData++, bitmapData++) {
+// 			byte pixel = *bitmapData;
+// 			if (pixel == 0x00) {
+// 				buf.setPixelAt(txData, 0xf81f);
+// 			} else if (pixel == 0x80) {
+// 				buf.setPixelAt(txData, 0);
+// 			} else if (pixel == 0xFF) {
+// 				buf.setPixelAt(txData, color);
+// 			}
+// 		}
+//
+// 		userData[j].width = width;
+// 		userData[j].height = height;
+// 		userData[j].data = buf.getRawBuffer();
+// 		userData[j].x = text->getLineX(j);
+// 		userData[j].y = text->getLineY(j);
+//
+// 		delete[] _textBitmap;
+// 	}
 }
 
 void GfxTinyGL::drawTextObject(TextObject *text) {
-	TextObjectData *userData = (TextObjectData *)text->getUserData();
-	if (userData) {
-		int numLines = text->getNumLines();
-		for (int i = 0; i < numLines; ++i) {
-			blit(_pixelFormat, NULL, (byte *)_zb->pbuf.getRawBuffer(), userData[i].data, userData[i].x, userData[i].y, userData[i].width, userData[i].height, true);
-		}
-	}
+// 	TextObjectData *userData = (TextObjectData *)text->getUserData();
+// 	if (userData) {
+// 		int numLines = text->getNumLines();
+// 		for (int i = 0; i < numLines; ++i) {
+// 			blit(_pixelFormat, NULL, (byte *)_zb->pbuf.getRawBuffer(), userData[i].data, userData[i].x, userData[i].y, userData[i].width, userData[i].height, true);
+// 		}
+// 	}
 }
 
 void GfxTinyGL::destroyTextObject(TextObject *text) {
-	TextObjectData *userData = (TextObjectData *)text->getUserData();
-	if (userData) {
-		int numLines = text->getNumLines();
-		for (int i = 0; i < numLines; ++i) {
-			delete[] userData[i].data;
-		}
-		delete[] userData;
-	}
+// 	TextObjectData *userData = (TextObjectData *)text->getUserData();
+// 	if (userData) {
+// 		int numLines = text->getNumLines();
+// 		for (int i = 0; i < numLines; ++i) {
+// 			delete[] userData[i].data;
+// 		}
+// 		delete[] userData;
+// 	}
 }
 
 void GfxTinyGL::createMaterial(Texture *material, const char *data, const CMap *cmap) {

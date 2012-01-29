@@ -1213,9 +1213,9 @@ void Actor::draw() {
 		x1 = y1 = 1000;
 		x2 = y2 = -1000;
 		if (!_costumeStack.empty()) {
-			g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
-			_costumeStack.back()->getBoundingBox(&x1, &y1, &x2, &y2);
-			g_driver->finishActorDraw();
+// 			g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
+// 			_costumeStack.back()->getBoundingBox(&x1, &y1, &x2, &y2);
+// 			g_driver->finishActorDraw();
 		}
 
 		TextObject *textObject = TextObject::getPool().getObject(_sayLineText);

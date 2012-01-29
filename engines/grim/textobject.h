@@ -73,6 +73,8 @@ class TextObjectDefaults : public TextObjectCommon {
 
 };
 
+class TextObjectData;
+
 class TextObject : public PoolObject<TextObject, MKTAG('T', 'E', 'X', 'T')>,
                    public TextObjectCommon {
 public:
@@ -90,9 +92,6 @@ public:
 
 	int getLineX(int line);
 	int getLineY(int line);
-
-	void *getUserData() { return _userData; }
-	void setUserData(void *data) { _userData = data; }
 
 	const Common::String *getLines() { return _lines; }
 	int getNumLines() { return _numberLines; }
@@ -114,7 +113,9 @@ public:
 		RJUSTIFY
 	};
 
-protected:
+private:
+	void create();
+
 	bool _created;
 	void setupText();
 	int _numberLines;
@@ -124,7 +125,7 @@ protected:
 	int _elapsedTime;
 	int _maxLineWidth;
 	Common::String *_lines;
-	void *_userData;
+	TextObjectData *_userData;
 };
 
 } // end of namespace Grim

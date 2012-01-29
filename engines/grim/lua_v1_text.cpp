@@ -169,7 +169,7 @@ void Lua_V1::BlastText() {
 		setTextObjectParams(textObject, tableObj);
 
 	textObject->setText(line);
-// 	textObject->draw();
+	textObject->draw();
 	delete textObject;
 }
 

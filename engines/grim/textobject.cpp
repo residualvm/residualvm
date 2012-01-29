@@ -20,6 +20,11 @@
  *
  */
 
+#include "graphics/pixelbuffer.h"
+
+#include "graphics/agl/bitmap2d.h"
+#include "graphics/agl/manager.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/textobject.h"
@@ -37,6 +42,11 @@ TextObjectCommon::TextObjectCommon() :
 	_font(NULL), _duration(0), _positioned(false) {
 }
 
+struct TextObjectData {
+	int width, height, x, y;
+	AGL::Bitmap2D *_bitmap;
+};
+
 TextObject::TextObject(bool blastDraw, bool isSpeech) :
 		PoolObject<TextObject, MKTAG('T', 'E', 'X', 'T')>(), TextObjectCommon(), _numberLines(1),
 		_maxLineWidth(0), _lines(0), _userData(0), _created(false) {
@@ -51,8 +61,11 @@ TextObject::TextObject() :
 
 TextObject::~TextObject() {
 	delete[] _lines;
-	if (_created) {
-		g_driver->destroyTextObject(this);
+	if (_userData) {
+		for (int i = 0; i < _numberLines; ++i) {
+			delete _userData[i]._bitmap;
+		}
+		delete[] _userData;
 	}
 }
 
@@ -338,15 +351,19 @@ void TextObject::draw() {
 		return;
 
 	if (!_created) {
-		g_driver->createTextObject(this);
+		create();
 		_created = true;
 	}
 
 	if (_justify > 3 || _justify < 0)
 		warning("TextObject::draw: Unknown justification code (%d)", _justify);
 
-	g_driver->drawTextObject(this);
-
+	if (_userData) {
+		for (int i = 0; i < getNumLines(); ++i) {
+			TextObjectData &ud = _userData[i];
+			ud._bitmap->draw(ud.x, ud.y);
+		}
+	}
 }
 
 void TextObject::update() {
@@ -357,6 +374,78 @@ void TextObject::update() {
 	_elapsedTime += g_grim->getFrameTime();
 	if (_elapsedTime > _duration) {
 		delete this;
+	}
+}
+
+void TextObject::create() {
+	int numLines = getNumLines();
+	const Common::String *lines = getLines();
+	const Font *font = getFont();
+	const Color &fgColor = getFGColor();
+	_userData = new TextObjectData[numLines];
+	for (int j = 0; j < numLines; j++) {
+		const Common::String &currentLine = lines[j];
+
+		int width = font->getStringLength(currentLine) + 1;
+		int height = font->getHeight();
+
+		uint8 *_textBitmap = new uint8[height * width];
+		memset(_textBitmap, 0, height * width);
+
+		// Fill bitmap
+		int startOffset = 0;
+		for (unsigned int d = 0; d < currentLine.size(); d++) {
+			int ch = currentLine[d];
+			int8 startingLine = font->getCharStartingLine(ch) + font->getBaseOffsetY();
+			int32 charDataWidth = font->getCharDataWidth(ch);
+			int32 charWidth = font->getCharWidth(ch);
+			int8 startingCol = font->getCharStartingCol(ch);
+			for (int line = 0; line < font->getCharDataHeight(ch); line++) {
+				int offset = startOffset + (width * (line + startingLine));
+				for (int r = 0; r < charDataWidth; r++) {
+					const byte pixel = *(font->getCharData(ch) + r + (charDataWidth * line));
+					byte *dst = _textBitmap + offset + startingCol + r;
+					if (*dst == 0 && pixel != 0)
+						_textBitmap[offset + startingCol + r] = pixel;
+				}
+				if (line + startingLine >= font->getHeight())
+					break;
+			}
+			startOffset += charWidth;
+		}
+
+		Graphics::PixelFormat pixelFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
+		Graphics::PixelBuffer buf(pixelFormat, width * height, DisposeAfterUse::YES);
+
+		uint8 *bitmapData = _textBitmap;
+		uint8 r = fgColor.getRed();
+		uint8 g = fgColor.getGreen();
+		uint8 b = fgColor.getBlue();
+		uint32 color = pixelFormat.RGBToColor(r, g, b);
+
+		if (color == 0xf81f)
+			color = 0xf81e;
+
+		int txData = 0;
+		for (int i = 0; i < width * height; i++, txData++, bitmapData++) {
+			byte pixel = *bitmapData;
+			if (pixel == 0x00) {
+				buf.setPixelAt(txData, 0xf81f);
+			} else if (pixel == 0x80) {
+				buf.setPixelAt(txData, 0);
+			} else if (pixel == 0xFF) {
+				buf.setPixelAt(txData, color);
+			}
+		}
+
+		_userData[j].width = width;
+		_userData[j].height = height;
+		_userData[j].x = getLineX(j);
+		_userData[j].y = getLineY(j);
+
+		_userData[j]._bitmap = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, buf, width, height);
+
+		delete[] _textBitmap;
 	}
 }
 
