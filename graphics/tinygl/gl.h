@@ -85,7 +85,7 @@ enum {
 	TGL_T2F_C4F_N3F_V3F				= 0x2A2C,
 	TGL_T4F_C4F_N3F_V4F				= 0x2A2D,
 
-	// Matrix Mode 
+	// Matrix Mode
 	TGL_MATRIX_MODE					= 0x0BA0,
 	TGL_MODELVIEW					= 0x1700,
 	TGL_PROJECTION					= 0x1701,
@@ -626,7 +626,7 @@ enum {
 	TGL_INDEX_ARRAY_POINTER_EXT		= 0x8091,
 	TGL_TEXTURE_COORD_ARRAY_POINTER_EXT = 0x8092,
 	TGL_EDGE_FLAG_ARRAY_POINTER_EXT	= 0x8093,
-	
+
 	// Color-types from 1.2, from SDL_opengl.h
 	TGL_BGR                         = 0x80E0,
 	TGL_BGRA                        = 0x80E1

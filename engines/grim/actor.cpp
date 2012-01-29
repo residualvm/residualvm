@@ -30,6 +30,9 @@
 #include "math/line3d.h"
 #include "math/rect2d.h"
 
+#include "graphics/agl/manager.h"
+#include "graphics/agl/renderer.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/actor.h"
 #include "engines/grim/grim.h"
@@ -1179,23 +1182,30 @@ void Actor::draw() {
 		g_grim->getCurrSet()->setupLights(_pos);
 
 		Costume *costume = _costumeStack.back();
-		for (int l = 0; l < MAX_SHADOWS; l++) {
-			if (!shouldDrawShadow(l))
-				continue;
-			g_driver->setShadow(&_shadowArray[l]);
-			g_driver->setShadowMode();
-			if (g_driver->isHardwareAccelerated())
-				g_driver->drawShadowPlanes();
-			g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
-			costume->draw();
-			g_driver->finishActorDraw();
-			g_driver->clearShadowMode();
-			g_driver->setShadow(NULL);
-		}
+// 		for (int l = 0; l < MAX_SHADOWS; l++) {
+// 			if (!shouldDrawShadow(l))
+// 				continue;
+// 			g_driver->setShadow(&_shadowArray[l]);
+// 			g_driver->setShadowMode();
+// 			if (g_driver->isHardwareAccelerated())
+// 				g_driver->drawShadowPlanes();
+// 			g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
+// 			costume->draw();
+// 			g_driver->finishActorDraw();
+// 			g_driver->clearShadowMode();
+// 			g_driver->setShadow(NULL);
+// 		}
+
 		// normal draw actor
-		g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
+// 		g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
+		AGLMan._renderer->pushMatrix();
+		AGLMan._renderer->translate(_pos.x(),_pos.y(),_pos.z());
+		AGLMan._renderer->rotate(_yaw.getDegrees(),0,0,1);
+		AGLMan._renderer->rotate(_pitch.getDegrees(),1,0,0);
+		AGLMan._renderer->rotate(_roll.getDegrees(),0,1,0);
 		costume->draw();
-		g_driver->finishActorDraw();
+		AGLMan._renderer->popMatrix();
+// 		g_driver->finishActorDraw();
 	}
 
 	if (_mustPlaceText) {

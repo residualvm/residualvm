@@ -46,6 +46,10 @@
 
 #include "graphics/pixelbuffer.h"
 
+#include "graphics/agl/manager.h"
+#include "graphics/agl/target.h"
+#include "graphics/agl/texture.h"
+
 #include "gui/error.h"
 #include "gui/gui-manager.h"
 
@@ -243,14 +247,27 @@ Common::Error GrimEngine::run() {
 		_softRenderer=true;
 	}
 
+
 	if (_softRenderer)
-		g_driver = CreateGfxTinyGL();
+		AGLMan.init("TinyGL");
 #ifdef USE_OPENGL
 	else
-		g_driver = CreateGfxOpenGL();
+		AGLMan.init("OpenGL");
 #endif
 
-	g_driver->setupScreen(640, 480, fullscreen);
+
+
+	AGLMan.setupScreen(640, 480, fullscreen, 24);
+
+
+// 	if (_softRenderer)
+		g_driver = CreateGfxTinyGL();
+// #ifdef USE_OPENGL
+// 	else
+// 		g_driver = CreateGfxOpenGL();
+// #endif
+
+// 	g_driver->setupScreen(640, 480, fullscreen);
 
 	if (getGameType() == GType_MONKEY4 && SearchMan.hasFile("AMWI.m4b")) {
 		// TODO: Play EMI Mac Aspyr logo
@@ -265,12 +282,12 @@ Common::Error GrimEngine::run() {
 	else if (getGamePlatform() == Common::kPlatformPS2 && getGameType() == GType_MONKEY4)
 		splash_bm = Bitmap::create("load.tga");
 
-	g_driver->clearScreen();
+	AGLMan.getTarget()->clear();
 
 	if (splash_bm != NULL)
 		splash_bm->draw();
-	
-	g_driver->flipBuffer();
+
+	AGLMan.flipBuffer();
 
 	LuaBase *lua = NULL;
 	if (getGameType() == GType_GRIM) {
@@ -472,7 +489,7 @@ void GrimEngine::updateDisplayScene() {
 
 		cameraPostChangeHandle(_currSet->getSetup());
 
-		g_driver->clearScreen();
+		AGLMan.getTarget()->clear();
 
 		_prevSmushFrame = 0;
 		_movieTime = 0;
@@ -497,41 +514,50 @@ void GrimEngine::updateDisplayScene() {
 		// need to render underneath the animation or you can't see what's going on
 		// This should not occur on top of everything though or Manny gets covered
 		// up when he's next to Glottis's service room
-		if (g_movie->isPlaying()) {
-			_movieTime = g_movie->getMovieTime();
-			if (g_movie->isUpdateNeeded()) {
-				g_driver->prepareMovieFrame(g_movie->getDstSurface());
-				g_movie->clearUpdateNeeded();
-			}
-			if (g_movie->getFrame() >= 0)
-				g_driver->drawMovieFrame(g_movie->getX(), g_movie->getY());
-			else
-				g_driver->releaseMovieFrame();
-		}
-
-		// Draw Primitives
-		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
-			p->draw();
-		}
-
+// 		if (g_movie->isPlaying()) {
+// 			_movieTime = g_movie->getMovieTime();
+// 			if (g_movie->isUpdateNeeded()) {
+// 				g_driver->prepareMovieFrame(g_movie->getDstSurface());
+// 				g_movie->clearUpdateNeeded();
+// 			}
+// 			if (g_movie->getFrame() >= 0)
+// 				g_driver->drawMovieFrame(g_movie->getX(), g_movie->getY());
+// 			else
+// 				g_driver->releaseMovieFrame();
+// 		}
+//
+// 		// Draw Primitives
+// 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
+// 			p->draw();
+// 		}
+//
 		_currSet->setupCamera();
+<<<<<<< HEAD
 
 		g_driver->set3DMode();
 
 		// Draw actors
+=======
+//
+// 		g_driver->set3DMode();
+//
+// 		_currSet->setupLights();
+//
+// 		// Draw actors
+>>>>>>> AGL: First draft of the Abstract Graphics Layer
 		foreach (Actor *a, Actor::getPool()) {
 			if (a->isInSet(_currSet->getName()) && a->isVisible())
 				a->draw();
 			a->undraw(a->isInSet(_currSet->getName()) && a->isVisible());
 		}
-		flagRefreshShadowMask(false);
+// 		flagRefreshShadowMask(false);
 
 		// Draw overlying scene components
 		// The overlay objects should be drawn on top of everything else,
 		// including 3D objects such as Manny and the message tube
 		_currSet->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
 
-		drawPrimitives();
+// 		drawPrimitives();
 	} else if (_mode == DrawMode) {
 		_doFlip = false;
 		_prevSmushFrame = 0;
@@ -545,8 +571,8 @@ void GrimEngine::doFlip() {
 		return;
 	}
 
-	if (_showFps && _mode != DrawMode)
-		g_driver->drawEmergString(550, 25, _fps, Color(255, 255, 255));
+// 	if (_showFps && _mode != DrawMode)
+// 		g_driver->drawEmergString(550, 25, _fps, Color(255, 255, 255));
 
 	if (_flipEnable)
 		g_driver->flipBuffer();
@@ -615,8 +641,8 @@ void GrimEngine::mainLoop() {
 			delete g_driver;
 			if (tolower(g_registry->get("soft_renderer", "false")[0]) == 't') {
 				g_driver = CreateGfxTinyGL();
-			} else {
-				g_driver = CreateGfxOpenGL();
+// 			} else {
+// 				g_driver = CreateGfxOpenGL();
 			}
 
 			g_driver->setupScreen(screenWidth, screenHeight, fullscreen);

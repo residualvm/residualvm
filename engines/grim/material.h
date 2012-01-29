@@ -25,6 +25,10 @@
 
 #include "engines/grim/object.h"
 
+namespace AGL {
+class Texture;
+}
+
 namespace Grim {
 
 class CMap;
@@ -37,6 +41,7 @@ public:
 	int _bpp;
 	bool _hasAlpha;
 	void *_texture;
+	AGL::Texture *_tex;
 	char *_data;
 };
 

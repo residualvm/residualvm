@@ -40,7 +40,7 @@ class Material;
 struct EMIColormap {
 	unsigned char r, g, b, a;
 };
-	
+
 // Todo: port this to math::vector
 struct Vector3int;
 
@@ -48,7 +48,7 @@ class EMIModel;
 struct BoneInfo;
 struct Bone;
 class Skeleton;
-	
+
 class EMIMeshFace {
 public:
 	Vector3int *_indexes;
@@ -58,7 +58,7 @@ public:
 	uint32 _texID;
 	uint32 _flags;
 	EMIModel *_parent;
-	
+
 	EMIMeshFace() : _numFaces(0), _hasTexture(0), _texID(0), _flags(0), _indexes(NULL), _parent(NULL) { }
 	~EMIMeshFace();
 	void loadFace(Common::SeekableReadStream *data);
@@ -77,24 +77,29 @@ public:
 	Math::Vector3d *_normals;
 	EMIColormap *_colorMap;
 	Math::Vector2d *_texVerts;
-	
+
 	uint32 _numFaces;
 	EMIMeshFace *_faces;
 	uint32 _numTextures;
 	Common::String *_texNames;
 	Material **_mats;
-	
+<<<<<<< HEAD:engines/grim/emi/modelemi.h
+
 	Skeleton *_skeleton;
-	
+
 	int _numBones;
 	Bone *_bones;
-	
+
 	// Bone-stuff:
 	int _numBoneInfos;
 	BoneInfo *_boneInfos;
 	Common::String *_boneNames;
 	int *_vertexBoneInfo;
 	int *_vertexBone;
+=======
+
+	int _numBones;
+>>>>>>> AGL: First draft of the Abstract Graphics Layer:engines/grim/modelemi.h
 
 	// Stuff we dont know how to use:
 	Math::Vector4d *_sphereData;
@@ -102,19 +107,22 @@ public:
 	Math::Vector3d *_boxData2;
 	int _numTexSets;
 	int _setType;
-	
+
 	Common::String _fname;
 public:
 	EMIModel(const Common::String &filename, Common::SeekableReadStream *data, EMIModel *parent = NULL);
 	~EMIModel();
 	void setTex(int index);
+<<<<<<< HEAD:engines/grim/emi/modelemi.h
 	void setSkeleton(Skeleton *skel);
+=======
+>>>>>>> AGL: First draft of the Abstract Graphics Layer:engines/grim/modelemi.h
 	void loadMesh(Common::SeekableReadStream *data);
 	void prepareForRender();
 	void prepare();
 	void draw();
 };
-	
+
 } // end of namespace Grim
 
 #endif

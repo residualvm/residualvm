@@ -26,6 +26,9 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_mkdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_unlink
 
+#include "graphics/agl/manager.h"
+#include "graphics/agl/target.h"
+
 #include "engines/grim/grim.h"
 #include "engines/grim/lua_v1.h"
 #include "engines/grim/resource.h"
@@ -89,7 +92,8 @@ void Lua_V1::BlastImage() {
 }
 
 void Lua_V1::CleanBuffer() {
-	g_driver->copyStoredToDisplay();
+	AGLMan.getTarget()->restoreContent();
+// 	g_driver->copyStoredToDisplay();
 }
 
 void Lua_V1::StartFullscreenMovie() {
@@ -451,8 +455,10 @@ void Lua_V1::KillPrimitive() {
 }
 
 void Lua_V1::DimScreen() {
-	g_driver->storeDisplay();
-	g_driver->dimScreen();
+	AGLMan.getTarget()->storeContent();
+	AGLMan.getTarget()->dim(0.1f);
+// 	g_driver->storeDisplay();
+// 	g_driver->dimScreen();
 }
 
 void Lua_V1::DimRegion() {

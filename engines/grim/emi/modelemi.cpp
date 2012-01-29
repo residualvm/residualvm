@@ -51,10 +51,10 @@ Common::String readLAString(Common::ReadStream *ms) {
 	int strLength = ms->readUint32LE();
 	char* readString = new char[strLength];
 	ms->read(readString, strLength);
-	
+
 	Common::String retVal(readString);
 	delete[] readString;
-	
+
 	return retVal;
 }
 
@@ -101,7 +101,7 @@ void EMIMeshFace::render() {
 
 void EMIModel::loadMesh(Common::SeekableReadStream *data) {
 	//int strLength = 0; // Usefull for PS2-strings
-	
+
 	Common::String nameString = readLAString(data);
 
 	_sphereData->readFromStream(data);
@@ -199,24 +199,26 @@ void EMIModel::setSkeleton(Skeleton *skel) {
 		return;
 	}
 	_skeleton = skel;
+
 	if (!skel || !_numBoneInfos) {
 		return;
 	}
+
 	int boneVert = 0;
 	delete[] _vertexBoneInfo; _vertexBoneInfo = NULL;
 	delete[] _vertexBone; _vertexBone = NULL;
 	_vertexBoneInfo = new int[_numBoneInfos];
 	_vertexBone = new int[_numBoneInfos]; // Oversized, but yeah.
-	
+
 	for (int i = 0; i < _numBoneInfos; i++) {
 		_vertexBoneInfo[i] = _skeleton->findJointIndex(_boneNames[_boneInfos[i]._joint], _skeleton->_numJoints);
-		
+
 		if (_boneInfos[i]._incFac == 1) {
 			_vertexBone[boneVert] = i;
 			boneVert++;
 		}
 	}
-	
+
 	Math::Vector3d vertex;
 	Math::Matrix4 mat;
 	for (int i = 0; i < _numVertices; i++) {

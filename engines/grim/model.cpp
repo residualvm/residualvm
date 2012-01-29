@@ -22,6 +22,13 @@
 
 #include "common/endian.h"
 
+#include "graphics/agl/mesh.h"
+#include "graphics/agl/meshface.h"
+#include "graphics/agl/manager.h"
+#include "graphics/agl/renderer.h"
+
+#include "graphics/agl/openglrenderer/glmesh.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/model.h"
@@ -341,7 +348,7 @@ MeshFace::~MeshFace() {
 	delete[] _texVertices;
 }
 
-int MeshFace::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
+int MeshFace::loadBinary(Common::SeekableReadStream *data, Material *materials[],float *vertices, float *normals, float *textures) {
 	char v3[4 * 3], f[4];
 	data->seek(4, SEEK_CUR);
 	_type = data->readUint32LE();
@@ -375,6 +382,33 @@ int MeshFace::loadBinary(Common::SeekableReadStream *data, Material *materials[]
 		materialPtr = data->readUint32LE();
 		_material = materials[materialPtr];
 	}
+
+	AGL::GLMeshFace *fa = static_cast<AGL::GLMeshFace*>(_face);
+	AGL::GLMesh *m = fa->_parent;
+
+	_face->prepare(_numVertices);
+	_face->setNormal(_normal.x(), _normal.y(), _normal.z());
+	for (int i = 0; i < _numVertices; ++i) {
+// 		_face->vertex(_vertices[i]);
+// 		_face->texture(_texVertices[i]);
+// 		_face->normal(_vertices[i]);
+
+		float *v = m->_vertices + 3 * _vertices[i];
+		float *t = m->_textures + 2 * _texVertices[i];
+		float *n = m->_normals + 3 * _vertices[i];
+
+		assert(v[0] == (vertices + 3 * _vertices[i])[0]);
+		assert(v[1] == (vertices + 3 * _vertices[i])[1]);
+		assert(v[2] == (vertices + 3 * _vertices[i])[2]);
+
+		assert(t[0] == (textures + 2 * _texVertices[i])[0]);
+		assert(t[1] == (textures + 2 * _texVertices[i])[1]);
+
+		_face->vertex(v[0], v[1], v[2]);
+		_face->texture(t[0], t[1]);
+		_face->normal(n[0], n[1], n[2]);
+	}
+
 	return materialPtr;
 }
 
@@ -383,8 +417,10 @@ void MeshFace::changeMaterial(Material *material) {
 }
 
 void MeshFace::draw(float *vertices, float *vertNormals, float *textureVerts) const {
-	_material->select();
-	g_driver->drawModelFace(this, vertices, vertNormals, textureVerts);
+// 	_material->select();
+// 	g_driver->drawModelFace(this, vertices, vertNormals, textureVerts);
+
+	_face->draw(_material->getData()->_textures[_material->getActiveTexture()]._tex);
 }
 
 /**
@@ -428,12 +464,41 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 		_verticesI[i] = get_float(f);
 	}
 	data->seek(_numVertices * 4, SEEK_CUR);
-	for (int i = 0; i < _numFaces; i++)
-		_materialid[i] = _faces[i].loadBinary(data, materials);
+
+	AGL::Mesh *mesh = AGLMan.createMesh();
+	mesh->prepare((_numTextureVerts > _numVertices ? _numTextureVerts : _numVertices));
+	mesh->setUseAbsoluteTexCoords(true);
+
+	for (int i = 0; i < (_numTextureVerts > _numVertices ? _numTextureVerts : _numVertices); ++i) {
+		float *v = _vertices + 3 * i;
+		float *t = _textureVerts + 2 * i;
+		float *n = _vertNormals + 3 * i;
+		if (i < _numVertices)
+		mesh->vertex(v[0], v[1], v[2]);
+		else
+			mesh->vertex(0,0,0);
+		if (i < _numTextureVerts)
+		mesh->texture(t[0], t[1]);
+		if (i < _numVertices)
+		mesh->normal(n[0], n[1], n[2]);
+	}
+	AGL::GLMesh *m = static_cast<AGL::GLMesh*>(mesh);
+	assert(0==memcmp(_vertices, m->_vertices, _numVertices*3));
+	assert(0==memcmp(_textureVerts, m->_textures, _numTextureVerts*2));
+	for (int i = 0; i < _numFaces; i++) {
+		_faces[i]._face = mesh->createFace();
+		_materialid[i] = _faces[i].loadBinary(data, materials,_vertices,_vertNormals,_textureVerts);
+	}
 	for (int i = 0; i < 3 * _numVertices; i++) {
 		data->read(f, 4);
 		_vertNormals[i] = get_float(f);
 	}
+
+// 	AGL::GLMesh *m = static_cast<AGL::GLMesh*>(mesh);
+// 	assert(0==memcmp(_vertices, m->_vertices, _numVertices*3));
+// 	assert(0==memcmp(_textureVerts, m->_textures, _numTextureVerts*2));
+// 	assert(0==memcmp(_vertNormals, m->_normals, _numVertices*3));
+
 	_shadow = data->readUint32LE();
 	data->seek(4, SEEK_CUR);
 	data->read(f, 4);
@@ -545,14 +610,14 @@ void Mesh::changeMaterials(Material *materials[]) {
 }
 
 void Mesh::draw() const {
-	if (_lightingMode == 0)
-		g_driver->disableLights();
+// 	if (_lightingMode == 0)
+// 		g_driver->disableLights();
 
 	for (int i = 0; i < _numFaces; i++)
 		_faces[i].draw(_vertices, _vertNormals, _textureVerts);
 
-	if (_lightingMode == 0)
-		g_driver->enableLights();
+// 	if (_lightingMode == 0)
+// 		g_driver->enableLights();
 }
 
 void Mesh::getBoundingBox(int *x1, int *y1, int *x2, int *y2) const {
@@ -637,10 +702,13 @@ void ModelNode::draw() const {
 		g_driver->translateViewpointStart();
 		g_driver->translateViewpoint(_pivot);
 
+		AGLMan._renderer->pushMatrix();
+		AGLMan._renderer->translate(_pivot.x(),_pivot.y(),_pivot.z());
+
 		if (!g_driver->isShadowModeActive()) {
 			Sprite *sprite = _sprite;
 			while (sprite) {
-				sprite->draw();
+// 				sprite->draw();
 				sprite = sprite->_next;
 			}
 		}
@@ -650,6 +718,7 @@ void ModelNode::draw() const {
 		}
 
 		g_driver->translateViewpointFinish();
+		AGLMan._renderer->popMatrix();
 
 		if (_child) {
 			_child->draw();
@@ -773,9 +842,16 @@ void ModelNode::translateViewpoint() const {
 	g_driver->rotateViewpoint(animYaw, Math::Vector3d(0, 0, 1));
 	g_driver->rotateViewpoint(animPitch, Math::Vector3d(1, 0, 0));
 	g_driver->rotateViewpoint(animRoll, Math::Vector3d(0, 1, 0));
+
+	AGLMan._renderer->pushMatrix();
+	AGLMan._renderer->translate(animPos.x(), animPos.y(),animPos.z());
+	AGLMan._renderer->rotate(animYaw.getDegrees(), 0,0,1);
+	AGLMan._renderer->rotate(animPitch.getDegrees(),1,0,0);
+	AGLMan._renderer->rotate(animRoll.getDegrees(),0,1,0);
 }
 
 void ModelNode::translateViewpointBack() const {
+	AGLMan._renderer->popMatrix();
 	g_driver->translateViewpointFinish();
 }
 

@@ -31,6 +31,10 @@ namespace Graphics {
 class PixelBuffer;
 }
 
+namespace AGL {
+class Bitmap2D;
+}
+
 namespace Grim {
 
 /**
@@ -93,6 +97,8 @@ public:
 	bool _keepData;
 
 	int _refCount;
+
+	AGL::Bitmap2D **_bmps;
 
 private:
 	Graphics::PixelBuffer *_data;

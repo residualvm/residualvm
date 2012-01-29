@@ -92,6 +92,10 @@ public:
 		LINK_PLUGIN(MYST3)
 		#endif
 
+		// AGL Plugins
+		LINK_PLUGIN(TinyGL);
+		LINK_PLUGIN(OpenGL);
+
 		// Music plugins
 		// TODO: Use defines to disable or enable each MIDI driver as a
 		// static/dynamic plugin, like it's done for the engines

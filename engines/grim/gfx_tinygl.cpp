@@ -655,20 +655,20 @@ void GfxTinyGL::drawSprite(const Sprite *sprite) {
 }
 
 void GfxTinyGL::translateViewpointStart() {
-	tglMatrixMode(TGL_MODELVIEW);
-	tglPushMatrix();
+// 	tglMatrixMode(TGL_MODELVIEW);
+// 	tglPushMatrix();
 }
 
 void GfxTinyGL::translateViewpoint(const Math::Vector3d &vec) {
-	tglTranslatef(vec.x(), vec.y(), vec.z());
+// 	tglTranslatef(vec.x(), vec.y(), vec.z());
 }
 
 void GfxTinyGL::rotateViewpoint(const Math::Angle &angle, const Math::Vector3d &axis) {
-	tglRotatef(angle.getDegrees(), axis.x(), axis.y(), axis.z());
+// 	tglRotatef(angle.getDegrees(), axis.x(), axis.y(), axis.z());
 }
 
 void GfxTinyGL::translateViewpointFinish() {
-	tglPopMatrix();
+// 	tglPopMatrix();
 }
 
 void GfxTinyGL::enableLights() {

@@ -27,6 +27,9 @@
 #include "graphics/colormasks.h"
 #include "graphics/pixelbuffer.h"
 
+#include "graphics/agl/manager.h"
+#include "graphics/agl/bitmap2d.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/bitmap.h"
@@ -171,6 +174,7 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 	_hasTransparency = false;
 
 	_data = new Graphics::PixelBuffer[_numImages];
+	_bmps = new AGL::Bitmap2D*[_numImages];
 	data->seek(0x80, SEEK_SET);
 	for (int i = 0; i < _numImages; i++) {
 		data->seek(8, SEEK_CUR);
@@ -197,6 +201,8 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 			}
 		}
 #endif
+
+		_bmps[i] = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, _data[i], _width, _height);
 	}
 
 	// Initially, no GPU-side textures created. the createBitmap
@@ -204,7 +210,7 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 	_numTex = 0;
 	_texIds = NULL;
 
-	g_driver->createBitmap(this);
+// 	g_driver->createBitmap(this);
 	return true;
 }
 
@@ -242,6 +248,12 @@ BitmapData::~BitmapData() {
 	freeData();
 	if (_loaded) {
 		g_driver->destroyBitmap(this);
+	}
+	if (_bmps) {
+		for (int i = 0; i < _numImages; ++i) {
+			delete _bmps[i];
+		}
+		delete[] _bmps;
 	}
 	if (_bitmaps) {
 		if (_bitmaps->contains(_fname)) {
@@ -451,7 +463,9 @@ void Bitmap::draw(int x, int y) {
 	if (_currImage == 0)
 		return;
 
-	g_driver->drawBitmap(this, x, y);
+	_data->_bmps[_currImage - 1]->draw(x, y);
+
+// 	g_driver->drawBitmap(this, x, y);
 }
 
 void Bitmap::setActiveImage(int n) {

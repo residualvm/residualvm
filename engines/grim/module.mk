@@ -81,7 +81,6 @@ MODULE_OBJS := \
 	detection.o \
 	font.o \
 	gfx_base.o \
-	gfx_opengl.o \
 	gfx_tinygl.o \
 	grim.o \
 	grim_controls.o \

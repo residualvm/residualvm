@@ -30,6 +30,10 @@ namespace Common {
 class SeekableReadStream;
 }
 
+namespace AGL {
+class MeshFace;
+}
+
 namespace Grim {
 
 class TextSplitter;
@@ -99,7 +103,7 @@ public:
 
 class MeshFace {
 public:
-	int loadBinary(Common::SeekableReadStream *data, Material *materials[]);
+	int loadBinary(Common::SeekableReadStream *data, Material *materials[], float*,float*,float*);
 	void draw(float *vertices, float *vertNormals, float *textureVerts) const;
 	void changeMaterial(Material *material);
 	~MeshFace();
@@ -110,6 +114,8 @@ public:
 	int _numVertices;
 	int *_vertices, *_texVertices;
 	Math::Vector3d _normal;
+
+	AGL::MeshFace *_face;
 };
 
 class Mesh {

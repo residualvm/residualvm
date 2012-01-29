@@ -34,7 +34,7 @@
 #include "engines/grim/costume/mesh_component.h"
 
 namespace Grim {
-	
+
 #define DEFAULT_COLORMAP "item.cmp"
 
 ModelComponent::ModelComponent(Component *p, int parentID, const char *filename, Component *prevComponent, tag32 t) :

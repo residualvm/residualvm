@@ -24,6 +24,8 @@
 
 #include "common/foreach.h"
 
+#include "graphics/agl/manager.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/set.h"
 #include "engines/grim/textsplit.h"
@@ -476,8 +478,8 @@ void Set::Setup::setupCamera() const {
 	// are important at some point, we'll need to modify the
 	// zbuffer transformation in bitmap.cpp to take nclip_ and
 	// fclip_ into account.
-	g_driver->setupCamera(_fov, 0.01f, 3276.8f, _roll);
-	g_driver->positionCamera(_pos, _interest);
+	AGLMan.setupCamera(_fov, 0.01f, 3276.8f, _roll);
+	AGLMan.positionCamera(_pos, _interest);
 }
 
 class Sorter {

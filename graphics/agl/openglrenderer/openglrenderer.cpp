@@ -1,0 +1,232 @@
+
+#include "common/system.h"
+#include "common/endian.h"
+#include "common/streamdebug.h"
+
+#include "math/vector3d.h"
+
+#include "graphics/pixelbuffer.h"
+
+#include "graphics/agl/texture.h"
+#include "graphics/agl/mesh.h"
+#include "graphics/agl/meshface.h"
+
+#include "graphics/agl/openglrenderer/openglrenderer.h"
+#include "graphics/agl/openglrenderer/gltarget.h"
+#include "graphics/agl/openglrenderer/glmesh.h"
+#include "graphics/agl/openglrenderer/glbitmap2d.h"
+
+#ifdef USE_OPENGL
+
+#if defined (SDL_BACKEND) && defined(GL_ARB_fragment_program)
+
+// We need SDL.h for SDL_GL_GetProcAddress.
+#include "backends/platform/sdl/sdl-sys.h"
+
+// Extension functions needed for fragment programs.
+PFNGLGENPROGRAMSARBPROC glGenProgramsARB;
+PFNGLBINDPROGRAMARBPROC glBindProgramARB;
+PFNGLPROGRAMSTRINGARBPROC glProgramStringARB;
+PFNGLDELETEPROGRAMSARBPROC glDeleteProgramsARB;
+
+#endif
+
+namespace AGL {
+
+class GLTexture : public Texture {
+public:
+	GLTexture(const Graphics::PixelBuffer &buf, int width, int height)
+		: Texture(buf.getFormat(), width, height) {
+		GLuint format = 0;
+		GLuint internalFormat = 0;
+// 		if (material->_colorFormat == BM_RGBA) {
+			format = GL_RGBA;
+			internalFormat = GL_RGBA;
+// 		} else {	// The only other colorFormat we load right now is BGR
+// 		format = GL_BGR;
+// 		internalFormat = GL_RGB;
+// 		}
+
+		glGenTextures(1, &_texId);
+		glBindTexture(GL_TEXTURE_2D, _texId);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, buf.getRawBuffer());
+	}
+
+	void bind() {
+		glBindTexture(GL_TEXTURE_2D, _texId);
+	}
+
+	GLuint _texId;
+};
+
+Target *OpenGLRenderer::setupScreen(int screenW, int screenH, bool fullscreen, int bpp) {
+	g_system->setupScreen(screenW, screenH, fullscreen, true);
+
+// 	_screenWidth = screenW;
+// 	_screenHeight = screenH;
+// 	_isFullscreen = g_system->getFeatureState(OSystem::kFeatureFullscreenMode);
+	_useDepthShader = false;
+//
+	// Load emergency built-in font
+	loadEmergFont();
+//
+// 	_screenSize = _screenWidth * _screenHeight * 4;
+// 	_storedDisplay = new byte[_screenSize];
+// 	memset(_storedDisplay, 0, _screenSize);
+// 	_smushNumTex = 0;
+//
+// 	_currentShadowArray = NULL;
+//
+	GLfloat ambientSource[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientSource);
+
+	glEnable(GL_LIGHTING);
+
+// 	glPolygonOffset(-6.0, -6.0);
+
+	initExtensions();
+
+	GLTarget *t = new GLTarget(screenW, screenH, bpp);
+	t->_storedDisplay = new byte[screenW * screenH * 4];
+
+	return t;
+}
+
+void OpenGLRenderer::setupCamera(float fov, float nclip, float fclip, float roll) {
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	float right = nclip * tan(fov / 2 * (LOCAL_PI / 180));
+	glFrustum(-right, right, -right * 0.75, right * 0.75, nclip, fclip);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glRotatef(roll, 0, 0, -1);
+}
+
+void OpenGLRenderer::positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest) {
+	Math::Vector3d up_vec(0, 0, 1);
+
+	if (pos.x() == interest.x() && pos.y() == interest.y())
+		up_vec = Math::Vector3d(0, 1, 0);
+
+	gluLookAt(pos.x(), pos.y(), pos.z(), interest.x(), interest.y(), interest.z(), up_vec.x(), up_vec.y(), up_vec.z());
+}
+
+// Simple ARB fragment program that writes the value from a texture to the Z-buffer.
+static char fragSrc[] =
+	"!!ARBfp1.0\n\
+	TEMP d;\n\
+	TEX d, fragment.texcoord[0], texture[0], 2D;\n\
+	MOV result.depth, d.r;\n\
+	END\n";
+
+void OpenGLRenderer::initExtensions() {
+#if defined (SDL_BACKEND) && defined(GL_ARB_fragment_program)
+	union {
+		void* obj_ptr;
+		void (APIENTRY *func_ptr)();
+	} u;
+	// We're casting from an object pointer to a function pointer, the
+	// sizes need to be the same for this to work.
+	assert(sizeof(u.obj_ptr) == sizeof(u.func_ptr));
+	u.obj_ptr = SDL_GL_GetProcAddress("glGenProgramsARB");
+	glGenProgramsARB = (PFNGLGENPROGRAMSARBPROC)u.func_ptr;
+	u.obj_ptr = SDL_GL_GetProcAddress("glBindProgramARB");
+	glBindProgramARB = (PFNGLBINDPROGRAMARBPROC)u.func_ptr;
+	u.obj_ptr = SDL_GL_GetProcAddress("glProgramStringARB");
+	glProgramStringARB = (PFNGLPROGRAMSTRINGARBPROC)u.func_ptr;
+	u.obj_ptr = SDL_GL_GetProcAddress("glDeleteProgramsARB");
+	glDeleteProgramsARB = (PFNGLDELETEPROGRAMSARBPROC)u.func_ptr;
+
+	const char* extensions = (const char*)glGetString(GL_EXTENSIONS);
+	if (strstr(extensions, "ARB_fragment_program")) {
+		_useDepthShader = true;
+	}
+
+	if (_useDepthShader) {
+		glGenProgramsARB(1, &_fragmentProgram);
+		glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, _fragmentProgram);
+
+		GLint errorPos;
+		glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, strlen(fragSrc), fragSrc);
+		glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &errorPos);
+		if (errorPos != -1) {
+			warning("Error compiling fragment program:\n%s", glGetString(GL_PROGRAM_ERROR_STRING_ARB));
+			_useDepthShader = false;
+		}
+	}
+#endif
+}
+
+void OpenGLRenderer::loadEmergFont() {
+// 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+//
+// 	_emergFont = glGenLists(128);
+// 	for (int i = 32; i < 127; i++) {
+// 		glNewList(_emergFont + i, GL_COMPILE);
+// 		glBitmap(8, 13, 0, 2, 10, 0, Font::emerFont[i - 32]);
+// 		glEndList();
+// 	}
+}
+
+#define BITMAP_TEXTURE_SIZE 256
+
+Bitmap2D *OpenGLRenderer::createBitmap2D(Bitmap2D::Type texType, const Graphics::PixelBuffer &buf, int width, int height) {
+	GLBitmap2D *bitmap = new GLBitmap2D(this, texType, buf, width, height);
+	return bitmap;
+}
+
+Texture *OpenGLRenderer::createTexture(const Graphics::PixelBuffer &buf, int width, int height) {
+	GLTexture *t = new GLTexture(buf, width, height);
+	return t;
+}
+
+Mesh *OpenGLRenderer::createMesh() {
+	return new GLMesh();
+}
+
+void OpenGLRenderer::pushMatrix() {
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+}
+void OpenGLRenderer::translate(float x, float y, float z) {
+	glTranslatef(x, y, z);
+}
+void OpenGLRenderer::rotate(float deg, float x, float y, float z) {
+	glRotatef(deg, x, y, z);
+}
+void OpenGLRenderer::popMatrix() {
+	glPopMatrix();
+}
+
+const char *OpenGLRenderer::prettyString() const {
+	char GLDriver[1024];
+	sprintf(GLDriver, "ResidualVM: %s/%s", glGetString(GL_VENDOR), glGetString(GL_RENDERER));
+	return GLDriver;
+}
+
+
+
+
+class OpenGLPlugin : public RendererPluginObject {
+public:
+	OpenGLRenderer *createInstance() {
+		return new OpenGLRenderer();
+	}
+
+	const char *getName() const {
+		return "OpenGL";
+	}
+};
+
+}
+
+REGISTER_PLUGIN_STATIC(OpenGL, PLUGIN_TYPE_AGL_RENDERER, AGL::OpenGLPlugin);
+
+#endif
