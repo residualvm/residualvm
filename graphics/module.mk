@@ -24,6 +24,7 @@ MODULE_OBJS := \
 	agl/target.o \
 	agl/bitmap2d.o \
 	agl/texture.o \
+	agl/primitive.o \
 	agl/renderer.o \
 	agl/rendererfactory.o \
 	agl/tinyglrenderer/tinyglrenderer.o \

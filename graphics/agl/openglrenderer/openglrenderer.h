@@ -31,6 +31,7 @@ public:
 	Texture *createTexture(const Graphics::PixelBuffer &buf, int width, int height);
 	Mesh *createMesh();
 	Light *createLight(Light::Type type);
+	Primitive *createPrimitive();
 
 	void pushMatrix();
 	void translate(float x, float y, float z);

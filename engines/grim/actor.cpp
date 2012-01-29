@@ -1172,9 +1172,9 @@ void Actor::draw() {
 		for (int l = 0; l < MAX_SHADOWS; l++) {
 			if (!_shadowArray[l].active)
 				continue;
-			g_driver->setShadow(&_shadowArray[l]);
-			g_driver->drawShadowPlanes();
-			g_driver->setShadow(NULL);
+// 			g_driver->setShadow(&_shadowArray[l]);
+// 			g_driver->drawShadowPlanes();
+// 			g_driver->setShadow(NULL);
 		}
 	}
 

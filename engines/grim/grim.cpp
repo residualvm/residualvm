@@ -526,10 +526,10 @@ void GrimEngine::updateDisplayScene() {
 // 				g_driver->releaseMovieFrame();
 // 		}
 //
-// 		// Draw Primitives
-// 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
-// 			p->draw();
-// 		}
+		// Draw Primitives
+		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
+			p->draw();
+		}
 //
 		_currSet->setupCamera();
 <<<<<<< HEAD

@@ -75,4 +75,8 @@ Light *Manager::createLight(Light::Type type) {
 	return _renderer->createLight(type);
 }
 
+Primitive *Manager::createPrimitive() {
+	return _renderer->createPrimitive();
+}
+
 }

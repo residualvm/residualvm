@@ -204,6 +204,10 @@ Light *TinyGLRenderer::createLight(Light::Type type) {
 
 }
 
+Primitive *TinyGLRenderer::createPrimitive() {
+
+}
+
 const char *TinyGLRenderer::prettyString() const {
 	return "ResidualVM: Software 3D Renderer";
 }

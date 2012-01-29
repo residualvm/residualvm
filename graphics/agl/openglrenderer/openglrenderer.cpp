@@ -9,6 +9,7 @@
 
 #include "graphics/agl/texture.h"
 #include "graphics/agl/light.h"
+#include "graphics/agl/primitive.h"
 
 #include "graphics/agl/openglrenderer/openglrenderer.h"
 #include "graphics/agl/openglrenderer/gltarget.h"
@@ -32,20 +33,81 @@ PFNGLDELETEPROGRAMSARBPROC glDeleteProgramsARB;
 
 namespace AGL {
 
+class GLPrimitive : public Primitive {
+public:
+	GLPrimitive()
+		: Primitive() {
+
+	}
+
+	void draw(float x, float y) {
+		int _screenWidth = 640;
+		int _screenHeight = 480;
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, _screenWidth, _screenHeight, 0, 0, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glTranslatef(x, y, 0);
+
+		glDisable(GL_LIGHTING);
+		glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
+
+		GLenum mode;
+		switch(getMode()) {
+			case Points:
+				mode = GL_POINTS;
+				break;
+			case Lines:
+				mode = GL_LINES;
+				break;
+			case LineLoop:
+				mode = GL_LINE_LOOP;
+				break;
+			case Quads:
+				mode = GL_QUADS;
+		}
+
+		glBegin(mode);
+		uint num = getNumVertices();
+		for (uint i = 0; i < num; ++i) {
+			const Graphics::Color &c = getColor(i);
+			const Math::Vector2d &v = getVertex(i);
+			glColor4ubv(c.getData());
+			glVertex2fv(v.getData());
+			if (breaksAt(i)) {
+				glEnd();
+				glBegin(mode);
+			}
+		}
+		glEnd();
+
+		glColor3f(1.0f, 1.0f, 1.0f);
+
+		glDepthMask(GL_TRUE);
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_LIGHTING);
+	}
+};
+
 class GLLight : public Light {
 public:
 	GLLight(Light::Type type)
-		: Light(type) { }
+		: Light(type),
+		  _id(-1) { }
 
 	void enable() {
-		_id = -1;
-		// Find a free id.
-		int max;
-		glGetIntegerv(GL_MAX_LIGHTS, &max);
-		for (int i = 0; i < max; ++i) {
-			if (!glIsEnabled(GL_LIGHT0 + i)) {
-				_id = i;
-				break;
+		if (_id == -1) {
+			// Find a free id.
+			int max;
+			glGetIntegerv(GL_MAX_LIGHTS, &max);
+			for (int i = 0; i < max; ++i) {
+				if (!glIsEnabled(GL_LIGHT0 + i)) {
+					_id = i;
+					break;
+				}
 			}
 		}
 
@@ -259,6 +321,10 @@ Mesh *OpenGLRenderer::createMesh() {
 
 Light *OpenGLRenderer::createLight(Light::Type type) {
 	return new GLLight(type);
+}
+
+Primitive *OpenGLRenderer::createPrimitive() {
+	return new GLPrimitive();
 }
 
 void OpenGLRenderer::pushMatrix() {

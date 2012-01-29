@@ -8,6 +8,7 @@
 
 #include "graphics/agl/bitmap2d.h"
 #include "graphics/agl/light.h"
+#include "graphics/agl/primitive.h"
 
 namespace Common {
 class Rect;
@@ -39,6 +40,7 @@ public:
 	virtual Texture *createTexture(const Graphics::PixelBuffer &buf, int width, int height) = 0;
 	virtual Mesh *createMesh() = 0;
 	virtual Light *createLight(Light::Type type) = 0;
+	virtual Primitive *createPrimitive() = 0;
 
 	virtual void pushMatrix() { }
 	virtual void translate(float x, float y, float z) { }

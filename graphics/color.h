@@ -38,6 +38,8 @@ public:
 	inline uint8 getBlue() const { return _vals[2]; }
 	inline uint8 getAlpha() const { return _vals[3]; }
 
+	inline const uint8 *getData() const { return _vals; }
+
 	void setRed(uint8 r);
 	void setGreen(uint8 r);
 	void setBlue(uint8 r);

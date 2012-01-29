@@ -27,6 +27,7 @@ public:
 	Texture *createTexture(const Graphics::PixelBuffer &buf, int width, int height);
 	Mesh *createMesh();
 	Light *createLight(Light::Type type);
+	Primitive *createPrimitive();
 
 	const char *prettyString() const;
 

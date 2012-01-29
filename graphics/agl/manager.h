@@ -23,6 +23,7 @@ class Renderer;
 class Target;
 class Mesh;
 class Texture;
+class Primitive;
 
 class Manager : public Common::Singleton<Manager> {
 public:
@@ -43,6 +44,7 @@ public:
 	Texture *createTexture(const Graphics::PixelBuffer &buf, int width, int height);
 	Mesh *createMesh();
 	Light *createLight(Light::Type type);
+	Primitive *createPrimitive();
 
 // private:
 	Renderer *_renderer;
