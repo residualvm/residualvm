@@ -178,6 +178,14 @@ void TinyGLRenderer::positionCamera(const Math::Vector3d &pos, const Math::Vecto
 	lookAt(pos.x(), pos.y(), pos.z(), interest.x(), interest.y(), interest.z(), up_vec.x(), up_vec.y(), up_vec.z());
 }
 
+void TinyGLRenderer::enableLighting() {
+	tglEnable(TGL_LIGHTING);
+}
+
+void TinyGLRenderer::disableLighting() {
+	tglDisable(TGL_LIGHTING);
+}
+
 Bitmap2D *TinyGLRenderer::createBitmap2D(Bitmap2D::Type type, const Graphics::PixelBuffer &buf, int width, int height) {
 	TGLBitmap2D *b = new TGLBitmap2D(type, buf, width, height);
 	b->_renderer = this;
@@ -189,6 +197,10 @@ Texture *TinyGLRenderer::createTexture(const Graphics::PixelBuffer &buf, int wid
 }
 
 Mesh *TinyGLRenderer::createMesh() {
+
+}
+
+Light *TinyGLRenderer::createLight(Light::Type type) {
 
 }
 

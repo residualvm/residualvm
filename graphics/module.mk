@@ -19,6 +19,7 @@ MODULE_OBJS := \
 	yuv_to_rgb.o \
 	yuva_to_rgba.o \
 	pixelbuffer.o \
+	color.o \
 	agl/manager.o \
 	agl/target.o \
 	agl/bitmap2d.o \

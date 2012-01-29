@@ -25,6 +25,7 @@
 #include "common/foreach.h"
 
 #include "graphics/agl/manager.h"
+#include "graphics/agl/light.h"
 
 #include "engines/grim/debug.h"
 #include "engines/grim/set.h"
@@ -412,21 +413,33 @@ void Light::load(TextSplitter &ts) {
 	_name = buf;
 
 	ts.scanString(" type %256s", 1, buf);
-	_type = buf;
+	Common::String type = buf;
 
-	ts.scanString(" position %f %f %f", 3, &_pos.x(), &_pos.y(), &_pos.z());
-	ts.scanString(" direction %f %f %f", 3, &_dir.x(), &_dir.y(), &_dir.z());
-	ts.scanString(" intensity %f", 1, &_intensity);
-	ts.scanString(" umbraangle %f", 1, &_umbraangle);
-	ts.scanString(" penumbraangle %f", 1, &_penumbraangle);
+	Math::Vector3d pos, dir;
+	ts.scanString(" position %f %f %f", 3, &pos.x(), &pos.y(), &pos.z());
+	ts.scanString(" direction %f %f %f", 3, &dir.x(), &dir.y(), &dir.z());
+	float intensity, umbraangle, penumbraangle;
+	ts.scanString(" intensity %f", 1, &intensity);
+	ts.scanString(" umbraangle %f", 1, &umbraangle);
+	ts.scanString(" penumbraangle %f", 1, &penumbraangle);
 
 	int r, g, b;
 	ts.scanString(" color %d %d %d", 3, &r, &g, &b);
-	_color.getRed() = r;
-	_color.getGreen() = g;
-	_color.getBlue() = b;
 
 	_enabled = true;
+
+	AGL::Light::Type t = AGL::Light::Point;
+	if (type == "directi")
+		t = AGL::Light::Directional;
+	else if (type == "spot")
+		t = AGL::Light::Spot;
+
+	_light = AGLMan.createLight(t);
+	_light->setPosition(pos);
+	_light->setDirection(dir);
+	_light->setColor(Graphics::Color(r, g, b));
+	_light->setCutoff(t == AGL::Light::Spot ? penumbraangle : 180.f);
+	_light->setIntensity(intensity);
 }
 
 void Light::loadBinary(Common::SeekableReadStream *data) {
@@ -440,31 +453,31 @@ void Light::saveState(SaveGame *savedState) const {
 	savedState->writeBool(_enabled);
 
 	//type
-	savedState->writeString(_type);
+// 	savedState->writeLEString(_type);
 
-	savedState->writeVector3d(_pos);
-	savedState->writeVector3d(_dir);
-
-	savedState->writeColor(_color);
-
-	savedState->writeFloat(_intensity);
-	savedState->writeFloat(_umbraangle);
-	savedState->writeFloat(_penumbraangle);
+// 	savedState->writeVector3d(_pos);
+// 	savedState->writeVector3d(_dir);
+//
+// 	savedState->writeColor(_color);
+//
+// 	savedState->writeFloat(_intensity);
+// 	savedState->writeFloat(_umbraangle);
+// 	savedState->writeFloat(_penumbraangle);
 }
 
 bool Light::restoreState(SaveGame *savedState) {
 	_name = savedState->readString();
 	_enabled = savedState->readBool();
-	_type = savedState->readString();
+// 	_type = savedState->readString();
 
-	_pos           = savedState->readVector3d();
-	_dir           = savedState->readVector3d();
-
-	_color         = savedState->readColor();
-
-	_intensity     = savedState->readFloat();
-	_umbraangle    = savedState->readFloat();
-	_penumbraangle = savedState->readFloat();
+// 	_pos           = savedState->readVector3d();
+// 	_dir           = savedState->readVector3d();
+//
+// 	_color         = savedState->readColor();
+//
+// 	_intensity     = savedState->readFloat();
+// 	_umbraangle    = savedState->readFloat();
+// 	_penumbraangle = savedState->readFloat();
 
 	return true;
 }
@@ -497,7 +510,7 @@ public:
 
 void Set::setupLights(const Math::Vector3d &pos) {
 	if (!_enableLights) {
-		g_driver->disableLights();
+		AGLMan.disableLighting();
 		return;
 	}
 
@@ -508,8 +521,7 @@ void Set::setupLights(const Math::Vector3d &pos) {
 	int count = 0;
 	foreach (Light *l, _lightsList) {
 		if (l->_enabled) {
-			g_driver->setupLight(l, count);
-			++count;
+			l->_light->enable();
 		}
 	}
 }
@@ -520,8 +532,7 @@ void Set::turnOffLights() {
 	for (int i = 0; i < _numLights; i++) {
 		Light *l = &_lights[i];
 		if (l->_enabled) {
-			g_driver->turnOffLight(count);
-			++count;
+			l->_light->disable();
 		}
 	}
 }
@@ -615,7 +626,7 @@ void Set::setLightIntensity(const char *light, float intensity) {
 	for (int i = 0; i < _numLights; ++i) {
 		Light &l = _lights[i];
 		if (l._name == light) {
-			l._intensity = intensity;
+			l._light->setIntensity(intensity);
 			return;
 		}
 	}
@@ -623,7 +634,7 @@ void Set::setLightIntensity(const char *light, float intensity) {
 
 void Set::setLightIntensity(int light, float intensity) {
 	Light &l = _lights[light];
-	l._intensity = intensity;
+	l._light->setIntensity(intensity);
 }
 
 void Set::setLightEnabled(const char *light, bool enabled) {
@@ -645,7 +656,7 @@ void Set::setLightPosition(const char *light, const Math::Vector3d &pos) {
 	for (int i = 0; i < _numLights; ++i) {
 		Light &l = _lights[i];
 		if (l._name == light) {
-			l._pos = pos;
+			l._light->setPosition(pos);
 			return;
 		}
 	}
@@ -653,7 +664,7 @@ void Set::setLightPosition(const char *light, const Math::Vector3d &pos) {
 
 void Set::setLightPosition(int light, const Math::Vector3d &pos) {
 	Light &l = _lights[light];
-	l._pos = pos;
+	l._light->setPosition(pos);
 }
 
 void Set::setSoundPosition(const char *soundName, const Math::Vector3d &pos) {

@@ -17,11 +17,9 @@ public:
 
 	virtual MeshFace *createFace() = 0;
 
-	virtual void prepare(uint size) { }
-
-	virtual void vertex(float x, float y, float z) = 0;
-	virtual void texture(float u, float v) = 0;
-	virtual void normal(float x, float y, float z) = 0;
+	virtual void pushVertex(float x, float y, float z) = 0;
+	virtual void pushTexVertex(float u, float v) = 0;
+	virtual void pushNormal(float x, float y, float z) = 0;
 
 	virtual void draw(Texture *texture) = 0;
 

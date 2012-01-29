@@ -7,6 +7,7 @@
 #include "math/mathfwd.h"
 
 #include "graphics/agl/bitmap2d.h"
+#include "graphics/agl/light.h"
 
 namespace Common {
 class String;
@@ -35,9 +36,13 @@ public:
 	void positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest);
 	void flipBuffer();
 
+	void enableLighting();
+	void disableLighting();
+
 	Bitmap2D *createBitmap2D(Bitmap2D::Type type, const Graphics::PixelBuffer &buf, int width, int height);
 	Texture *createTexture(const Graphics::PixelBuffer &buf, int width, int height);
 	Mesh *createMesh();
+	Light *createLight(Light::Type type);
 
 // private:
 	Renderer *_renderer;

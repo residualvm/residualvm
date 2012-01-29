@@ -51,6 +51,14 @@ void Manager::flipBuffer() {
 	g_system->updateScreen();
 }
 
+void Manager::enableLighting() {
+	_renderer->enableLighting();
+}
+
+void Manager::disableLighting() {
+	_renderer->disableLighting();
+}
+
 Bitmap2D *Manager::createBitmap2D(Bitmap2D::Type type, const Graphics::PixelBuffer &buf, int width, int height) {
 	return _renderer->createBitmap2D(type, buf, width, height);
 }
@@ -61,6 +69,10 @@ Texture *Manager::createTexture(const Graphics::PixelBuffer &buf, int width, int
 
 Mesh *Manager::createMesh() {
 	return _renderer->createMesh();
+}
+
+Light *Manager::createLight(Light::Type type) {
+	return _renderer->createLight(type);
 }
 
 }

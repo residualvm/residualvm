@@ -27,8 +27,6 @@
 #include "graphics/agl/manager.h"
 #include "graphics/agl/renderer.h"
 
-#include "graphics/agl/openglrenderer/glmesh.h"
-
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/model.h"
@@ -383,30 +381,12 @@ int MeshFace::loadBinary(Common::SeekableReadStream *data, Material *materials[]
 		_material = materials[materialPtr];
 	}
 
-	AGL::GLMeshFace *fa = static_cast<AGL::GLMeshFace*>(_face);
-	AGL::GLMesh *m = fa->_parent;
-
 	_face->prepare(_numVertices);
 	_face->setNormal(_normal.x(), _normal.y(), _normal.z());
 	for (int i = 0; i < _numVertices; ++i) {
-// 		_face->vertex(_vertices[i]);
-// 		_face->texture(_texVertices[i]);
-// 		_face->normal(_vertices[i]);
-
-		float *v = m->_vertices + 3 * _vertices[i];
-		float *t = m->_textures + 2 * _texVertices[i];
-		float *n = m->_normals + 3 * _vertices[i];
-
-		assert(v[0] == (vertices + 3 * _vertices[i])[0]);
-		assert(v[1] == (vertices + 3 * _vertices[i])[1]);
-		assert(v[2] == (vertices + 3 * _vertices[i])[2]);
-
-		assert(t[0] == (textures + 2 * _texVertices[i])[0]);
-		assert(t[1] == (textures + 2 * _texVertices[i])[1]);
-
-		_face->vertex(v[0], v[1], v[2]);
-		_face->texture(t[0], t[1]);
-		_face->normal(n[0], n[1], n[2]);
+		_face->vertex(_vertices[i]);
+		_face->texture(_texVertices[i]);
+		_face->normal(_vertices[i]);
 	}
 
 	return materialPtr;
@@ -466,25 +446,17 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 	data->seek(_numVertices * 4, SEEK_CUR);
 
 	AGL::Mesh *mesh = AGLMan.createMesh();
-	mesh->prepare((_numTextureVerts > _numVertices ? _numTextureVerts : _numVertices));
 	mesh->setUseAbsoluteTexCoords(true);
 
-	for (int i = 0; i < (_numTextureVerts > _numVertices ? _numTextureVerts : _numVertices); ++i) {
+	for (int i = 0; i < _numVertices;++i) {
 		float *v = _vertices + 3 * i;
-		float *t = _textureVerts + 2 * i;
-		float *n = _vertNormals + 3 * i;
-		if (i < _numVertices)
-		mesh->vertex(v[0], v[1], v[2]);
-		else
-			mesh->vertex(0,0,0);
-		if (i < _numTextureVerts)
-		mesh->texture(t[0], t[1]);
-		if (i < _numVertices)
-		mesh->normal(n[0], n[1], n[2]);
+		mesh->pushVertex(v[0], v[1], v[2]);
 	}
-	AGL::GLMesh *m = static_cast<AGL::GLMesh*>(mesh);
-	assert(0==memcmp(_vertices, m->_vertices, _numVertices*3));
-	assert(0==memcmp(_textureVerts, m->_textures, _numTextureVerts*2));
+	for (int i = 0; i < _numTextureVerts;++i) {
+		float *t = _textureVerts + 2 * i;
+		mesh->pushTexVertex(t[0], t[1]);
+	}
+
 	for (int i = 0; i < _numFaces; i++) {
 		_faces[i]._face = mesh->createFace();
 		_materialid[i] = _faces[i].loadBinary(data, materials,_vertices,_vertNormals,_textureVerts);
@@ -494,10 +466,10 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 		_vertNormals[i] = get_float(f);
 	}
 
-// 	AGL::GLMesh *m = static_cast<AGL::GLMesh*>(mesh);
-// 	assert(0==memcmp(_vertices, m->_vertices, _numVertices*3));
-// 	assert(0==memcmp(_textureVerts, m->_textures, _numTextureVerts*2));
-// 	assert(0==memcmp(_vertNormals, m->_normals, _numVertices*3));
+	for (int i = 0; i < _numVertices;++i) {
+		float *n = _vertNormals + 3 * i;
+		mesh->pushNormal(n[0], n[1], n[2]);
+	}
 
 	_shadow = data->readUint32LE();
 	data->seek(4, SEEK_CUR);
@@ -610,14 +582,14 @@ void Mesh::changeMaterials(Material *materials[]) {
 }
 
 void Mesh::draw() const {
-// 	if (_lightingMode == 0)
-// 		g_driver->disableLights();
+	if (_lightingMode == 0)
+		AGLMan.disableLighting();
 
 	for (int i = 0; i < _numFaces; i++)
 		_faces[i].draw(_vertices, _vertNormals, _textureVerts);
 
-// 	if (_lightingMode == 0)
-// 		g_driver->enableLights();
+	if (_lightingMode == 0)
+		AGLMan.enableLighting();
 }
 
 void Mesh::getBoundingBox(int *x1, int *y1, int *x2, int *y2) const {

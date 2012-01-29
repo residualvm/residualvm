@@ -2,6 +2,8 @@
 #ifndef AGL_GLMESH_H
 #define AGL_GLMESH_H
 
+#include "common/array.h"
+
 #include "math/vector3d.h"
 
 #include "graphics/agl/mesh.h"
@@ -14,19 +16,17 @@ class Texture;
 
 class GLMesh : public Mesh {
 public:
-	void prepare(uint size);
-	void vertex(float x, float y, float z);
-	void texture(float u, float v);
-	void normal(float x, float y, float z);
+	void pushVertex(float x, float y, float z);
+	void pushTexVertex(float u, float v);
+	void pushNormal(float x, float y, float z);
 
 	MeshFace *createFace();
 
 	void draw(Texture *texture);
 
-	float *_vertices;
-	float *_textures;
-	float *_normals;
-	int _i;
+	Common::Array<float> _vertices;
+	Common::Array<float> _textures;
+	Common::Array<float> _normals;
 };
 
 class GLMeshFace : public MeshFace {
@@ -39,20 +39,14 @@ public:
 	void vertex(int index);
 	void texture(int index);
 	void normal(int index);
-	void vertex(float x, float y, float z);
-	void texture(float u, float v);
-	void normal(float x, float y, float z);
 
 	void draw(Texture *texture);
 
 	GLMesh *_parent;
 	Math::Vector3d _normal;
-// 	int *_vertices;
-// 	int *_textures;
-// 	int *_normals;
-	float *_vertices;
-	float *_textures;
-	float *_normals;
+	int *_vertices;
+	int *_textures;
+	int *_normals;
 	int _i;
 };
 

@@ -680,49 +680,49 @@ void GfxTinyGL::disableLights() {
 }
 
 void GfxTinyGL::setupLight(Light *light, int lightId) {
-	assert(lightId < T_MAX_LIGHTS);
-	tglEnable(TGL_LIGHTING);
-	float lightColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float lightPos[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float lightDir[] = { 0.0f, 0.0f, -1.0f };
-	float cutoff = 180.0f;
-
-	float intensity = light->_intensity / 1.3f;
-	lightColor[0] = ((float)light->_color.getRed() / 15.0f) * intensity;
-	lightColor[1] = ((float)light->_color.getGreen() / 15.0f) * intensity;
-	lightColor[2] = ((float)light->_color.getBlue() / 15.0f) * intensity;
-
-	if (light->_type == "omni") {
-		lightPos[0] = light->_pos.x();
-		lightPos[1] = light->_pos.y();
-		lightPos[2] = light->_pos.z();
-	} else if (light->_type == "direct") {
-		lightPos[0] = -light->_dir.x();
-		lightPos[1] = -light->_dir.y();
-		lightPos[2] = -light->_dir.z();
-		lightPos[3] = 0;
-	} else if (light->_type == "spot") {
-		lightPos[0] = light->_pos.x();
-		lightPos[1] = light->_pos.y();
-		lightPos[2] = light->_pos.z();
-		lightDir[0] = light->_dir.x();
-		lightDir[1] = light->_dir.y();
-		lightDir[2] = light->_dir.z();
-		/* FIXME: TGL_SPOT_CUTOFF should be light->_penumbraangle, but there
-		   seems to be a bug in tinygl as it renders differently from OpenGL.
-		   Reproducing: turn off all lights (comment out), go to scene "al",
-		   and walk along left wall under the lamp. */
-		cutoff = 90.0f;
-	} else {
-		error("Set::setupLights() Unknown type of light: %s", light->_type.c_str());
-		return;
-	}
-	tglDisable(TGL_LIGHT0 + lightId);
-	tglLightfv(TGL_LIGHT0 + lightId, TGL_DIFFUSE, lightColor);
-	tglLightfv(TGL_LIGHT0 + lightId, TGL_POSITION, lightPos);
-	tglLightfv(TGL_LIGHT0 + lightId, TGL_SPOT_DIRECTION, lightDir);
-	tglLightf(TGL_LIGHT0 + lightId, TGL_SPOT_CUTOFF, cutoff);
-	tglEnable(TGL_LIGHT0 + lightId);
+// 	assert(lightId < T_MAX_LIGHTS);
+// 	tglEnable(TGL_LIGHTING);
+// 	float lightColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+// 	float lightPos[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+// 	float lightDir[] = { 0.0f, 0.0f, -1.0f };
+// 	float cutoff = 180.0f;
+//
+// 	float intensity = light->_intensity / 1.3f;
+// 	lightColor[0] = ((float)light->_color.getRed() / 15.0f) * intensity;
+// 	lightColor[1] = ((float)light->_color.getGreen() / 15.0f) * intensity;
+// 	lightColor[2] = ((float)light->_color.getBlue() / 15.0f) * intensity;
+//
+// 	if (light->_type == "omni") {
+// 		lightPos[0] = light->_pos.x();
+// 		lightPos[1] = light->_pos.y();
+// 		lightPos[2] = light->_pos.z();
+// 	} else if (light->_type == "direct") {
+// 		lightPos[0] = -light->_dir.x();
+// 		lightPos[1] = -light->_dir.y();
+// 		lightPos[2] = -light->_dir.z();
+// 		lightPos[3] = 0;
+// 	} else if (light->_type == "spot") {
+// 		lightPos[0] = light->_pos.x();
+// 		lightPos[1] = light->_pos.y();
+// 		lightPos[2] = light->_pos.z();
+// 		lightDir[0] = light->_dir.x();
+// 		lightDir[1] = light->_dir.y();
+// 		lightDir[2] = light->_dir.z();
+// 		/* FIXME: TGL_SPOT_CUTOFF should be light->_penumbraangle, but there
+// 		   seems to be a bug in tinygl as it renders differently from OpenGL.
+// 		   Reproducing: turn off all lights (comment out), go to scene "al",
+// 		   and walk along left wall under the lamp. */
+// 		cutoff = 90.0f;
+// 	} else {
+// 		error("Set::setupLights() Unknown type of light: %s", light->_type.c_str());
+// 		return;
+// 	}
+// 	tglDisable(TGL_LIGHT0 + lightId);
+// 	tglLightfv(TGL_LIGHT0 + lightId, TGL_DIFFUSE, lightColor);
+// 	tglLightfv(TGL_LIGHT0 + lightId, TGL_POSITION, lightPos);
+// 	tglLightfv(TGL_LIGHT0 + lightId, TGL_SPOT_DIRECTION, lightDir);
+// 	tglLightf(TGL_LIGHT0 + lightId, TGL_SPOT_CUTOFF, cutoff);
+// 	tglEnable(TGL_LIGHT0 + lightId);
 }
 
 void GfxTinyGL::turnOffLight(int lightId) {

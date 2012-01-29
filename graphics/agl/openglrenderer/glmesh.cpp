@@ -14,29 +14,21 @@
 namespace AGL {
 
 
-void GLMesh::prepare(uint size) {
-	_vertices = new float[3 * size];
-	_textures = new float[2 * size];
-	_normals = new float[3 * size];
-	_i = -1;
+void GLMesh::pushVertex(float x, float y, float z) {
+	_vertices.push_back(x);
+	_vertices.push_back(y);
+	_vertices.push_back(z);
 }
 
-void GLMesh::vertex(float x, float y, float z) {
-	++_i;
-	_vertices[3 * _i] = x;
-	_vertices[3 * _i + 1] = y;
-	_vertices[3 * _i + 2] = z;
+void GLMesh::pushTexVertex(float u, float v) {
+	_textures.push_back(u);
+	_textures.push_back(v);
 }
 
-void GLMesh::texture(float u, float v) {
-	_textures[2 * _i] = u;
-	_textures[2 * _i + 1] = v;
-}
-
-void GLMesh::normal(float x, float y, float z) {
-	_normals[3 * _i] = x;
-	_normals[3 * _i + 1] = y;
-	_normals[3 * _i + 2] = z;
+void GLMesh::pushNormal(float x, float y, float z) {
+	_normals.push_back(x);
+	_normals.push_back(y);
+	_normals.push_back(z);
 }
 
 MeshFace *GLMesh::createFace() {
@@ -56,35 +48,14 @@ GLMeshFace::GLMeshFace(GLMesh *parent)
 
 }
 void GLMeshFace::prepare(uint size) {
-	_vertices = new float[size*3];
-	_textures = new float[size*2];
-	_normals = new float[size*3];
-// 	_vertices = new int[size];
-// 	_textures = new int[size];
-// 	_normals = new int[size];
+	_vertices = new int[size];
+	_textures = new int[size];
+	_normals = new int[size];
 	_i = -1;
 }
 
 void GLMeshFace::setNormal(float x, float y, float z) {
 	_normal = Math::Vector3d(x, y, z);
-}
-
-void GLMeshFace::vertex(float x, float y, float z) {
-	++_i;
-	_vertices[3 * _i] = x;
-	_vertices[3 * _i + 1] = y;
-	_vertices[3 * _i + 2] = z;
-}
-
-void GLMeshFace::texture(float u, float v) {
-	_textures[2 * _i] = u;
-	_textures[2 * _i + 1] = v;
-}
-
-void GLMeshFace::normal(float x, float y, float z) {
-	_normals[3 * _i] = x;
-	_normals[3 * _i + 1] = y;
-	_normals[3 * _i + 2] = z;
 }
 
 void GLMeshFace::vertex(int index) {
@@ -119,15 +90,15 @@ void GLMeshFace::draw(Texture *texture) {
 	glNormal3fv(_normal.getData());
 	glBegin(GL_POLYGON);
 	for (int i = 0; i < _i + 1; ++i) {
-// 		glNormal3fv(_parent->_normals + 3 * _normals[i]);
-// 		glNormal3fv(_normals + 3 * i);
+		int n = 3 * _normals[i];
+		glNormal3f(_parent->_normals[n], _parent->_normals[n + 1], _parent->_normals[n + 2]);
 
 // 			if (face->_texVertices)
-			glTexCoord2fv(_textures + 2 * i);
-// 			glTexCoord2fv(_parent->_textures + 2 *_textures[i]);
+			int t = 2 * _textures[i];
+			glTexCoord2f(_parent->_textures[t], _parent->_textures[t + 1]);
 
-		glVertex3fv(_vertices + 3 * i);
-// 		glVertex3fv(_parent->_vertices + 3 *_vertices[i]);
+		int v = 3 * _vertices[i];
+		glVertex3f(_parent->_vertices[v], _parent->_vertices[v + 1], _parent->_vertices[v + 2]);
 	}
 	glEnd();
 

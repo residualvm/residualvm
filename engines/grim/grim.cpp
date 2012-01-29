@@ -541,7 +541,7 @@ void GrimEngine::updateDisplayScene() {
 //
 // 		g_driver->set3DMode();
 //
-// 		_currSet->setupLights();
+		_currSet->setupLights();
 //
 // 		// Draw actors
 >>>>>>> AGL: First draft of the Abstract Graphics Layer

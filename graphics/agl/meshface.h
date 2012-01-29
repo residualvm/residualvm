@@ -17,9 +17,6 @@ public:
 	virtual void vertex(int index) = 0;
 	virtual void texture(int index) = 0;
 	virtual void normal(int index) = 0;
-	virtual void vertex(float x, float y, float z) = 0;
-	virtual void texture(float u, float v) = 0;
-	virtual void normal(float x, float y, float z) = 0;
 
 	virtual void draw(Texture *texture) = 0;
 

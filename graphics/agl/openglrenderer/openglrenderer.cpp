@@ -8,8 +8,7 @@
 #include "graphics/pixelbuffer.h"
 
 #include "graphics/agl/texture.h"
-#include "graphics/agl/mesh.h"
-#include "graphics/agl/meshface.h"
+#include "graphics/agl/light.h"
 
 #include "graphics/agl/openglrenderer/openglrenderer.h"
 #include "graphics/agl/openglrenderer/gltarget.h"
@@ -32,6 +31,65 @@ PFNGLDELETEPROGRAMSARBPROC glDeleteProgramsARB;
 #endif
 
 namespace AGL {
+
+class GLLight : public Light {
+public:
+	GLLight(Light::Type type)
+		: Light(type) { }
+
+	void enable() {
+		_id = -1;
+		// Find a free id.
+		int max;
+		glGetIntegerv(GL_MAX_LIGHTS, &max);
+		for (int i = 0; i < max; ++i) {
+			if (!glIsEnabled(GL_LIGHT0 + i)) {
+				_id = i;
+				break;
+			}
+		}
+
+		assert(_id > -1);
+
+		glEnable(GL_LIGHTING);
+		float lightColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		float lightPos[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		float lightDir[] = { 0.0f, 0.0f, -1.0f };
+
+		float intensity = getIntensity() / 1.3f;
+		lightColor[0] = ((float)getColor().getRed() / 15.0f) * intensity;
+		lightColor[1] = ((float)getColor().getGreen() / 15.0f) * intensity;
+		lightColor[2] = ((float)getColor().getBlue() / 15.0f) * intensity;
+
+		if (getType() == Light::Point) {
+			memcpy(lightPos, getPosition().getData(), 3 * sizeof(float));
+		} else if (getType() == Light::Directional) {
+			lightPos[0] = -getDirection().x();
+			lightPos[1] = -getDirection().y();
+			lightPos[2] = -getDirection().z();
+			lightPos[3] = 0;
+		} else if (getType() == Light::Spot) {
+			memcpy(lightPos, getPosition().getData(), 3 * sizeof(float));
+			memcpy(lightDir, getDirection().getData(), 3 * sizeof(float));
+		}
+
+		glDisable(GL_LIGHT0 + _id);
+		glLightfv(GL_LIGHT0 + _id, GL_DIFFUSE, lightColor);
+		glLightfv(GL_LIGHT0 + _id, GL_POSITION, lightPos);
+		glLightfv(GL_LIGHT0 + _id, GL_SPOT_DIRECTION, lightDir);
+		glLightf(GL_LIGHT0 + _id, GL_SPOT_CUTOFF, getCutoff());
+		glEnable(GL_LIGHT0 + _id);
+	}
+	void disable() {
+		if (_id < 0)
+			return;
+
+		glDisable(GL_LIGHT0 + _id);
+		_id = -1;
+	}
+
+	int _id;
+};
 
 class GLTexture : public Texture {
 public:
@@ -81,7 +139,7 @@ Target *OpenGLRenderer::setupScreen(int screenW, int screenH, bool fullscreen, i
 //
 // 	_currentShadowArray = NULL;
 //
-	GLfloat ambientSource[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat ambientSource[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientSource);
 
 	glEnable(GL_LIGHTING);
@@ -116,6 +174,14 @@ void OpenGLRenderer::positionCamera(const Math::Vector3d &pos, const Math::Vecto
 		up_vec = Math::Vector3d(0, 1, 0);
 
 	gluLookAt(pos.x(), pos.y(), pos.z(), interest.x(), interest.y(), interest.z(), up_vec.x(), up_vec.y(), up_vec.z());
+}
+
+void OpenGLRenderer::enableLighting() {
+	glEnable(GL_LIGHTING);
+}
+
+void OpenGLRenderer::disableLighting() {
+	glDisable(GL_LIGHTING);
 }
 
 // Simple ARB fragment program that writes the value from a texture to the Z-buffer.
@@ -189,6 +255,10 @@ Texture *OpenGLRenderer::createTexture(const Graphics::PixelBuffer &buf, int wid
 
 Mesh *OpenGLRenderer::createMesh() {
 	return new GLMesh();
+}
+
+Light *OpenGLRenderer::createLight(Light::Type type) {
+	return new GLLight(type);
 }
 
 void OpenGLRenderer::pushMatrix() {
