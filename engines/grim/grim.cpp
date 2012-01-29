@@ -649,11 +649,15 @@ void GrimEngine::mainLoop() {
 			clearPools();
 
 			delete g_driver;
+#ifdef USE_OPENGL
 			if (tolower(g_registry->get("soft_renderer", "false")[0]) == 't') {
 				g_driver = CreateGfxTinyGL();
 			} else {
 				g_driver = CreateGfxOpenGL();
 			}
+#else
+			g_driver = CreateGfxTinyGL();
+#endif
 
 			g_driver->setupScreen(640, 480, false);
 			savegameRestore();
