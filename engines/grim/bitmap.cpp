@@ -201,8 +201,10 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 			}
 		}
 #endif
-
-		_bmps[i] = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, _data[i], _width, _height);
+		if (_format == 1)
+			_bmps[i] = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, _data[i], _width, _height);
+		else
+			_bmps[i] = 0;
 	}
 
 	// Initially, no GPU-side textures created. the createBitmap

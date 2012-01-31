@@ -68,8 +68,8 @@ GLBitmap2D::GLBitmap2D(OpenGLRenderer *rend, Bitmap2D::Type texType, const Graph
 		glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
-		int bpp = buf.getFormat().bytesPerPixel * 8;
-		if (texType == Bitmap2D::Image && bpp == 16 /*&& bitmap->_colorFormat != BM_RGB1555*/) {
+// 		int bpp = buf.getFormat().bytesPerPixel * 8;
+// 		if (texType == Bitmap2D::Image && bpp == 16 /*&& bitmap->_colorFormat != BM_RGB1555*/) {
 			if (texData == 0)
 				texData = new byte[4 * width * height];
 			// Convert data to 32-bit RGBA format
@@ -96,7 +96,7 @@ GLBitmap2D::GLBitmap2D(OpenGLRenderer *rend, Bitmap2D::Type texType, const Graph
 // 			texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
 // 		} else {
 // 			texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
-		}
+// 		}
 
 		for (int i = 0; i < _numTex; i++) {
 			glBindTexture(GL_TEXTURE_2D, _texIds[i]);

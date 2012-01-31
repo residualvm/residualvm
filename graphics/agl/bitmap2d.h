@@ -2,8 +2,6 @@
 #ifndef AGL_BITMAP2D_H
 #define AGL_BITMAP2D_H
 
-#include "common/rect.h"
-
 namespace AGL {
 
 class Bitmap2D {

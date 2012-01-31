@@ -113,7 +113,11 @@ public:
 			}
 		}
 
-		assert(_id > -1);
+		if (_id == -1) {
+			warning("Cannot init light.");
+				return;
+		}
+// 		assert(_id > -1);
 
 		glEnable(GL_LIGHTING);
 		float lightColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
