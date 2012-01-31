@@ -25,6 +25,7 @@ MODULE_OBJS := \
 	agl/bitmap2d.o \
 	agl/texture.o \
 	agl/primitive.o \
+	agl/shadowplane.o \
 	agl/renderer.o \
 	agl/rendererfactory.o \
 	agl/tinyglrenderer/tinyglrenderer.o \

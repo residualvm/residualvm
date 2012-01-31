@@ -2,6 +2,7 @@
 #include "common/system.h"
 #include "common/endian.h"
 #include "common/streamdebug.h"
+#include "common/foreach.h"
 
 #include "math/vector3d.h"
 
@@ -10,6 +11,7 @@
 #include "graphics/agl/texture.h"
 #include "graphics/agl/light.h"
 #include "graphics/agl/primitive.h"
+#include "graphics/agl/shadowplane.h"
 
 #include "graphics/agl/openglrenderer/openglrenderer.h"
 #include "graphics/agl/openglrenderer/gltarget.h"
@@ -151,6 +153,108 @@ public:
 	}
 
 	int _id;
+};
+
+static void glShadowProjection(const Math::Vector3d &light, const Math::Vector3d &plane, const Math::Vector3d &normal, bool dontNegate) {
+	// Based on GPL shadow projection example by
+	// (c) 2002-2003 Phaetos <phaetos@gaffga.de>
+	float d, c;
+	float mat[16];
+	float nx, ny, nz, lx, ly, lz, px, py, pz;
+
+	nx = normal.x();
+	ny = normal.y();
+	nz = normal.z();
+	// for some unknown for me reason normal need negation
+	if (!dontNegate) {
+		nx = -nx;
+		ny = -ny;
+		nz = -nz;
+	}
+	lx = light.x();
+	ly = light.y();
+	lz = light.z();
+	px = plane.x();
+	py = plane.y();
+	pz = plane.z();
+
+	d = nx * lx + ny * ly + nz * lz;
+	c = px * nx + py * ny + pz * nz - d;
+
+	mat[0] = lx * nx + c;
+	mat[4] = ny * lx;
+	mat[8] = nz * lx;
+	mat[12] = -lx * c - lx * d;
+
+	mat[1] = nx * ly;
+	mat[5] = ly * ny + c;
+	mat[9] = nz * ly;
+	mat[13] = -ly * c - ly * d;
+
+	mat[2] = nx * lz;
+	mat[6] = ny * lz;
+	mat[10] = lz * nz + c;
+	mat[14] = -lz * c - lz * d;
+
+	mat[3] = nx;
+	mat[7] = ny;
+	mat[11] = nz;
+	mat[15] = -d;
+
+	glMultMatrixf((GLfloat *)mat);
+}
+
+class GLShadowPlane : public ShadowPlane {
+public:
+	GLShadowPlane()
+		: ShadowPlane() { }
+
+	void enable(const Math::Vector3d &pos) {
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		glDepthMask(GL_FALSE);
+		glClearStencil(~0);
+		glClear(GL_STENCIL_BUFFER_BIT);
+
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 1, (GLuint)~0);
+		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_TEXTURE_2D);
+
+		foreach (const Sector &s, getSectors()) {
+			glBegin(GL_POLYGON);
+			int num = s._vertices.size();
+			for (int k = 0; k < num; k++) {
+				glVertex3fv(s._vertices[k].getData());
+			}
+			glEnd();
+		}
+
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+		glStencilFunc(GL_EQUAL, 1, (GLuint)~0);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+
+		glEnable(GL_POLYGON_OFFSET_FILL);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_TEXTURE_2D);
+
+		// 	glColor3f(_shadowColorR / 255.0f, _shadowColorG / 255.0f, _shadowColorB / 255.0f);
+		glColor3f(0,0,0);
+		glPushMatrix();
+		glShadowProjection(pos, getSectors()[0]._vertices[0], Math::Vector3d(0,0,1), false);
+	}
+
+	void disable() {
+		glPopMatrix();
+		glEnable(GL_LIGHTING);
+		glColor3f(1.0f, 1.0f, 1.0f);
+		glDisable(GL_POLYGON_OFFSET_FILL);
+
+		glDisable(GL_STENCIL_TEST);
+		glDepthMask(GL_TRUE);
+	}
 };
 
 class GLTexture : public Texture {
@@ -325,6 +429,10 @@ Light *OpenGLRenderer::createLight(Light::Type type) {
 
 Primitive *OpenGLRenderer::createPrimitive() {
 	return new GLPrimitive();
+}
+
+ShadowPlane *OpenGLRenderer::createShadowPlane() {
+	return new GLShadowPlane();
 }
 
 void OpenGLRenderer::pushMatrix() {

@@ -8,6 +8,7 @@
 
 #include "graphics/agl/bitmap2d.h"
 #include "graphics/agl/light.h"
+#include "graphics/agl/shadowplane.h"
 
 namespace Common {
 class String;
@@ -24,6 +25,7 @@ class Target;
 class Mesh;
 class Texture;
 class Primitive;
+class ShadowPlane;
 
 class Manager : public Common::Singleton<Manager> {
 public:
@@ -45,6 +47,7 @@ public:
 	Mesh *createMesh();
 	Light *createLight(Light::Type type);
 	Primitive *createPrimitive();
+	ShadowPlane *createShadowPlane();
 
 // private:
 	Renderer *_renderer;

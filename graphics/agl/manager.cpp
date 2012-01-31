@@ -79,4 +79,8 @@ Primitive *Manager::createPrimitive() {
 	return _renderer->createPrimitive();
 }
 
+ShadowPlane *Manager::createShadowPlane() {
+	return _renderer->createShadowPlane();
+}
+
 }

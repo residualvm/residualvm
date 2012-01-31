@@ -29,6 +29,10 @@
 #include "math/vector3d.h"
 #include "math/angle.h"
 
+namespace AGL {
+class ShadowPlane;
+}
+
 namespace Grim {
 
 class TextObject;
@@ -55,6 +59,7 @@ struct Shadow {
 	int shadowMaskSize;
 	bool active;
 	bool dontNegate;
+	AGL::ShadowPlane *plane;
 };
 
 /**

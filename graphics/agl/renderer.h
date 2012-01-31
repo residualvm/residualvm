@@ -23,6 +23,7 @@ namespace AGL {
 class Target;
 class Texture;
 class Mesh;
+class ShadowPlane;
 
 class Renderer {
 public:
@@ -41,6 +42,7 @@ public:
 	virtual Mesh *createMesh() = 0;
 	virtual Light *createLight(Light::Type type) = 0;
 	virtual Primitive *createPrimitive() = 0;
+	virtual ShadowPlane *createShadowPlane() = 0;
 
 	virtual void pushMatrix() { }
 	virtual void translate(float x, float y, float z) { }

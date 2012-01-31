@@ -32,6 +32,7 @@ public:
 	Mesh *createMesh();
 	Light *createLight(Light::Type type);
 	Primitive *createPrimitive();
+	ShadowPlane *createShadowPlane();
 
 	void pushMatrix();
 	void translate(float x, float y, float z);

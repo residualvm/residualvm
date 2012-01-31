@@ -208,6 +208,10 @@ Primitive *TinyGLRenderer::createPrimitive() {
 
 }
 
+ShadowPlane *TinyGLRenderer::createShadowPlane() {
+
+}
+
 const char *TinyGLRenderer::prettyString() const {
 	return "ResidualVM: Software 3D Renderer";
 }

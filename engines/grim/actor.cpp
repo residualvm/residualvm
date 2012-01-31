@@ -84,6 +84,7 @@ Actor::Actor(const Common::String &actorName) :
 		_shadowArray[i].dontNegate = false;
 		_shadowArray[i].shadowMask = NULL;
 		_shadowArray[i].shadowMaskSize = 0;
+		_shadowArray[i].plane = NULL;
 	}
 }
 
@@ -104,6 +105,7 @@ Actor::Actor() :
 		_shadowArray[i].dontNegate = false;
 		_shadowArray[i].shadowMask = NULL;
 		_shadowArray[i].shadowMaskSize = 0;
+		_shadowArray[i].plane = NULL;
 	}
 }
 
@@ -1182,9 +1184,9 @@ void Actor::draw() {
 		g_grim->getCurrSet()->setupLights(_pos);
 
 		Costume *costume = _costumeStack.back();
-// 		for (int l = 0; l < MAX_SHADOWS; l++) {
-// 			if (!shouldDrawShadow(l))
-// 				continue;
+		for (int l = 0; l < MAX_SHADOWS; l++) {
+			if (!shouldDrawShadow(l))
+				continue;
 // 			g_driver->setShadow(&_shadowArray[l]);
 // 			g_driver->setShadowMode();
 // 			if (g_driver->isHardwareAccelerated())
@@ -1194,7 +1196,20 @@ void Actor::draw() {
 // 			g_driver->finishActorDraw();
 // 			g_driver->clearShadowMode();
 // 			g_driver->setShadow(NULL);
-// 		}
+
+			_shadowArray[l].plane->enable(_shadowArray[l].pos);
+
+			AGLMan._renderer->pushMatrix();
+			AGLMan._renderer->translate(_pos.x(),_pos.y(),_pos.z());
+			AGLMan._renderer->rotate(_yaw.getDegrees(),0,0,1);
+			AGLMan._renderer->rotate(_pitch.getDegrees(),1,0,0);
+			AGLMan._renderer->rotate(_roll.getDegrees(),0,1,0);
+			costume->draw();
+			AGLMan._renderer->popMatrix();
+
+
+			_shadowArray[l].plane->disable();
+		}
 
 		// normal draw actor
 // 		g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
@@ -1256,6 +1271,12 @@ void Actor::addShadowPlane(const char *n, Set *scene, int shadowId) {
 		// the scenes' sectors are deleted while they are still keeped by the actors.
 		Plane p = { scene->getName(), new Sector(*sector) };
 		_shadowArray[shadowId].planeList.push_back(p);
+
+		if (!_shadowArray[shadowId].plane) {
+			_shadowArray[shadowId].plane = AGLMan.createShadowPlane();
+		}
+
+		_shadowArray[shadowId].plane->addSector(AGL::ShadowPlane::Vertices(sector->getVertices(), sector->getNumVertices()));
 		g_grim->flagRefreshShadowMask(true);
 	}
 }
@@ -1320,6 +1341,8 @@ void Actor::clearShadowPlanes() {
 		shadow->shadowMask = NULL;
 		shadow->active = false;
 		shadow->dontNegate = false;
+		delete shadow->plane;
+		shadow->plane = NULL;
 	}
 }
 

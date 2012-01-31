@@ -28,6 +28,7 @@ public:
 	Mesh *createMesh();
 	Light *createLight(Light::Type type);
 	Primitive *createPrimitive();
+	ShadowPlane *createShadowPlane();
 
 	const char *prettyString() const;
 

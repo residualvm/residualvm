@@ -83,7 +83,6 @@ public:
 	uint32 _numTextures;
 	Common::String *_texNames;
 	Material **_mats;
-<<<<<<< HEAD:engines/grim/emi/modelemi.h
 
 	Skeleton *_skeleton;
 
@@ -96,10 +95,6 @@ public:
 	Common::String *_boneNames;
 	int *_vertexBoneInfo;
 	int *_vertexBone;
-=======
-
-	int _numBones;
->>>>>>> AGL: First draft of the Abstract Graphics Layer:engines/grim/modelemi.h
 
 	// Stuff we dont know how to use:
 	Math::Vector4d *_sphereData;
@@ -113,10 +108,7 @@ public:
 	EMIModel(const Common::String &filename, Common::SeekableReadStream *data, EMIModel *parent = NULL);
 	~EMIModel();
 	void setTex(int index);
-<<<<<<< HEAD:engines/grim/emi/modelemi.h
 	void setSkeleton(Skeleton *skel);
-=======
->>>>>>> AGL: First draft of the Abstract Graphics Layer:engines/grim/modelemi.h
 	void loadMesh(Common::SeekableReadStream *data);
 	void prepareForRender();
 	void prepare();
