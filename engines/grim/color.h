@@ -23,7 +23,7 @@
 #ifndef GRIM_COLOR_H
 #define GRIM_COLOR_H
 
-#include "engines/grim/pool.h"
+#include "graphics/color.h"
 
 namespace Grim {
 
@@ -47,6 +47,8 @@ public:
 
 	Color& operator =(const Color &c);
 	Color& operator =(Color *c);
+
+	operator Graphics::Color() const;
 };
 
 

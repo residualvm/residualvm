@@ -457,6 +457,8 @@ public:
 
 	bool _toClean;
 
+	static void setShadowColor(const Color &color);
+
 private:
 	void costumeMarkerCallback(int marker);
 	void collisionHandlerCallback(Actor *other) const;
@@ -576,6 +578,8 @@ private:
 	float _collisionScale;
 
 	bool _puckOrient;
+
+	static Color s_shadowColor;
 
 	friend class GrimEngine;
 };

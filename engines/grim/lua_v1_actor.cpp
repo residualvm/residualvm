@@ -1437,7 +1437,7 @@ void Lua_V1::SetShadowColor() {
 	int g = (int)lua_getnumber(lua_getparam(2));
 	int b = (int)lua_getnumber(lua_getparam(3));
 
-	g_driver->setShadowColor(r, g, b);
+	Actor::setShadowColor(Color(r, g, b));
 }
 
 void Lua_V1::KillActorShadows() {

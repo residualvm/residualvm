@@ -115,7 +115,7 @@ public:
 
 		if (_id == -1) {
 			warning("Cannot init light.");
-				return;
+			return;
 		}
 // 		assert(_id > -1);
 
@@ -213,7 +213,7 @@ public:
 	GLShadowPlane()
 		: ShadowPlane() { }
 
-	void enable(const Math::Vector3d &pos) {
+		void enable(const Math::Vector3d &pos, const Graphics::Color &color) {
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_FALSE);
 		glClearStencil(~0);
@@ -244,10 +244,9 @@ public:
 		glDisable(GL_LIGHTING);
 		glDisable(GL_TEXTURE_2D);
 
-		// 	glColor3f(_shadowColorR / 255.0f, _shadowColorG / 255.0f, _shadowColorB / 255.0f);
-		glColor3f(0,0,0);
+		glColor3ubv(color.getData());
 		glPushMatrix();
-		glShadowProjection(pos, getSectors()[0]._vertices[0], Math::Vector3d(0,0,1), false);
+		glShadowProjection(pos, getSectors()[0]._vertices[0], getSectors()[0]._normal, false);
 	}
 
 	void disable() {

@@ -52,6 +52,8 @@
 
 namespace Grim {
 
+Color Actor::s_shadowColor;
+
 Actor::Actor(const Common::String &actorName) :
 		PoolObject<Actor, MKTAG('A', 'C', 'T', 'R')>(), _name(actorName), _setName(""),
 		_talkColor(255, 255, 255), _pos(0, 0, 0),
@@ -1197,7 +1199,7 @@ void Actor::draw() {
 // 			g_driver->clearShadowMode();
 // 			g_driver->setShadow(NULL);
 
-			_shadowArray[l].plane->enable(_shadowArray[l].pos);
+			_shadowArray[l].plane->enable(_shadowArray[l].pos, s_shadowColor);
 
 			AGLMan._renderer->pushMatrix();
 			AGLMan._renderer->translate(_pos.x(),_pos.y(),_pos.z());
@@ -1598,6 +1600,10 @@ void Actor::collisionHandlerCallback(Actor *other) const {
 	objects.add(other);
 
 	LuaBase::instance()->callback("collisionHandler", objects);
+}
+
+void Actor::setShadowColor(const Color &color) {
+	s_shadowColor = color;
 }
 
 

@@ -67,5 +67,9 @@ Color& Color::operator =(Color *c) {
 	return *this;
 }
 
+Color::operator Graphics::Color() const {
+	return Graphics::Color(_vals[0], _vals[1], _vals[2]);
+}
+
 } // end of namespace Grim
 
