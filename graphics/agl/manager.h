@@ -16,6 +16,7 @@ class String;
 
 namespace Graphics {
 class PixelBuffer;
+class Surface;
 }
 
 namespace AGL {
@@ -43,6 +44,7 @@ public:
 	void disableLighting();
 
 	Bitmap2D *createBitmap2D(Bitmap2D::Type type, const Graphics::PixelBuffer &buf, int width, int height);
+	Bitmap2D *createBitmap2D(Graphics::Surface *surface);
 	Texture *createTexture(const Graphics::PixelBuffer &buf, int width, int height);
 	Mesh *createMesh();
 	Light *createLight(Light::Type type);

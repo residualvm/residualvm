@@ -2,6 +2,9 @@
 #include "common/str.h"
 #include "common/system.h"
 
+#include "graphics/surface.h"
+#include "graphics/pixelbuffer.h"
+
 #include "graphics/agl/manager.h"
 #include "graphics/agl/renderer.h"
 #include "graphics/agl/rendererfactory.h"
@@ -61,6 +64,11 @@ void Manager::disableLighting() {
 
 Bitmap2D *Manager::createBitmap2D(Bitmap2D::Type type, const Graphics::PixelBuffer &buf, int width, int height) {
 	return _renderer->createBitmap2D(type, buf, width, height);
+}
+
+Bitmap2D *Manager::createBitmap2D(Graphics::Surface *surface) {
+	return _renderer->createBitmap2D(Bitmap2D::Image, Graphics::PixelBuffer(surface->format, (byte *)surface->pixels),
+									 surface->w, surface->h);
 }
 
 Texture *Manager::createTexture(const Graphics::PixelBuffer &buf, int width, int height) {

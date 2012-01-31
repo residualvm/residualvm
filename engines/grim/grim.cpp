@@ -463,20 +463,20 @@ void GrimEngine::updateDisplayScene() {
 		if (g_movie->isPlaying()) {
 			_movieTime = g_movie->getMovieTime();
 			if (g_movie->isUpdateNeeded()) {
-				g_driver->prepareMovieFrame(g_movie->getDstSurface());
+				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
 				g_movie->clearUpdateNeeded();
 			}
 			int frame = g_movie->getFrame();
 			if (frame >= 0) {
 				if (frame != _prevSmushFrame) {
 					_prevSmushFrame = g_movie->getFrame();
-					g_driver->drawMovieFrame(g_movie->getX(), g_movie->getY());
-					if (_showFps)
-						g_driver->drawEmergString(550, 25, _fps, Color(255, 255, 255));
+					_movieFrame->draw(g_movie->getX(), g_movie->getY());
+// 					if (_showFps)
+// 						g_driver->drawEmergString(550, 25, _fps, Color(255, 255, 255));
 				} else
 					_doFlip = false;
 			} else
-				g_driver->releaseMovieFrame();
+				delete _movieFrame;
 		}
 		// Draw Primitives
 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
@@ -514,18 +514,18 @@ void GrimEngine::updateDisplayScene() {
 		// need to render underneath the animation or you can't see what's going on
 		// This should not occur on top of everything though or Manny gets covered
 		// up when he's next to Glottis's service room
-// 		if (g_movie->isPlaying()) {
-// 			_movieTime = g_movie->getMovieTime();
-// 			if (g_movie->isUpdateNeeded()) {
-// 				g_driver->prepareMovieFrame(g_movie->getDstSurface());
-// 				g_movie->clearUpdateNeeded();
-// 			}
-// 			if (g_movie->getFrame() >= 0)
-// 				g_driver->drawMovieFrame(g_movie->getX(), g_movie->getY());
-// 			else
-// 				g_driver->releaseMovieFrame();
-// 		}
-//
+		if (g_movie->isPlaying()) {
+			_movieTime = g_movie->getMovieTime();
+			if (g_movie->isUpdateNeeded()) {
+				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
+				g_movie->clearUpdateNeeded();
+			}
+			if (g_movie->getFrame() >= 0)
+				_movieFrame->draw(g_movie->getX(), g_movie->getY());
+			else
+				delete _movieFrame;
+		}
+
 		// Draw Primitives
 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
 			p->draw();
