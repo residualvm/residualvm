@@ -156,7 +156,7 @@ int ModelComponent::getNumNodes() {
 	return _obj->getNumNodes();
 }
 
-void ModelComponent::translateObject(ModelNode *node, bool reset) {
+void ModelComponent::translateObject(const ModelNode *node, bool reset) {
 	if (node->_parent)
 		translateObject(node->_parent, reset);
 
@@ -167,7 +167,7 @@ void ModelComponent::translateObject(ModelNode *node, bool reset) {
 	}
 }
 
-void ModelComponent::translateObject(bool res) {
+void ModelComponent::translateObject(bool res) const {
 	ModelNode *node = _hier->_parent;
 	if (node) {
 		translateObject(node, res);
@@ -190,20 +190,22 @@ void ModelComponent::draw() {
 	translateObject(true);
 }
 
-void ModelComponent::getBoundingBox(int *x1, int *y1, int *x2, int *y2) {
+bool ModelComponent::calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const {
 	// If the object was drawn by being a component
 	// of it's parent then don't draw it
 
 	if (_parent && _parent->isVisible())
-		return;
+		return false;
 	// Need to translate object to be in accordance
 		// with the setup of the parent
 	translateObject(false);
 
-	_hier->getBoundingBox(x1, y1, x2, y2);
+	bool ok = _hier->calculate2DBoundingBox(left, top, right, bottom);
 
 	// Need to un-translate when done
 	translateObject(true);
+
+	return ok;
 }
 
 } // end of namespace Grim

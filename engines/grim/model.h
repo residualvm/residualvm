@@ -32,6 +32,7 @@ class SeekableReadStream;
 
 namespace AGL {
 class MeshFace;
+class Mesh;
 }
 
 namespace Grim {
@@ -124,7 +125,7 @@ public:
 	void loadText(TextSplitter *ts, Material *materials[]);
 	void changeMaterials(Material *materials[]);
 	void draw() const;
-	void getBoundingBox(int *x1, int *y1, int *x2, int *y2) const;
+	bool calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const;
 	void update();
 	Mesh() : _numFaces(0) { }
 	~Mesh();
@@ -145,6 +146,8 @@ public:
 	int _numFaces;
 	MeshFace *_faces;
 	Math::Matrix4 _matrix;
+
+	AGL::Mesh *_mesh;
 };
 
 class ModelNode {
@@ -153,7 +156,7 @@ public:
 	~ModelNode();
 	void loadBinary(Common::SeekableReadStream *data, ModelNode *hierNodes, const Model::Geoset *g);
 	void draw() const;
-	void getBoundingBox(int *x1, int *y1, int *x2, int *y2) const;
+	bool calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const;
 	void addChild(ModelNode *child);
 	void removeChild(ModelNode *child);
 	void setMatrix(const Math::Matrix4 &matrix);

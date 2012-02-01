@@ -79,7 +79,7 @@ public:
 	void animate();
 	void setupTextures();
 	virtual void draw();
-	void getBoundingBox(int *x1, int *y1, int *x2, int *y2);
+	bool calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const;
 	void setPosRotate(const Math::Vector3d &pos, const Math::Angle &pitch,
 					  const Math::Angle &yaw, const Math::Angle &roll);
 	Math::Matrix4 getMatrix() const;

@@ -126,7 +126,7 @@ Common::Rect Label::getLineRect(int line) const {
 	else if (_alignment == Right)
 		x = -_maxLineWidth;
 
-	return Common::Rect(x, height * line, length, height);
+	return Common::Rect(x, height * line, x + length, height * (line + 1));
 }
 
 }

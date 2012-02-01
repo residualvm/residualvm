@@ -413,6 +413,7 @@ Mesh::~Mesh() {
 	delete[] _textureVerts;
 	delete[] _faces;
 	delete[] _materialid;
+	delete _mesh;
 }
 
 void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
@@ -445,20 +446,20 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 	}
 	data->seek(_numVertices * 4, SEEK_CUR);
 
-	AGL::Mesh *mesh = AGLMan.createMesh();
-	mesh->setUseAbsoluteTexCoords(true);
+	_mesh = AGLMan.createMesh();
+	_mesh->setUseAbsoluteTexCoords(true);
 
 	for (int i = 0; i < _numVertices;++i) {
 		float *v = _vertices + 3 * i;
-		mesh->pushVertex(v[0], v[1], v[2]);
+		_mesh->pushVertex(v[0], v[1], v[2]);
 	}
 	for (int i = 0; i < _numTextureVerts;++i) {
 		float *t = _textureVerts + 2 * i;
-		mesh->pushTexVertex(t[0], t[1]);
+		_mesh->pushTexVertex(t[0], t[1]);
 	}
 
 	for (int i = 0; i < _numFaces; i++) {
-		_faces[i]._face = mesh->createFace();
+		_faces[i]._face = _mesh->createFace();
 		_materialid[i] = _faces[i].loadBinary(data, materials,_vertices,_vertNormals,_textureVerts);
 	}
 	for (int i = 0; i < 3 * _numVertices; i++) {
@@ -468,7 +469,7 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 
 	for (int i = 0; i < _numVertices;++i) {
 		float *n = _vertNormals + 3 * i;
-		mesh->pushNormal(n[0], n[1], n[2]);
+		_mesh->pushNormal(n[0], n[1], n[2]);
 	}
 
 	_shadow = data->readUint32LE();
@@ -525,6 +526,8 @@ void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 		_vertNormals[3 * num + 1] = y;
 		_vertNormals[3 * num + 2] = z;
 	}
+
+	_mesh = NULL;
 
 	ts->scanString("faces %d", 1, &_numFaces);
 	_faces = new MeshFace[_numFaces];
@@ -592,15 +595,17 @@ void Mesh::draw() const {
 		AGLMan.enableLighting();
 }
 
-void Mesh::getBoundingBox(int *x1, int *y1, int *x2, int *y2) const {
-	int winX1, winY1, winX2, winY2;
-	g_driver->getBoundingBoxPos(this, &winX1, &winY1, &winX2, &winY2);
-	if (winX1 != -1 && winY1 != -1 && winX2 != -1 && winY2 != -1) {
-		*x1 = MIN(*x1, winX1);
-		*y1 = MIN(*y1, winY1);
-		*x2 = MAX(*x2, winX2);
-		*y2 = MAX(*y2, winY2);
+bool Mesh::calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const {
+	int l, t, r, b;
+	if (_mesh->calculate2DBoundingBox(&l, &t, &r, &b)) {
+		*left = MIN(*left, l);
+		*top = MIN(*top, t);
+		*right = MAX(*right, r);
+		*bottom = MAX(*bottom, b);
+
+		return true;
 	}
+	return false;
 }
 
 /**
@@ -703,27 +708,31 @@ void ModelNode::draw() const {
 	}
 }
 
-void ModelNode::getBoundingBox(int *x1, int *y1, int *x2, int *y2) const {
+bool ModelNode::calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const {
 	translateViewpoint();
+	bool ok = false;
 	if (_hierVisible) {
 		g_driver->translateViewpointStart();
 		g_driver->translateViewpoint(_pivot);
 
 		if (_mesh && _meshVisible) {
-			_mesh->getBoundingBox(x1, y1, x2, y2);
+			ok = _mesh->calculate2DBoundingBox(left, top, right, bottom);
 		}
 
 		g_driver->translateViewpointFinish();
 
 		if (_child) {
-			_child->getBoundingBox(x1, y1, x2, y2);
+			// IMPORTANT! Do NOT do 'ok = ok || c->...', since if ok is true it won't call calculate2DBoundingBox.
+			ok = _child->calculate2DBoundingBox(left, top, right, bottom) || ok;
 		}
 	}
 	translateViewpointBack();
 
 	if (_sibling) {
-		_sibling->getBoundingBox(x1, y1, x2, y2);
+		// IMPORTANT! Do NOT do 'ok = ok || c->...', since if ok is true it won't call calculate2DBoundingBox.
+		ok = _sibling->calculate2DBoundingBox(left, top, right, bottom) || ok;
 	}
+	return ok;
 }
 
 void ModelNode::addChild(ModelNode *child) {

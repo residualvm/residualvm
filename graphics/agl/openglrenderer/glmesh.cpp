@@ -32,15 +32,79 @@ void GLMesh::pushNormal(float x, float y, float z) {
 }
 
 MeshFace *GLMesh::createFace() {
-	return new GLMeshFace(this);
+	GLMeshFace *f = new GLMeshFace(this);
+	_faces.push_back(f);
+
+	return f;
 }
 
 void GLMesh::draw(Texture *texture) {
 
 }
 
+bool GLMesh::calculate2DBoundingBox(int *l, int *t, int *r, int *b) const {
+	GLdouble top = 1000;
+	GLdouble right = -1000;
+	GLdouble left = 1000;
+	GLdouble bottom = -1000;
+	GLdouble winX, winY, winZ;
 
+	for (Faces::const_iterator i = _faces.begin(); i != _faces.end(); ++i) {
+		GLMeshFace *face = static_cast<GLMeshFace *>(*i);
+		Math::Vector3d v;
 
+		for (int j = 0; j < face->_i + 1; ++j) {
+			GLdouble modelView[16], projection[16];
+			GLint viewPort[4];
+
+			glGetDoublev(GL_MODELVIEW_MATRIX, modelView);
+			glGetDoublev(GL_PROJECTION_MATRIX, projection);
+			glGetIntegerv(GL_VIEWPORT, viewPort);
+
+			int n = 3 * face->_vertices[j];
+			Math::Vector3d v(_vertices.begin() + n);
+
+			gluProject(v.x(), v.y(), v.z(), modelView, projection, viewPort, &winX, &winY, &winZ);
+
+			if (winX > right)
+				right = winX;
+			if (winX < left)
+				left = winX;
+			if (winY < top)
+				top = winY;
+			if (winY > bottom)
+				bottom = winY;
+		}
+	}
+
+	const int _gameHeight = 480;
+	const int _gameWidth = 640;
+
+	double tt = bottom;
+	bottom = _gameHeight - top;
+	top = _gameHeight - tt;
+
+	if (left < 0)
+		left = 0;
+	if (right >= _gameWidth)
+		right = _gameWidth - 1;
+	if (top < 0)
+		top = 0;
+	if (bottom >= _gameHeight)
+		bottom = _gameHeight - 1;
+
+	if (top >= _gameHeight || left >= _gameWidth || bottom < 0 || right < 0) {
+		return false;
+	}
+
+	*l = left;
+	*t = top;
+	*r = right;
+	*b = bottom;
+	return true;
+}
+
+// -- GLMeshFace --
 
 GLMeshFace::GLMeshFace(GLMesh *parent)
 	: MeshFace(parent),

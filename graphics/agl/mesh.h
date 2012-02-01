@@ -4,6 +4,10 @@
 
 #include "common/list.h"
 
+namespace Common {
+class Rect;
+}
+
 namespace AGL {
 
 class MeshFace;
@@ -25,6 +29,8 @@ public:
 
 	inline void setUseAbsoluteTexCoords(bool useAbs) { _useAbsTexCoords = useAbs; }
 	inline bool getUseAbsoluteTexCoords() const { return _useAbsTexCoords; }
+
+	virtual bool calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const = 0;
 
 // 	Faces::iterator facesBegin() const { return _faces.begin(); }
 // 	Faces::iterator facesEnd() const { return _faces.end(); }

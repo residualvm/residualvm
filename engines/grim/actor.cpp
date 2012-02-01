@@ -27,6 +27,8 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_mkdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_unlink
 
+#include "common/rect.h"
+
 #include "math/line3d.h"
 #include "math/rect2d.h"
 
@@ -1226,18 +1228,23 @@ void Actor::draw() {
 	}
 
 	if (_mustPlaceText) {
+		Common::Rect rect(0, 0, 0, 0);
 		int x1, y1, x2, y2;
 		x1 = y1 = 1000;
 		x2 = y2 = -1000;
 		if (!_costumeStack.empty()) {
-// 			g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
-// 			_costumeStack.back()->getBoundingBox(&x1, &y1, &x2, &y2);
-// 			g_driver->finishActorDraw();
+			AGLMan._renderer->pushMatrix();
+			AGLMan._renderer->translate(_pos.x(),_pos.y(),_pos.z());
+			AGLMan._renderer->rotate(_yaw.getDegrees(),0,0,1);
+			AGLMan._renderer->rotate(_pitch.getDegrees(),1,0,0);
+			AGLMan._renderer->rotate(_roll.getDegrees(),0,1,0);
+			_costumeStack.back()->calculate2DBoundingBox(&x1, &y1, &x2, &y2);
+			AGLMan._renderer->popMatrix();
 		}
 
 		TextObject *textObject = TextObject::getPool().getObject(_sayLineText);
 		if (textObject) {
-			if (x1 == 1000 || x2 == -1000 || y2 == -1000) {
+			if (x1 == -1000 || x2 == 1000 || y2 == 1000) {
 				textObject->setX(640 / 2);
 				textObject->setY(463);
 			} else {
