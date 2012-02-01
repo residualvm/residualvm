@@ -35,6 +35,7 @@
 
 namespace AGL {
 class Bitmap2D;
+class Label;
 }
 
 namespace Grim {
@@ -217,6 +218,8 @@ private:
 	Iris *_iris;
 
 	AGL::Bitmap2D *_movieFrame;
+	Font *_fpsFont;
+	AGL::Label *_fpsLabel;
 
 	uint32 _gameFlags;
 	GrimGameType _gameType;

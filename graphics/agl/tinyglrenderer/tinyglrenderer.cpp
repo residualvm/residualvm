@@ -212,7 +212,7 @@ ShadowPlane *TinyGLRenderer::createShadowPlane() {
 
 }
 
-Label *TinyGLRenderer::createLabel(Font *font, const Common::String &string) {
+Label *TinyGLRenderer::createLabel() {
 
 }
 

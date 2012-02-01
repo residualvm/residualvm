@@ -40,8 +40,8 @@ namespace AGL {
 
 class GLLabel : public Label {
 public:
-	GLLabel(Font *font, const Common::String &string)
-		: Label(font, string) {
+	GLLabel()
+		: Label() {
 
 	}
 
@@ -516,8 +516,8 @@ ShadowPlane *OpenGLRenderer::createShadowPlane() {
 	return new GLShadowPlane();
 }
 
-Label *OpenGLRenderer::createLabel(Font *font, const Common::String &string) {
-	return new GLLabel(font, string);
+Label *OpenGLRenderer::createLabel() {
+	return new GLLabel();
 }
 
 void OpenGLRenderer::pushMatrix() {

@@ -7,17 +7,25 @@
 
 namespace AGL {
 
-Label::Label(Font *font, const Common::String &string)
+Label::Label()
 	: _alignment(Center),
-	  _font(font),
-	  _text(string) {
+	  _font(NULL) {
 
-	_lines.push_back(string);
 	_maxLineWidth = 0;
 }
 
 Label::~Label() {
 
+}
+
+void Label::setFont(Font *font) {
+	_font = font;
+}
+
+void Label::setText(const Common::String &text) {
+	_text = text;
+	_lines.clear();
+	_lines.push_back(text);
 }
 
 void Label::setAlignment(Alignment alignment) {

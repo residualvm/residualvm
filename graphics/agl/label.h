@@ -21,6 +21,8 @@ public:
 
 	virtual ~Label();
 
+	void setFont(Font *font);
+	void setText(const Common::String &text);
 	void setAlignment(Alignment alignment);
 	void setTextColor(const Graphics::Color &color);
 
@@ -31,7 +33,7 @@ public:
 	Common::Rect getBoundingRect() const;
 
 protected:
-	Label(Font *font, const Common::String &string);
+	Label();
 
 	inline Font *getFont() const { return _font; }
 	inline const Common::String &getText() const { return _text; }

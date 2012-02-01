@@ -8,6 +8,7 @@
 #include "graphics/agl/manager.h"
 #include "graphics/agl/renderer.h"
 #include "graphics/agl/rendererfactory.h"
+#include "graphics/agl/label.h"
 
 namespace Common {
 DECLARE_SINGLETON(AGL::Manager);
@@ -91,8 +92,19 @@ ShadowPlane *Manager::createShadowPlane() {
 	return _renderer->createShadowPlane();
 }
 
+Label *Manager::createLabel(Font *font) {
+	Label *l = _renderer->createLabel();
+	l->setFont(font);
+
+	return l;
+}
+
 Label *Manager::createLabel(Font *font, const Common::String &string) {
-	return _renderer->createLabel(font, string);
+	Label *l = _renderer->createLabel();
+	l->setFont(font);
+	l->setText(string);
+
+	return l;
 }
 
 }

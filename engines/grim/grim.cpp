@@ -49,6 +49,7 @@
 #include "graphics/agl/manager.h"
 #include "graphics/agl/target.h"
 #include "graphics/agl/texture.h"
+#include "graphics/agl/label.h"
 
 #include "gui/error.h"
 #include "gui/gui-manager.h"
@@ -198,6 +199,8 @@ GrimEngine::~GrimEngine() {
 	delete g_driver;
 	g_driver = NULL;
 	delete _iris;
+	delete _fpsLabel;
+	delete _fpsFont;
 
 	DebugMan.clearAllDebugChannels();
 }
@@ -321,6 +324,10 @@ Common::Error GrimEngine::run() {
 		_savegameLoadRequest = true;
 		_savegameFileName = saveName;
 	}
+
+	_fpsFont = g_resourceloader->loadFont("ComicSans18.laf");
+	_fpsLabel = AGLMan.createLabel(_fpsFont);
+	_fpsLabel->setTextColor(Color(255, 255, 255));
 
 	g_grim->setMode(NormalMode);
 	if (splash_bm)
@@ -471,8 +478,10 @@ void GrimEngine::updateDisplayScene() {
 				if (frame != _prevSmushFrame) {
 					_prevSmushFrame = g_movie->getFrame();
 					_movieFrame->draw(g_movie->getX(), g_movie->getY());
-// 					if (_showFps)
-// 						g_driver->drawEmergString(550, 25, _fps, Color(255, 255, 255));
+					if (_showFps) {
+						_fpsLabel->setText(_fps);
+						_fpsLabel->draw(550, 25);
+					}
 				} else
 					_doFlip = false;
 			} else
@@ -571,8 +580,10 @@ void GrimEngine::doFlip() {
 		return;
 	}
 
-// 	if (_showFps && _mode != DrawMode)
-// 		g_driver->drawEmergString(550, 25, _fps, Color(255, 255, 255));
+	if (_showFps && _mode != DrawMode) {
+		_fpsLabel->setText(_fps);
+		_fpsLabel->draw(550, 25);
+	}
 
 	if (_flipEnable)
 		g_driver->flipBuffer();
