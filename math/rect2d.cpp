@@ -31,6 +31,13 @@ Rect2d::Rect2d() {
 
 }
 
+Rect2d::Rect2d(float left, float top, float width, float height) {
+	_topLeft = Vector2d(left, top);
+	_topRight = Vector2d(left + width, top);
+	_bottomLeft = Vector2d(left, top + height);
+	_bottomRight = Vector2d(left + width, top + height);
+}
+
 Rect2d::Rect2d(const Vector2d &topLeft, const Vector2d &bottomRight) {
 	float left = (topLeft.getX() <= bottomRight.getX() ? topLeft.getX() : bottomRight.getX());
 	float right = (topLeft.getX() <= bottomRight.getX() ? bottomRight.getX() : topLeft.getX());
@@ -139,22 +146,6 @@ Vector2d Rect2d::getCenter() const {
 	sum /= 4;
 
 	return sum;
-}
-
-Vector2d Rect2d::getTopLeft() const {
-	return _topLeft;
-}
-
-Vector2d Rect2d::getTopRight() const {
-	return _topRight;
-}
-
-Vector2d Rect2d::getBottomLeft() const {
-	return _bottomLeft;
-}
-
-Vector2d Rect2d::getBottomRight() const {
-	return _bottomRight;
 }
 
 float Rect2d::getWidth() const {

@@ -26,6 +26,10 @@
 #include "engines/grim/pool.h"
 #include "engines/grim/color.h"
 
+namespace AGL {
+class Label;
+}
+
 namespace Grim {
 
 class SaveGame;
@@ -90,12 +94,6 @@ public:
 	int getBitmapHeight();
 	int getTextCharPosition(int pos);
 
-	int getLineX(int line);
-	int getLineY(int line);
-
-	const Common::String *getLines() { return _lines; }
-	int getNumLines() { return _numberLines; }
-
 	const Common::String &getName() const { return _textID; }
 	void draw();
 	void update();
@@ -116,16 +114,13 @@ public:
 private:
 	void create();
 
-	bool _created;
 	void setupText();
-	int _numberLines;
 	bool _blastDraw;
 	bool _isSpeech;
 	Common::String _textID;
 	int _elapsedTime;
-	int _maxLineWidth;
-	Common::String *_lines;
-	TextObjectData *_userData;
+
+	AGL::Label *_label;
 };
 
 } // end of namespace Grim

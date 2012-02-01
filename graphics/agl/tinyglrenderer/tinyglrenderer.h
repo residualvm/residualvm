@@ -29,6 +29,7 @@ public:
 	Light *createLight(Light::Type type);
 	Primitive *createPrimitive();
 	ShadowPlane *createShadowPlane();
+	Label *createLabel(Font *font, const Common::String &string);
 
 	const char *prettyString() const;
 

@@ -20,10 +20,13 @@
  *
  */
 
+#include "common/rect.h"
+
 #include "graphics/pixelbuffer.h"
 
 #include "graphics/agl/bitmap2d.h"
 #include "graphics/agl/manager.h"
+#include "graphics/agl/label.h"
 
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
@@ -42,31 +45,20 @@ TextObjectCommon::TextObjectCommon() :
 	_font(NULL), _duration(0), _positioned(false) {
 }
 
-struct TextObjectData {
-	int width, height, x, y;
-	AGL::Bitmap2D *_bitmap;
-};
-
 TextObject::TextObject(bool blastDraw, bool isSpeech) :
-		PoolObject<TextObject, MKTAG('T', 'E', 'X', 'T')>(), TextObjectCommon(), _numberLines(1),
-		_maxLineWidth(0), _lines(0), _userData(0), _created(false) {
+		PoolObject<TextObject, MKTAG('T', 'E', 'X', 'T')>(), TextObjectCommon() {
 	_blastDraw = blastDraw;
 	_isSpeech = isSpeech;
+	_label = NULL;
 }
 
 TextObject::TextObject() :
-	PoolObject<TextObject, MKTAG('T', 'E', 'X', 'T')>(), TextObjectCommon(), _maxLineWidth(0), _lines(NULL) {
+	PoolObject<TextObject, MKTAG('T', 'E', 'X', 'T')>(), TextObjectCommon() {
 
 }
 
 TextObject::~TextObject() {
-	delete[] _lines;
-	if (_userData) {
-		for (int i = 0; i < _numberLines; ++i) {
-			delete _userData[i]._bitmap;
-		}
-		delete[] _userData;
-	}
+	delete _label;
 }
 
 void TextObject::setText(const Common::String &text) {
@@ -88,7 +80,7 @@ void TextObject::saveState(SaveGame *state) const {
 	state->writeLESint32(_width);
 	state->writeLESint32(_height);
 	state->writeLESint32(_justify);
-	state->writeLESint32(_numberLines);
+// 	state->writeLESint32(_numberLines);
 	state->writeLESint32(_duration);
 
 	state->writeBool(_blastDraw);
@@ -108,7 +100,7 @@ bool TextObject::restoreState(SaveGame *state) {
 	_width        = state->readLESint32();
 	_height       = state->readLESint32();
 	_justify      = state->readLESint32();
-	_numberLines  = state->readLESint32();
+// 	_numberLines  = state->readLESint32();
 	_duration     = state->readLESint32();
 
 	_blastDraw    = state->readBool();
@@ -120,8 +112,6 @@ bool TextObject::restoreState(SaveGame *state) {
 	_textID = state->readString();
 
 	setupText();
-	_created = false;
-	_userData = NULL;
 
 	return true;
 }
@@ -135,11 +125,11 @@ void TextObject::setDefaults(TextObjectDefaults *defaults) {
 }
 
 int TextObject::getBitmapWidth() {
-	return _maxLineWidth;
+	return _label->getBoundingRect().width();
 }
 
 int TextObject::getBitmapHeight() {
-	return _numberLines * _font->getHeight();
+	return _label->getBoundingRect().height();
 }
 
 int TextObject::getTextCharPosition(int pos) {
@@ -152,10 +142,7 @@ int TextObject::getTextCharPosition(int pos) {
 }
 
 void TextObject::destroy() {
-	if (_created) {
-		g_driver->destroyTextObject(this);
-		_created = false;
-	}
+	delete _label;
 }
 
 void TextObject::reposition() {
@@ -182,7 +169,6 @@ void TextObject::reposition() {
 
 void TextObject::setupText() {
 	Common::String msg = LuaBase::instance()->parseMsgText(_textID.c_str(), NULL);
-	Common::String message;
 
 	// remove spaces (NULL_TEXT) from the end of the string,
 	// while this helps make the string unique it screws up
@@ -192,11 +178,6 @@ void TextObject::setupText() {
 	while (pos >= 0 && (msg[pos] == ' ' || msg[pos] == 13)) {
 		msg.deleteLastChar();
 		pos = msg.size() - 1;
-	}
-	delete[] _lines;
-	if (msg.size() == 0) {
-		_lines = NULL;
-		return;
 	}
 
 	reposition();
@@ -228,53 +209,21 @@ void TextObject::setupText() {
 		maxWidth = _x;
 	}
 
-	// We break the message to lines not longer than maxWidth
-	Common::String currLine;
-	_numberLines = 1;
-	int lineWidth = 0;
-	int maxLineWidth = 0;
-	for (uint i = 0; i < msg.size(); i++) {
-		lineWidth += MAX(_font->getCharWidth(msg[i]), _font->getCharDataWidth(msg[i]));
-		if (lineWidth > maxWidth) {
-			bool wordSplit = false;
-			if (currLine.contains(' ')) {
-				while (msg[i] != ' ' && i > 0) {
-					lineWidth -= MAX(_font->getCharWidth(msg[i]), _font->getCharDataWidth(msg[i]));
-					message.deleteLastChar();
-					--i;
-				}
-			} else if (msg[i] != ' ') { // if it is a unique word
-				int dashWidth = MAX(_font->getCharWidth('-'), _font->getCharDataWidth('-'));
-				while (lineWidth + dashWidth > maxWidth) {
-					lineWidth -= MAX(_font->getCharWidth(msg[i]), _font->getCharDataWidth(msg[i]));
-					message.deleteLastChar();
-					--i;
-				}
-				message += '-';
-				wordSplit = true;
- 			}
-			message += '\n';
-			currLine.clear();
-			_numberLines++;
-
-			if (lineWidth > maxLineWidth) {
-				maxLineWidth = lineWidth;
-			}
-			lineWidth = 0;
-
-			if (wordSplit) {
-				lineWidth += MAX(_font->getCharWidth(msg[i]), _font->getCharDataWidth(msg[i]));
-			} else {
-				continue; // don't add the space back
-			}
-		}
-
-		if (lineWidth > maxLineWidth)
-			maxLineWidth = lineWidth;
-
-		message += msg[i];
-		currLine += msg[i];
+	_label = AGLMan.createLabel(getFont(), msg);
+	_label->setTextColor(_fgColor);
+	_label->wrapWords(maxWidth);
+	AGL::Label::Alignment al;
+	switch (getJustify()) {
+		case LJUSTIFY:
+			al = AGL::Label::Left;
+			break;
+		case RJUSTIFY:
+			al = AGL::Label::Right;
+			break;
+		default:
+			al = AGL::Label::Center;
 	}
+	_label->setAlignment(al);
 
 	// If the text object is a speech subtitle, the y parameter is the
 	// coordinate of the bottom of the text block (instead of the top). It means
@@ -282,48 +231,22 @@ void TextObject::setupText() {
 	// printed further down the screen.
 	const int SCREEN_TOP_MARGIN = 16;
 	if (_isSpeech) {
-		_y -= _numberLines * _font->getHeight();
+		_y -= _label->getBoundingRect().height();
 		if (_y < SCREEN_TOP_MARGIN) {
 			_y = SCREEN_TOP_MARGIN;
 		}
 	}
 
-	_lines = new Common::String[_numberLines];
-
-	for (int j = 0; j < _numberLines; j++) {
-		int nextLinePos, cutLen;
-		const char *breakPos = strchr(message.c_str(), '\n');
-		if (breakPos) {
-			nextLinePos = breakPos - message.c_str();
-			cutLen = nextLinePos + 1;
-		} else {
-			nextLinePos = message.size();
-			cutLen = nextLinePos;
-		}
-		Common::String currentLine(message.c_str(), message.c_str() + nextLinePos);
-		_lines[j] = currentLine;
-		int width = _font->getStringLength(currentLine);
-		if (width > _maxLineWidth)
-			_maxLineWidth = width;
-		for (int count = 0; count < cutLen; count++)
-			message.deleteChar(0);
-	}
 	_elapsedTime = 0;
 }
 
-int TextObject::getLineX(int line) {
-	int x = _x;
-	if (_justify == CENTER)
-		x = _x - (_font->getStringLength(_lines[line]) / 2);
-	else if (_justify == RJUSTIFY)
-		x = _x - getBitmapWidth();
+void TextObject::draw() {
+	if (!_label)
+		return;
 
-	if (x < 0)
-		x = 0;
-	return x;
-}
+	if (_justify > 3 || _justify < 0)
+		warning("TextObject::draw: Unknown justification code (%d)", _justify);
 
-int TextObject::getLineY(int line) {
 	int y = _y;
 	if (_blastDraw)
 		y = _y + 5;
@@ -341,111 +264,18 @@ int TextObject::getLineY(int line) {
 	}
 	if (y < 0)
 		y = 0;
-	y += _font->getHeight()*line;
 
-	return y;
-}
-
-void TextObject::draw() {
-	if (!_lines)
-		return;
-
-	if (!_created) {
-		create();
-		_created = true;
-	}
-
-	if (_justify > 3 || _justify < 0)
-		warning("TextObject::draw: Unknown justification code (%d)", _justify);
-
-	if (_userData) {
-		for (int i = 0; i < getNumLines(); ++i) {
-			TextObjectData &ud = _userData[i];
-			ud._bitmap->draw(ud.x, ud.y);
-		}
-	}
+	_label->draw(_x, y);
 }
 
 void TextObject::update() {
-	if (!_duration || !_created) {
+	if (!_duration) {
 		return;
 	}
 
 	_elapsedTime += g_grim->getFrameTime();
 	if (_elapsedTime > _duration) {
 		delete this;
-	}
-}
-
-void TextObject::create() {
-	int numLines = getNumLines();
-	const Common::String *lines = getLines();
-	const Font *font = getFont();
-	const Color &fgColor = getFGColor();
-	_userData = new TextObjectData[numLines];
-	for (int j = 0; j < numLines; j++) {
-		const Common::String &currentLine = lines[j];
-
-		int width = font->getStringLength(currentLine) + 1;
-		int height = font->getHeight();
-
-		uint8 *_textBitmap = new uint8[height * width];
-		memset(_textBitmap, 0, height * width);
-
-		// Fill bitmap
-		int startOffset = 0;
-		for (unsigned int d = 0; d < currentLine.size(); d++) {
-			int ch = currentLine[d];
-			int8 startingLine = font->getCharStartingLine(ch) + font->getBaseOffsetY();
-			int32 charDataWidth = font->getCharDataWidth(ch);
-			int32 charWidth = font->getCharWidth(ch);
-			int8 startingCol = font->getCharStartingCol(ch);
-			for (int line = 0; line < font->getCharDataHeight(ch); line++) {
-				int offset = startOffset + (width * (line + startingLine));
-				for (int r = 0; r < charDataWidth; r++) {
-					const byte pixel = *(font->getCharData(ch) + r + (charDataWidth * line));
-					byte *dst = _textBitmap + offset + startingCol + r;
-					if (*dst == 0 && pixel != 0)
-						_textBitmap[offset + startingCol + r] = pixel;
-				}
-				if (line + startingLine >= font->getHeight())
-					break;
-			}
-			startOffset += charWidth;
-		}
-
-		Graphics::PixelFormat pixelFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
-		Graphics::PixelBuffer buf(pixelFormat, width * height, DisposeAfterUse::YES);
-
-		uint8 *bitmapData = _textBitmap;
-		uint8 r = fgColor.getRed();
-		uint8 g = fgColor.getGreen();
-		uint8 b = fgColor.getBlue();
-		uint32 color = pixelFormat.RGBToColor(r, g, b);
-
-		if (color == 0xf81f)
-			color = 0xf81e;
-
-		int txData = 0;
-		for (int i = 0; i < width * height; i++, txData++, bitmapData++) {
-			byte pixel = *bitmapData;
-			if (pixel == 0x00) {
-				buf.setPixelAt(txData, 0xf81f);
-			} else if (pixel == 0x80) {
-				buf.setPixelAt(txData, 0);
-			} else if (pixel == 0xFF) {
-				buf.setPixelAt(txData, color);
-			}
-		}
-
-		_userData[j].width = width;
-		_userData[j].height = height;
-		_userData[j].x = getLineX(j);
-		_userData[j].y = getLineY(j);
-
-		_userData[j]._bitmap = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, buf, width, height);
-
-		delete[] _textBitmap;
 	}
 }
 

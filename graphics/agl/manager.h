@@ -27,6 +27,8 @@ class Mesh;
 class Texture;
 class Primitive;
 class ShadowPlane;
+class Label;
+class Font;
 
 class Manager : public Common::Singleton<Manager> {
 public:
@@ -50,6 +52,7 @@ public:
 	Light *createLight(Light::Type type);
 	Primitive *createPrimitive();
 	ShadowPlane *createShadowPlane();
+	Label *createLabel(Font *font, const Common::String &string);
 
 // private:
 	Renderer *_renderer;

@@ -212,6 +212,10 @@ ShadowPlane *TinyGLRenderer::createShadowPlane() {
 
 }
 
+Label *TinyGLRenderer::createLabel(Font *font, const Common::String &string) {
+
+}
+
 const char *TinyGLRenderer::prettyString() const {
 	return "ResidualVM: Software 3D Renderer";
 }

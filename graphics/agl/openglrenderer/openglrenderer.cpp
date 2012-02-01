@@ -5,6 +5,7 @@
 #include "common/foreach.h"
 
 #include "math/vector3d.h"
+#include "math/rect2d.h"
 
 #include "graphics/pixelbuffer.h"
 
@@ -12,6 +13,8 @@
 #include "graphics/agl/light.h"
 #include "graphics/agl/primitive.h"
 #include "graphics/agl/shadowplane.h"
+#include "graphics/agl/label.h"
+#include "graphics/agl/font.h"
 
 #include "graphics/agl/openglrenderer/openglrenderer.h"
 #include "graphics/agl/openglrenderer/gltarget.h"
@@ -34,6 +37,81 @@ PFNGLDELETEPROGRAMSARBPROC glDeleteProgramsARB;
 #endif
 
 namespace AGL {
+
+class GLLabel : public Label {
+public:
+	GLLabel(Font *font, const Common::String &string)
+		: Label(font, string) {
+
+	}
+
+	void draw(int x, int y) const {
+		int _screenWidth = 640;
+		int _screenHeight = 480;
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, _screenWidth, _screenHeight, 0, 0, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glMatrixMode(GL_TEXTURE);
+		glLoadIdentity();
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glDisable(GL_LIGHTING);
+		glEnable(GL_TEXTURE_2D);
+		glDepthMask(GL_FALSE);
+
+		Font *font = getFont();
+
+		glColor3ubv(getTextColor().getData());
+
+		font->bind();
+
+		int numLines = getNumLines();
+		for (int j = 0; j < numLines; ++j) {
+			const Common::String &line = getLine(j);
+			Common::Rect lineRect = getLineRect(j);
+
+			int lx = x + lineRect.left;
+			int ly = y + lineRect.top;
+
+			for (uint i = 0; i < line.size(); ++i) {
+				uint8 character = line[i];
+				Math::Rect2d texrect = font->getCharTextureRect(character);
+				Math::Rect2d quadrect = font->getCharQuadRect(character);
+
+				quadrect.translate(Math::Vector2d(lx, ly));
+
+				glBegin(GL_QUADS);
+				glTexCoord2fv(texrect.getTopLeft().getData());
+				glVertex2fv(quadrect.getTopLeft().getData());
+
+				glTexCoord2fv(texrect.getTopRight().getData());
+				glVertex2fv(quadrect.getTopRight().getData());
+
+				glTexCoord2fv(texrect.getBottomRight().getData());
+				glVertex2fv(quadrect.getBottomRight().getData());
+
+				glTexCoord2fv(texrect.getBottomLeft().getData());
+				glVertex2fv(quadrect.getBottomLeft().getData());
+				glEnd();
+
+				lx += font->getCharWidth(character);
+			}
+		}
+
+		glColor3f(1, 1, 1);
+
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_LIGHTING);
+		glDepthMask(GL_TRUE);
+	}
+};
 
 class GLPrimitive : public Primitive {
 public:
@@ -436,6 +514,10 @@ Primitive *OpenGLRenderer::createPrimitive() {
 
 ShadowPlane *OpenGLRenderer::createShadowPlane() {
 	return new GLShadowPlane();
+}
+
+Label *OpenGLRenderer::createLabel(Font *font, const Common::String &string) {
+	return new GLLabel(font, string);
 }
 
 void OpenGLRenderer::pushMatrix() {

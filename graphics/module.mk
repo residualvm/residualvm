@@ -22,6 +22,8 @@ MODULE_OBJS := \
 	color.o \
 	agl/manager.o \
 	agl/target.o \
+	agl/font.o \
+	agl/label.o \
 	agl/bitmap2d.o \
 	agl/texture.o \
 	agl/primitive.o \

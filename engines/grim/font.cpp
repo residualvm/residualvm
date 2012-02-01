@@ -22,6 +22,12 @@
 
 #include "common/endian.h"
 
+#include "math/rect2d.h"
+
+#include "graphics/pixelbuffer.h"
+
+#include "graphics/agl/manager.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/savegame.h"
@@ -34,12 +40,12 @@
 namespace Grim {
 
 Font::Font(const Common::String &filename, Common::SeekableReadStream *data) :
-		PoolObject<Font, MKTAG('F', 'O', 'N', 'T')>(), _userData(0) {
+		PoolObject<Font, MKTAG('F', 'O', 'N', 'T')>() {
 	load(filename, data);
 }
 
 Font::Font() :
-		PoolObject<Font, MKTAG('F', 'O', 'N', 'T')>(), _userData(0) {
+		PoolObject<Font, MKTAG('F', 'O', 'N', 'T')>() {
 	_charIndex = NULL;
 }
 
@@ -49,7 +55,6 @@ Font::~Font() {
 		delete[] _charHeaders;
 		delete[] _fontData;
 	}
-	g_driver->destroyFont(this);
 }
 
 void Font::load(const Common::String &filename, Common::SeekableReadStream *data) {
@@ -96,7 +101,78 @@ void Font::load(const Common::String &filename, Common::SeekableReadStream *data
 
 	data->read(_fontData, _dataSize);
 
-	g_driver->createFont(this);
+
+	// Create the texture
+	const byte *bitmapData = getFontData();
+	uint dataSize = getDataSize();
+
+	uint8 bpp = 4;
+	uint8 charsWide = 16;
+	uint8 charsHigh = 16;
+
+	byte *texDataPtr = new byte[dataSize * bpp];
+	byte *dat = texDataPtr;
+
+	for (uint i = 0; i < dataSize; i++, texDataPtr += bpp, bitmapData++) {
+		byte pixel = *bitmapData;
+		if (pixel == 0x00) {
+			texDataPtr[0] = texDataPtr[1] = texDataPtr[2] = texDataPtr[3] = 0;
+		} else if (pixel == 0x80) {
+			texDataPtr[0] = texDataPtr[1] = texDataPtr[2] = 0;
+			texDataPtr[3] = 255;
+		} else if (pixel == 0xFF) {
+			texDataPtr[0] = texDataPtr[1] = texDataPtr[2] = texDataPtr[3] = 255;
+		}
+	}
+	_quadSize = 0;
+	for (int i = 0; i < 256; ++i) {
+		int width = getCharDataWidth(i), height = getCharDataHeight(i);
+		int m = MAX(width, height);
+		if (m > _quadSize)
+			_quadSize = m;
+	}
+	assert(_quadSize < 64);
+	if (_quadSize < 8)
+		_quadSize = 8;
+	if (_quadSize < 16)
+		_quadSize = 16;
+	else if (_quadSize < 32)
+		_quadSize = 32;
+	else if (_quadSize < 64)
+		_quadSize = 64;
+
+	uint arraySize = _quadSize * _quadSize * bpp * charsWide * charsHigh;
+	byte *temp = new byte[arraySize];
+	if (!temp)
+		error("Could not allocate %d bytes", arraySize);
+
+	memset(temp, 0, arraySize);
+
+	for (int i = 0, row = 0; i < 256; ++i) {
+		int width = getCharDataWidth(i), height = getCharDataHeight(i);
+		int32 d = getCharOffset(i);
+		for (int x = 0; x < height; ++x) {
+			// a is the offset to get to the correct row.
+			// b is the offset to get to the correct line in the character.
+			// c is the offset of the character from the start of the row.
+			uint a = row * _quadSize * _quadSize * bpp * charsHigh;
+			uint b = x * _quadSize * charsWide * bpp;
+			uint c = 0;
+			if (i != 0)
+				c = ((i - 1) % 16) * _quadSize * bpp;
+
+			uint pos = a + b + c;
+			uint pos2 = d * bpp + x * width * bpp;
+			assert(pos + width * bpp <= arraySize);
+			assert(pos2 + width * bpp <= dataSize * bpp);
+			memcpy(temp + pos, dat + pos2, width * bpp);
+		}
+		if (i != 0 && i % charsWide == 0)
+			++row;
+	}
+
+	Graphics::PixelFormat f(4, 8, 8, 8, 8, 0, 8, 16, 24);
+	setTexture(AGLMan.createTexture(Graphics::PixelBuffer(f, temp), _quadSize * charsWide, _quadSize * charsHigh));
 }
 
 uint16 Font::getCharIndex(unsigned char c) const {
@@ -129,12 +205,31 @@ uint16 Font::getCharIndex(unsigned char c) const {
 	return 0;
 }
 
+int Font::getCharWidth(unsigned char c) const {
+	return MAX((int)_charHeaders[getCharIndex(c)].width, getCharDataWidth(c));
+}
+
 int Font::getStringLength(const Common::String &text) const {
 	int result = 0;
 	for (uint32 i = 0; i < text.size(); ++i) {
 		result += MAX(getCharDataWidth(text[i]), getCharWidth(text[i]));
 	}
 	return result;
+}
+
+Math::Rect2d Font::getCharTextureRect(unsigned char c) const {
+	float width = 1 / 16.f;
+	float cx = ((c - 1) % 16) / 16.0f;
+	float cy = ((c - 1) / 16) / 16.0f;
+
+	return Math::Rect2d(cx, cy, width, width);
+}
+
+Math::Rect2d Font::getCharQuadRect(unsigned char c) const {
+	float y = getCharStartingLine(c) + getBaseOffsetY();
+	float x = getCharStartingCol(c);
+
+	return Math::Rect2d(x, y, _quadSize, _quadSize);
 }
 
 void Font::saveState(SaveGame *state) const {

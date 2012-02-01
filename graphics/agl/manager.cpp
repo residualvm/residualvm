@@ -91,4 +91,8 @@ ShadowPlane *Manager::createShadowPlane() {
 	return _renderer->createShadowPlane();
 }
 
+Label *Manager::createLabel(Font *font, const Common::String &string) {
+	return _renderer->createLabel(font, string);
+}
+
 }
