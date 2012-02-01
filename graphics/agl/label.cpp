@@ -30,6 +30,7 @@ void Label::setTextColor(const Graphics::Color &color) {
 
 void Label::wrapWords(int maxWidth) {
 	_lines.clear();
+	_maxLineWidth = 0;
 
 	Common::String msg = _text;
 	Common::String message;
@@ -115,7 +116,7 @@ Common::Rect Label::getLineRect(int line) const {
 	if (_alignment == Center)
 		x = -( length/ 2);
 	else if (_alignment == Right)
-		x = getBoundingRect().width();
+		x = -_maxLineWidth;
 
 	return Common::Rect(x, height * line, length, height);
 }
