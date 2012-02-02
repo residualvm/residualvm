@@ -35,6 +35,7 @@
 #include "engines/grim/inputdialog.h"
 #include "engines/grim/debug.h"
 #include "engines/grim/emi/animationemi.h"
+#include "engines/grim/emi/costumeemi.h"
 #include "engines/grim/emi/modelemi.h"
 #include "engines/grim/emi/skeleton.h"
 #include "engines/grim/patchr.h"
@@ -330,10 +331,14 @@ Costume *ResourceLoader::loadCostume(const Common::String &filename, Costume *pr
 	if (!stream) {
 		error("Could not find costume \"%s\"", filename.c_str());
 	}
-
-	Costume *result = new Costume(filename, stream, prevCost);
+	Costume *result;
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		result = new CostumeEMI(filename, stream, prevCost);		
+	} else {
+		result = new Costume(filename, stream, prevCost);
+	}
 	delete stream;
-
+	
 	return result;
 }
 
