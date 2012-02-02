@@ -81,24 +81,18 @@ GLBitmap2D::GLBitmap2D(OpenGLRenderer *rend, Bitmap2D::Type texType, const Graph
 
 		GLint format = GL_RGBA;
 		GLint type = GL_UNSIGNED_BYTE;
-		int bytes = 4;
+		int bytes = buf.getFormat().bytesPerPixel;
 		if (texType == Bitmap2D::Depth) {
 			format = GL_DEPTH_COMPONENT;
 			type = GL_UNSIGNED_SHORT;
 			bytes = 2;
+		} else if (buf.getFormat() == Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0)) {
+			format = GL_RGB;
+			type = GL_UNSIGNED_SHORT_5_6_5;
 		}
 
 		glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-
-		if (texType == Bitmap2D::Image) {
-			Graphics::PixelFormat f(4, 8, 8, 8, 8, 0, 8, 16, 24);
-			if (buf.getFormat() != f) {
-				Graphics::PixelBuffer dst(f, width * height, DisposeAfterUse::NO);
-				dst.copyBuffer(0, width * height, buf);
-				texOut = dst.getRawBuffer();
-			}
-		}
 
 		for (int i = 0; i < _numTex; i++) {
 			glBindTexture(GL_TEXTURE_2D, _texIds[i]);

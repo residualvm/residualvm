@@ -200,7 +200,7 @@ GrimEngine::~GrimEngine() {
 	g_driver = NULL;
 	delete _iris;
 	delete _fpsLabel;
-	delete _fpsFont;
+// 	delete _fpsFont;
 
 	DebugMan.clearAllDebugChannels();
 }
