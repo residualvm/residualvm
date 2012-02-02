@@ -272,9 +272,6 @@ BitmapData::~BitmapData() {
 	_keepData = false;
 	freeData();
 	if (_loaded) {
-		g_driver->destroyBitmap(this);
-	}
-	if (_bmps) {
 		for (int i = 0; i < _numImages; ++i) {
 			delete _bmps[i];
 		}
@@ -480,7 +477,8 @@ void Bitmap::draw() {
 	if (_currImage == 0)
 		return;
 
-	g_driver->drawBitmap(this, _data->_x, _data->_y);
+
+	_data->_bmps[_currImage - 1]->draw(_data->_x, _data->_y);
 }
 
 void Bitmap::draw(int x, int y) {

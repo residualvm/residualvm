@@ -165,16 +165,7 @@ void PrimitiveObject::createPolygon(Common::Point p1, Common::Point p2, Common::
 void PrimitiveObject::draw() {
 	assert(_type);
 
-<<<<<<< HEAD
-	if (_type == RECTANGLE)
-		g_driver->drawRectangle(this);
-	else if (_type == LINE)
-		g_driver->drawLine(this);
-	else if (_type == POLYGON)
-		g_driver->drawPolygon(this);
-=======
 	_primitive->draw(_x, _y);
->>>>>>> AGL: Implemented primitives.
 }
 
 void PrimitiveObject::setPos(int x, int y) {
