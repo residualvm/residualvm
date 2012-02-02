@@ -17,6 +17,7 @@ public:
 	GLuint *_texIds;
 	bool _hasTransparency;
 	int _numTex;
+	byte *_data;
 };
 
 }

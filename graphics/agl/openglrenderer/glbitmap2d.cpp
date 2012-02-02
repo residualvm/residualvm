@@ -18,23 +18,47 @@ namespace AGL {
 
 #define BITMAP_TEXTURE_SIZE 256
 
+static void drawDepthBitmap(int x, int y, int w, int h, char *data) {
+	int _screenWidth = 640;
+	int _screenHeight = 480;
+
+	if (y + h == 480) {
+		glRasterPos2i(x, _screenHeight - 1);
+		glBitmap(0, 0, 0, 0, 0, -1, NULL);
+	} else
+		glRasterPos2i(x, y + h);
+
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_ALWAYS);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	glDepthMask(GL_TRUE);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+
+	glDrawPixels(w, h, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, data);
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glDepthFunc(GL_LESS);
+}
+
 GLBitmap2D::GLBitmap2D(OpenGLRenderer *rend, Bitmap2D::Type texType, const Graphics::PixelBuffer &buf, int width, int height)
 	: Bitmap2D(texType, width, height),
 	  _renderer(rend) {
 
+	byte *texOut = buf.getRawBuffer();
+
 	if (texType == Bitmap2D::Depth) {
-		uint16 *zbufPtr = reinterpret_cast<uint16 *>(buf.getRawBuffer());
-		for (int i = 0; i < (width * height); i++) {
-			uint16 val = READ_LE_UINT16(buf.getRawBuffer() + 2 * i);
-			// fix the value if it is incorrectly set to the bitmap transparency color
-			if (val == 0xf81f) {
-				val = 0;
-			}
-			zbufPtr[i] = 0xffff - ((uint32) val) * 0x10000 / 100 / (0x10000 - val);
+		Graphics::PixelFormat f(2, 5, 6, 5, 0, 11, 5, 0, 0);
+		if (buf.getFormat() != f) {
+			Graphics::PixelBuffer dst(f, width * height, DisposeAfterUse::NO);
+			dst.copyBuffer(0, width * height, buf);
+			texOut = dst.getRawBuffer();
 		}
 
 		// Flip the zbuffer image to match what GL expects
 		if (!_renderer->_useDepthShader) {
+			uint16 *zbufPtr = reinterpret_cast<uint16 *>(texOut);
 			for (int y = 0; y < height / 2; y++) {
 				uint16 *ptr1 = zbufPtr + y * width;
 				uint16 *ptr2 = zbufPtr + (height - 1 - y) * width;
@@ -44,6 +68,7 @@ GLBitmap2D::GLBitmap2D(OpenGLRenderer *rend, Bitmap2D::Type texType, const Graph
 					*ptr2 = tmp;
 				}
 			}
+			_data = texOut;
 		}
 	}
 	if (texType == Bitmap2D::Image || _renderer->_useDepthShader) {
@@ -54,7 +79,6 @@ GLBitmap2D::GLBitmap2D(OpenGLRenderer *rend, Bitmap2D::Type texType, const Graph
 		glGenTextures(_numTex, _texIds);
 
 		byte *texData = 0;
-		byte *texOut = 0;
 
 		GLint format = GL_RGBA;
 		GLint type = GL_UNSIGNED_BYTE;
@@ -68,35 +92,14 @@ GLBitmap2D::GLBitmap2D(OpenGLRenderer *rend, Bitmap2D::Type texType, const Graph
 		glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
-// 		int bpp = buf.getFormat().bytesPerPixel * 8;
-// 		if (texType == Bitmap2D::Image && bpp == 16 /*&& bitmap->_colorFormat != BM_RGB1555*/) {
-			if (texData == 0)
-				texData = new byte[4 * width * height];
-			// Convert data to 32-bit RGBA format
-			byte *texDataPtr = texData;
-			uint16 *bitmapData = reinterpret_cast<uint16 *>(buf.getRawBuffer());
-			for (int i = 0; i < width * height; i++, texDataPtr += 4, bitmapData++) {
-				uint16 pixel = *bitmapData;
-				int r = pixel >> 11;
-				texDataPtr[0] = (r << 3) | (r >> 2);
-				int g = (pixel >> 5) & 0x3f;
-				texDataPtr[1] = (g << 2) | (g >> 4);
-				int b = pixel & 0x1f;
-				texDataPtr[2] = (b << 3) | (b >> 2);
-				if (pixel == 0xf81f) { // transparent
-					texDataPtr[3] = 0;
-					_hasTransparency = true;
-				} else {
-					texDataPtr[3] = 255;
-				}
+		if (texType == Bitmap2D::Image) {
+			Graphics::PixelFormat f(4, 8, 8, 8, 8, 0, 8, 16, 24);
+			if (buf.getFormat() != f) {
+				Graphics::PixelBuffer dst(f, width * height, DisposeAfterUse::NO);
+				dst.copyBuffer(0, width * height, buf);
+				texOut = dst.getRawBuffer();
 			}
-			texOut = texData;
-// 		} else if (bitmap->_format == 1 && bitmap->_colorFormat == BM_RGB1555) {
-// 			bitmap->convertToColorFormat(pic, Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
-// 			texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
-// 		} else {
-// 			texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
-// 		}
+		}
 
 		for (int i = 0; i < _numTex; i++) {
 			glBindTexture(GL_TEXTURE_2D, _texIds[i]);
@@ -137,7 +140,6 @@ void GLBitmap2D::draw(int texX, int texY) {
 	int _screenWidth = 640;
 	int _screenHeight = 480;
 
-	GLuint *textures;
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0, _screenWidth, _screenHeight, 0, 0, 1);
@@ -158,7 +160,7 @@ void GLBitmap2D::draw(int texX, int texY) {
 	// If drawing a Z-buffer image, but no shaders are available, fall back to the glDrawPixels method.
 	if (getType() == Bitmap2D::Depth && !_renderer->_useDepthShader) {
 		// Only draw the manual zbuffer when enabled
-		// 		drawDepthBitmap(bitmap->getX(), bitmap->getY(), bitmap->getWidth(), bitmap->getHeight(), (char *)bitmap->getData(bitmap->getActiveImage() - 1).getRawBuffer());
+		drawDepthBitmap(texX, texY, getWidth(), getHeight(), (char *)_data);
 		glEnable(GL_LIGHTING);
 		return;
 	}
@@ -171,9 +173,9 @@ void GLBitmap2D::draw(int texX, int texY) {
 		glDepthFunc(GL_ALWAYS);
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_TRUE);
-		#ifdef GL_ARB_fragment_program
+#ifdef GL_ARB_fragment_program
 		glEnable(GL_FRAGMENT_PROGRAM_ARB);
-		#endif
+#endif
 	}
 
 	glEnable(GL_SCISSOR_TEST);
@@ -205,9 +207,9 @@ void GLBitmap2D::draw(int texX, int texY) {
 	} else {
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glDepthFunc(GL_LESS);
-		#ifdef GL_ARB_fragment_program
+#ifdef GL_ARB_fragment_program
 		glDisable(GL_FRAGMENT_PROGRAM_ARB);
-		#endif
+#endif
 	}
 	glEnable(GL_LIGHTING);
 }

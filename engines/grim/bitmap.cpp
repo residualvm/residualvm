@@ -201,10 +201,33 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 			}
 		}
 #endif
-		if (_format == 1)
+		if (_format == 1) {
+			Graphics::PixelFormat f(4, 8, 8, 8, 8, 0, 8, 16, 24);
+			Graphics::PixelBuffer dst(f, _width * _height, DisposeAfterUse::NO);
+
+			for (int j = 0; j < _width * _height; ++j) {
+				if (_data[i].getValueAt(j) == 0xf81f) { //transparency
+					dst.setPixelAt(j, 0, 0, 0, 0);
+				} else {
+					dst.setPixelAt(j, _data[i]);
+				}
+			}
+			_data[i].free();
+			_data[i] = dst;
+
 			_bmps[i] = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, _data[i], _width, _height);
-		else
-			_bmps[i] = 0;
+		} else {
+			uint16 *zbufPtr = reinterpret_cast<uint16 *>(_data[i].getRawBuffer());
+			for (int j = 0; j < (_width * _height); j++) {
+				uint16 val = READ_LE_UINT16(_data[i].getRawBuffer(j));
+				// fix the value if it is incorrectly set to the bitmap transparency color
+				if (val == 0xf81f) {
+					val = 0;
+				}
+				zbufPtr[j] = 0xffff - ((uint32) val) * 0x10000 / 100 / (0x10000 - val);
+			}
+			_bmps[i] = AGLMan.createBitmap2D(AGL::Bitmap2D::Depth, _data[i], _width, _height);
+		}
 	}
 
 	// Initially, no GPU-side textures created. the createBitmap
