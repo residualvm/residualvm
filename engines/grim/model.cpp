@@ -25,7 +25,7 @@
 #include "graphics/agl/mesh.h"
 #include "graphics/agl/meshface.h"
 #include "graphics/agl/manager.h"
-#include "graphics/agl/renderer.h"
+#include "graphics/agl/modelview.h"
 
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
@@ -676,11 +676,8 @@ void ModelNode::loadBinary(Common::SeekableReadStream *data, ModelNode *hierNode
 void ModelNode::draw() const {
 	translateViewpoint();
 	if (_hierVisible) {
-		g_driver->translateViewpointStart();
-		g_driver->translateViewpoint(_pivot);
-
-		AGLMan._renderer->pushMatrix();
-		AGLMan._renderer->translate(_pivot.x(),_pivot.y(),_pivot.z());
+		AGL::ModelView::pushMatrix();
+		AGL::ModelView::translate(_pivot);
 
 		if (!g_driver->isShadowModeActive()) {
 			Sprite *sprite = _sprite;
@@ -693,9 +690,7 @@ void ModelNode::draw() const {
 		if (_mesh && _meshVisible) {
 			_mesh->draw();
 		}
-
-		g_driver->translateViewpointFinish();
-		AGLMan._renderer->popMatrix();
+		AGL::ModelView::popMatrix();
 
 		if (_child) {
 			_child->draw();
@@ -817,23 +812,16 @@ void ModelNode::translateViewpoint() const {
 	Math::Angle animPitch = _pitch + _animPitch;
 	Math::Angle animYaw = _yaw + _animYaw;
 	Math::Angle animRoll = _roll + _animRoll;
-	g_driver->translateViewpointStart();
 
-	g_driver->translateViewpoint(animPos);
-	g_driver->rotateViewpoint(animYaw, Math::Vector3d(0, 0, 1));
-	g_driver->rotateViewpoint(animPitch, Math::Vector3d(1, 0, 0));
-	g_driver->rotateViewpoint(animRoll, Math::Vector3d(0, 1, 0));
-
-	AGLMan._renderer->pushMatrix();
-	AGLMan._renderer->translate(animPos.x(), animPos.y(),animPos.z());
-	AGLMan._renderer->rotate(animYaw.getDegrees(), 0,0,1);
-	AGLMan._renderer->rotate(animPitch.getDegrees(),1,0,0);
-	AGLMan._renderer->rotate(animRoll.getDegrees(),0,1,0);
+	AGL::ModelView::pushMatrix();
+	AGL::ModelView::translate(animPos);
+	AGL::ModelView::rotate(animYaw, 0, 0, 1);
+	AGL::ModelView::rotate(animPitch, 1, 0, 0);
+	AGL::ModelView::rotate(animRoll, 0, 1, 0);
 }
 
 void ModelNode::translateViewpointBack() const {
-	AGLMan._renderer->popMatrix();
-	g_driver->translateViewpointFinish();
+	AGL::ModelView::popMatrix();
 }
 
 } // end of namespace Grim

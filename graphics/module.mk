@@ -28,6 +28,7 @@ MODULE_OBJS := \
 	agl/texture.o \
 	agl/primitive.o \
 	agl/shadowplane.o \
+	agl/modelview.o \
 	agl/renderer.o \
 	agl/rendererfactory.o \
 	agl/tinyglrenderer/tinyglrenderer.o \

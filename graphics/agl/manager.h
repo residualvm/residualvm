@@ -56,9 +56,11 @@ public:
 	Label *createLabel(Font *font, const Common::String &string);
 	Label *createLabel(Font *font);
 
-// private:
+private:
 	Renderer *_renderer;
 	Target *_target;
+
+	friend class ModelView;
 };
 
 #define AGLMan AGL::Manager::instance()

@@ -33,7 +33,7 @@
 #include "math/rect2d.h"
 
 #include "graphics/agl/manager.h"
-#include "graphics/agl/renderer.h"
+#include "graphics/agl/modelview.h"
 
 #include "engines/grim/debug.h"
 #include "engines/grim/actor.h"
@@ -1203,28 +1203,17 @@ void Actor::draw() {
 
 			_shadowArray[l].plane->enable(_shadowArray[l].pos, s_shadowColor);
 
-			AGLMan._renderer->pushMatrix();
-			AGLMan._renderer->translate(_pos.x(),_pos.y(),_pos.z());
-			AGLMan._renderer->rotate(_yaw.getDegrees(),0,0,1);
-			AGLMan._renderer->rotate(_pitch.getDegrees(),1,0,0);
-			AGLMan._renderer->rotate(_roll.getDegrees(),0,1,0);
+			setModelView();
 			costume->draw();
-			AGLMan._renderer->popMatrix();
-
+			AGL::ModelView::popMatrix();
 
 			_shadowArray[l].plane->disable();
 		}
 
 		// normal draw actor
-// 		g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
-		AGLMan._renderer->pushMatrix();
-		AGLMan._renderer->translate(_pos.x(),_pos.y(),_pos.z());
-		AGLMan._renderer->rotate(_yaw.getDegrees(),0,0,1);
-		AGLMan._renderer->rotate(_pitch.getDegrees(),1,0,0);
-		AGLMan._renderer->rotate(_roll.getDegrees(),0,1,0);
+		setModelView();
 		costume->draw();
-		AGLMan._renderer->popMatrix();
-// 		g_driver->finishActorDraw();
+		AGL::ModelView::popMatrix();
 	}
 
 	if (_mustPlaceText) {
@@ -1233,13 +1222,9 @@ void Actor::draw() {
 		x1 = y1 = 1000;
 		x2 = y2 = -1000;
 		if (!_costumeStack.empty()) {
-			AGLMan._renderer->pushMatrix();
-			AGLMan._renderer->translate(_pos.x(),_pos.y(),_pos.z());
-			AGLMan._renderer->rotate(_yaw.getDegrees(),0,0,1);
-			AGLMan._renderer->rotate(_pitch.getDegrees(),1,0,0);
-			AGLMan._renderer->rotate(_roll.getDegrees(),0,1,0);
+			setModelView();
 			_costumeStack.back()->calculate2DBoundingBox(&x1, &y1, &x2, &y2);
-			AGLMan._renderer->popMatrix();
+			AGL::ModelView::popMatrix();
 		}
 
 		TextObject *textObject = TextObject::getPool().getObject(_sayLineText);
@@ -1611,6 +1596,14 @@ void Actor::collisionHandlerCallback(Actor *other) const {
 
 void Actor::setShadowColor(const Color &color) {
 	s_shadowColor = color;
+}
+
+void Actor::setModelView() {
+	AGL::ModelView::pushMatrix();
+	AGL::ModelView::translate(_pos);
+	AGL::ModelView::rotate(_yaw, 0, 0, 1);
+	AGL::ModelView::rotate(_pitch, 1, 0, 0);
+	AGL::ModelView::rotate(_roll, 0, 1, 0);
 }
 
 

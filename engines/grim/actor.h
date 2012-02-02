@@ -466,6 +466,7 @@ private:
 	void addShadowPlane(const char *n, Set *scene, int shadowId);
 	bool shouldDrawShadow(int shadowId);
 	void stopTalking();
+	void setModelView();
 	bool stopMumbleChore();
 	/**
 	 * Given a start point and a destination this function returns a position
