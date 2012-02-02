@@ -15,7 +15,6 @@ public:
 
 	OpenGLRenderer *_renderer;
 	GLuint *_texIds;
-	bool _hasTransparency;
 	int _numTex;
 	byte *_data;
 };

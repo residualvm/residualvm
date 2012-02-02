@@ -72,7 +72,6 @@ GLBitmap2D::GLBitmap2D(OpenGLRenderer *rend, Bitmap2D::Type texType, const Graph
 		}
 	}
 	if (texType == Bitmap2D::Image || _renderer->_useDepthShader) {
-		_hasTransparency = false;
 		_numTex = ((width + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
 						  ((height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
 		_texIds = new GLuint[_numTex];
@@ -147,9 +146,8 @@ void GLBitmap2D::draw(int texX, int texY) {
 	glLoadIdentity();
 	glMatrixMode(GL_TEXTURE);
 	glLoadIdentity();
-	// A lot more may need to be put there : disabling Alpha test, blending, ...
-	// For now, just keep this here :-)
-	if (getType() == Bitmap2D::Image && _hasTransparency) {
+
+	if (getType() == Bitmap2D::Image) {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	} else

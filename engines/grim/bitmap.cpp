@@ -209,7 +209,9 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 				if (_data[i].getValueAt(j) == 0xf81f) { //transparency
 					dst.setPixelAt(j, 0, 0, 0, 0);
 				} else {
-					dst.setPixelAt(j, _data[i]);
+					uint8 r, g, b;
+					_data[i].getRGBAt(j, r, g, b);
+					dst.setPixelAt(j, 255, r, g, b);
 				}
 			}
 			_data[i].free();
