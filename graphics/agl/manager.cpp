@@ -76,6 +76,10 @@ Texture *Manager::createTexture(const Graphics::PixelBuffer &buf, int width, int
 	return _renderer->createTexture(buf, width, height);
 }
 
+Texture *Manager::createTexture(Graphics::Surface *surface) {
+	return _renderer->createTexture(Graphics::PixelBuffer(surface->format, (byte *)surface->pixels), surface->w, surface->h);
+}
+
 Mesh *Manager::createMesh() {
 	return _renderer->createMesh();
 }

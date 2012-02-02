@@ -48,6 +48,7 @@ public:
 	Bitmap2D *createBitmap2D(Bitmap2D::Type type, const Graphics::PixelBuffer &buf, int width, int height);
 	Bitmap2D *createBitmap2D(Graphics::Surface *surface);
 	Texture *createTexture(const Graphics::PixelBuffer &buf, int width, int height);
+	Texture *createTexture(Graphics::Surface *surface);
 	Mesh *createMesh();
 	Light *createLight(Light::Type type);
 	Primitive *createPrimitive();
