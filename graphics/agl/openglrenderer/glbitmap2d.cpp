@@ -3,6 +3,9 @@
 
 #include "graphics/pixelbuffer.h"
 
+#include "graphics/agl/manager.h"
+#include "graphics/agl/target.h"
+
 #include "graphics/agl/openglrenderer/openglrenderer.h"
 #include "graphics/agl/openglrenderer/glbitmap2d.h"
 
@@ -19,11 +22,10 @@ namespace AGL {
 #define BITMAP_TEXTURE_SIZE 256
 
 static void drawDepthBitmap(int x, int y, int w, int h, char *data) {
-	int _screenWidth = 640;
-	int _screenHeight = 480;
+	const int screenHeight = AGLMan.getTarget()->getHeight();
 
-	if (y + h == 480) {
-		glRasterPos2i(x, _screenHeight - 1);
+	if (y + h == screenHeight) {
+		glRasterPos2i(x, screenHeight - 1);
 		glBitmap(0, 0, 0, 0, 0, -1, NULL);
 	} else
 		glRasterPos2i(x, y + h);
@@ -130,12 +132,12 @@ void GLBitmap2D::draw(int texX, int texY) {
 	int texWidth = getWidth();
 	int texHeight = getHeight();
 
-	int _screenWidth = 640;
-	int _screenHeight = 480;
+	const int screenWidth = AGLMan.getTarget()->getWidth();
+	const int screenHeight = AGLMan.getTarget()->getHeight();
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, _screenWidth, _screenHeight, 0, 0, 1);
+	glOrtho(0, screenWidth, screenHeight, 0, 0, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glMatrixMode(GL_TEXTURE);
@@ -171,7 +173,7 @@ void GLBitmap2D::draw(int texX, int texY) {
 	}
 
 	glEnable(GL_SCISSOR_TEST);
-	glScissor(texX, _screenHeight - (texY + texHeight), texWidth, texHeight);
+	glScissor(texX, screenHeight - (texY + texHeight), texWidth, texHeight);
 	int cur_tex_idx = 0;
 	for (int y = texY; y < (texY + texHeight); y += BITMAP_TEXTURE_SIZE) {
 		for (int x = texX; x < (texX + texWidth); x += BITMAP_TEXTURE_SIZE) {

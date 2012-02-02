@@ -9,6 +9,7 @@
 
 #include "graphics/pixelbuffer.h"
 
+#include "graphics/agl/manager.h"
 #include "graphics/agl/texture.h"
 #include "graphics/agl/light.h"
 #include "graphics/agl/primitive.h"
@@ -46,12 +47,12 @@ public:
 	}
 
 	void draw(int x, int y) const {
-		int _screenWidth = 640;
-		int _screenHeight = 480;
+		const int screenWidth = AGLMan.getTarget()->getWidth();
+		const int screenHeight = AGLMan.getTarget()->getHeight();
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glOrtho(0, _screenWidth, _screenHeight, 0, 0, 1);
+		glOrtho(0, screenWidth, screenHeight, 0, 0, 1);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glMatrixMode(GL_TEXTURE);
@@ -121,12 +122,12 @@ public:
 	}
 
 	void draw(float x, float y) {
-		int _screenWidth = 640;
-		int _screenHeight = 480;
+		const int screenWidth = AGLMan.getTarget()->getWidth();
+		const int screenHeight = AGLMan.getTarget()->getHeight();
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glOrtho(0, _screenWidth, _screenHeight, 0, 0, 1);
+		glOrtho(0, screenWidth, screenHeight, 0, 0, 1);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glTranslatef(x, y, 0);
@@ -371,27 +372,14 @@ public:
 Target *OpenGLRenderer::setupScreen(int screenW, int screenH, bool fullscreen, int bpp) {
 	g_system->setupScreen(screenW, screenH, fullscreen, true);
 
-// 	_screenWidth = screenW;
-// 	_screenHeight = screenH;
-// 	_isFullscreen = g_system->getFeatureState(OSystem::kFeatureFullscreenMode);
 	_useDepthShader = false;
-//
-	// Load emergency built-in font
-	loadEmergFont();
-//
-// 	_screenSize = _screenWidth * _screenHeight * 4;
-// 	_storedDisplay = new byte[_screenSize];
-// 	memset(_storedDisplay, 0, _screenSize);
-// 	_smushNumTex = 0;
-//
-// 	_currentShadowArray = NULL;
-//
+
 	GLfloat ambientSource[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientSource);
 
 	glEnable(GL_LIGHTING);
 
-// 	glPolygonOffset(-6.0, -6.0);
+	glPolygonOffset(-6.0, -6.0);
 
 	initExtensions();
 
@@ -476,19 +464,6 @@ void OpenGLRenderer::initExtensions() {
 	}
 #endif
 }
-
-void OpenGLRenderer::loadEmergFont() {
-// 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-//
-// 	_emergFont = glGenLists(128);
-// 	for (int i = 32; i < 127; i++) {
-// 		glNewList(_emergFont + i, GL_COMPILE);
-// 		glBitmap(8, 13, 0, 2, 10, 0, Font::emerFont[i - 32]);
-// 		glEndList();
-// 	}
-}
-
-#define BITMAP_TEXTURE_SIZE 256
 
 Bitmap2D *OpenGLRenderer::createBitmap2D(Bitmap2D::Type texType, const Graphics::PixelBuffer &buf, int width, int height) {
 	GLBitmap2D *bitmap = new GLBitmap2D(this, texType, buf, width, height);

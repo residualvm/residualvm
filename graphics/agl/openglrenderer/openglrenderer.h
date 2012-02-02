@@ -45,7 +45,6 @@ public:
 
 private:
 	void initExtensions();
-	void loadEmergFont();
 
 	GLuint _emergFont;
 	int _smushNumTex;
