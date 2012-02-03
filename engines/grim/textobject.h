@@ -37,16 +37,18 @@ class Font;
 
 class TextObjectCommon {
 public:
+	virtual ~TextObjectCommon() {}
+
 	void setX(int x) { _x = x; _positioned = false; }
 	int getX() { return _x; }
 
 	void setY(int y) { _y = y; _positioned = false; }
 	int getY() { return _y; }
 
-	void setFont(Font *font) { _font = font; }
+	virtual void setFont(Font *font) { _font = font; }
 	Font *getFont() { return _font; }
 
-	void setFGColor(const Color &fgColor) { _fgColor = fgColor; }
+	virtual void setFGColor(const Color &fgColor) { _fgColor = fgColor; }
 	Color getFGColor() { return _fgColor; }
 
 	void setJustify(int justify) { _justify = justify; }
@@ -100,6 +102,8 @@ public:
 
 	void destroy();
 	void reposition();
+
+	void setFGColor(const Color &fgColor);
 
 	void saveState(SaveGame *state) const;
 	bool restoreState(SaveGame *state);

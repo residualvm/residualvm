@@ -168,6 +168,14 @@ void TextObject::reposition() {
 	}
 }
 
+void TextObject::setFGColor(const Color &fgColor) {
+	TextObjectCommon::setFGColor(fgColor);
+
+	if (_label) {
+		_label->setTextColor(fgColor);
+	}
+}
+
 void TextObject::setupText() {
 	Common::String msg = LuaBase::instance()->parseMsgText(_textID.c_str(), NULL);
 
