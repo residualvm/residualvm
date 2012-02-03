@@ -23,6 +23,10 @@
 #ifndef GRIM_IRIS_H
 #define GRIM_IRIS_H
 
+namespace AGL {
+class Primitive;
+}
+
 namespace Grim {
 
 class SaveGame;
@@ -55,6 +59,7 @@ private:
 	int _targetY;
 	int _lenght;
 	int _currTime;
+	AGL::Primitive *_primitive;
 };
 
 } // end of namespace Grim

@@ -413,7 +413,7 @@ void GrimEngine::handleDebugLoadResource() {
 }
 
 void GrimEngine::drawPrimitives() {
-// 	_iris->draw();
+	_iris->draw();
 
 	// Draw text
 	foreach (TextObject *t, TextObject::getPool()) {

@@ -20,6 +20,10 @@
  *
  */
 
+#include "graphics/agl/manager.h"
+#include "graphics/agl/primitive.h"
+#include "graphics/agl/target.h"
+
 #include "engines/grim/iris.h"
 #include "engines/grim/gfx_base.h"
 #include "engines/grim/savegame.h"
@@ -30,10 +34,11 @@ namespace Grim {
 Iris::Iris() :
 	_playing(false), _direction(Open) {
 
+	_primitive = NULL;
 }
 
 Iris::~Iris() {
-
+	delete _primitive;
 }
 
 void Iris::play(Iris::Direction dir, int x, int y, int lenght) {
@@ -43,17 +48,72 @@ void Iris::play(Iris::Direction dir, int x, int y, int lenght) {
 	_targetY = y;
 	_lenght = lenght;
 	_currTime = 0;
+
+	if (!_primitive) {
+		_primitive = AGLMan.createPrimitive();
+		Color c(0, 0, 0);
+		_primitive->setGlobalColor(c);
+
+		const int height = AGLMan.getTarget()->getHeight();
+		const int width = AGLMan.getTarget()->getWidth();
+
+		const float dummy = 0.f;
+
+		_primitive->begin(AGL::Primitive::Quads);
+
+		_primitive->vertex(Math::Vector2d(0.f, 0.f));
+		_primitive->vertex(Math::Vector2d(dummy, 0.f));
+		_primitive->vertex(Math::Vector2d(dummy, height));
+		_primitive->vertex(Math::Vector2d(0.f, height));
+
+		_primitive->vertex(Math::Vector2d(dummy, height));
+		_primitive->vertex(Math::Vector2d(width, height));
+		_primitive->vertex(Math::Vector2d(width, dummy));
+		_primitive->vertex(Math::Vector2d(dummy, dummy));
+
+		_primitive->vertex(Math::Vector2d(dummy, height));
+		_primitive->vertex(Math::Vector2d(width, height));
+		_primitive->vertex(Math::Vector2d(width, 0.f));
+		_primitive->vertex(Math::Vector2d(dummy, 0.f));
+
+		_primitive->vertex(Math::Vector2d(dummy, dummy));
+		_primitive->vertex(Math::Vector2d(dummy, dummy));
+		_primitive->vertex(Math::Vector2d(dummy, 0.f));
+		_primitive->vertex(Math::Vector2d(dummy, 0.f));
+
+		_primitive->end();
+	}
 }
 
 void Iris::draw() {
 	if (!_playing) {
 		if (_direction == Close && g_grim->getMode() != GrimEngine::SmushMode) {
-			g_driver->irisAroundRegion(320, 240, 320, 240);
+			_x1 = _x2 = 320;
+			_y1 = _y2 = 240;
+		} else {
+			return;
 		}
-		return;
 	}
 
-	g_driver->irisAroundRegion(_x1, _y1, _x2, _y2);
+	const int height = AGLMan.getTarget()->getHeight();
+	const int width = AGLMan.getTarget()->getWidth();
+
+	_primitive->setVertex(1, Math::Vector2d(_x1, 0.f));
+	_primitive->setVertex(2, Math::Vector2d(_x1, height));
+
+	_primitive->setVertex(4, Math::Vector2d(_x1, height));
+	_primitive->setVertex(6, Math::Vector2d(width, _y2));
+	_primitive->setVertex(7, Math::Vector2d(_x1, _y2));
+
+	_primitive->setVertex(8, Math::Vector2d(_x2, height));
+	_primitive->setVertex(11, Math::Vector2d(_x2, 0.f));
+
+	_primitive->setVertex(12, Math::Vector2d(_x1, _y1));
+	_primitive->setVertex(13, Math::Vector2d(_x2, _y1));
+	_primitive->setVertex(14, Math::Vector2d(_x2, 0.f));
+	_primitive->setVertex(15, Math::Vector2d(_x1, 0.f));
+
+	_primitive->draw(0, 0);
 }
 
 void Iris::update(int frameTime) {

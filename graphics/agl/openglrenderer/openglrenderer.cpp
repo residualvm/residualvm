@@ -151,12 +151,19 @@ public:
 				mode = GL_QUADS;
 		}
 
+		const bool globalColor = useGlobalColor();
+		if (globalColor) {
+			glColor4ubv(getGlobalColor().getData());
+		}
+
 		glBegin(mode);
 		uint num = getNumVertices();
 		for (uint i = 0; i < num; ++i) {
-			const Graphics::Color &c = getColor(i);
 			const Math::Vector2d &v = getVertex(i);
-			glColor4ubv(c.getData());
+			if (!globalColor) {
+				const Graphics::Color &c = getColor(i);
+				glColor4ubv(c.getData());
+			}
 			glVertex2fv(v.getData());
 			if (breaksAt(i)) {
 				glEnd();
