@@ -156,21 +156,16 @@ public:
 			glColor4ubv(getGlobalColor().getData());
 		}
 
-		glBegin(mode);
-		uint num = getNumVertices();
+		glEnableClientState(GL_VERTEX_ARRAY);
+		uint num = getNumSubs();
 		for (uint i = 0; i < num; ++i) {
-			const Math::Vector2d &v = getVertex(i);
 			if (!globalColor) {
-				const Graphics::Color &c = getColor(i);
-				glColor4ubv(c.getData());
+				glColorPointer(4, GL_UNSIGNED_BYTE, 0, getColorPointer(i));
 			}
-			glVertex2fv(v.getData());
-			if (breaksAt(i)) {
-				glEnd();
-				glBegin(mode);
-			}
+			glVertexPointer(2, GL_FLOAT, 0, getVertexPointer(i));
+			glDrawArrays(mode, 0, getNumVertices(i));
 		}
-		glEnd();
+		glDisableClientState(GL_VERTEX_ARRAY);
 
 		glColor3f(1.0f, 1.0f, 1.0f);
 

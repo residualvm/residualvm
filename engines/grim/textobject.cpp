@@ -143,6 +143,7 @@ int TextObject::getTextCharPosition(int pos) {
 
 void TextObject::destroy() {
 	delete _label;
+	_label = NULL;
 }
 
 void TextObject::reposition() {

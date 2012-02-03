@@ -98,20 +98,20 @@ void Iris::draw() {
 	const int height = AGLMan.getTarget()->getHeight();
 	const int width = AGLMan.getTarget()->getWidth();
 
-	_primitive->setVertex(1, Math::Vector2d(_x1, 0.f));
-	_primitive->setVertex(2, Math::Vector2d(_x1, height));
+	_primitive->setVertex(0, 1, Math::Vector2d(_x1, 0.f));
+	_primitive->setVertex(0, 2, Math::Vector2d(_x1, height));
 
-	_primitive->setVertex(4, Math::Vector2d(_x1, height));
-	_primitive->setVertex(6, Math::Vector2d(width, _y2));
-	_primitive->setVertex(7, Math::Vector2d(_x1, _y2));
+	_primitive->setVertex(0, 4, Math::Vector2d(_x1, height));
+	_primitive->setVertex(0, 6, Math::Vector2d(width, _y2));
+	_primitive->setVertex(0, 7, Math::Vector2d(_x1, _y2));
 
-	_primitive->setVertex(8, Math::Vector2d(_x2, height));
-	_primitive->setVertex(11, Math::Vector2d(_x2, 0.f));
+	_primitive->setVertex(0, 8, Math::Vector2d(_x2, height));
+	_primitive->setVertex(0, 11, Math::Vector2d(_x2, 0.f));
 
-	_primitive->setVertex(12, Math::Vector2d(_x1, _y1));
-	_primitive->setVertex(13, Math::Vector2d(_x2, _y1));
-	_primitive->setVertex(14, Math::Vector2d(_x2, 0.f));
-	_primitive->setVertex(15, Math::Vector2d(_x1, 0.f));
+	_primitive->setVertex(0, 12, Math::Vector2d(_x1, _y1));
+	_primitive->setVertex(0, 13, Math::Vector2d(_x2, _y1));
+	_primitive->setVertex(0, 14, Math::Vector2d(_x2, 0.f));
+	_primitive->setVertex(0, 15, Math::Vector2d(_x1, 0.f));
 
 	_primitive->draw(0, 0);
 }

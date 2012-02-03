@@ -29,39 +29,43 @@ public:
 
 	void begin(Mode mode);
 
+	void vertex(float x, float y);
 	void vertex(const Math::Vector2d &vertex);
 	void color(const Graphics::Color &color);
 
-	void breakPolygon();
+	void newSubPolygon();
 
 	virtual void end() { }
 
 	void setGlobalColor(const Graphics::Color &color);
 
-	void setVertex(uint i, const Math::Vector2d &vertex);
-	void setColor(uint i, const Graphics::Color &c);
+	void setVertex(uint sub, uint i, const Math::Vector2d &vertex);
+	void setColor(uint sub, uint i, const Graphics::Color &c);
 
-	virtual void setup() { }
 	virtual void draw(float x, float y) = 0;
 
+protected:
 	inline Mode getMode() const { return _mode; }
-	inline uint getNumVertices() const { return _numVertices; }
-	inline const Math::Vector2d &getVertex(int i) const { return _vertices[i]; }
-	inline const Graphics::Color &getColor(int i) const { return _colors[i]; }
-	inline bool breaksAt(uint i) const { return _breaks.contains(i); }
+	inline uint getNumSubs() const { return _prims.size(); }
+	inline uint getNumVertices(uint sub) const { return _prims[sub]._numVertices; }
 
 	inline const Graphics::Color &getGlobalColor() const { return _globalColor; }
 	inline bool useGlobalColor() const { return _useGlobalColor; }
 
+	inline const float *getVertexPointer(uint sub) const { return _prims[sub]._vertices.begin(); }
+	inline const byte *getColorPointer(uint sub) const { return _prims[sub]._colors.begin(); }
+
 private:
+	struct SubPrimitive {
+		Common::Array<float> _vertices;
+		Common::Array<byte> _colors;
+		int _numVertices;
+	};
+	Common::Array<SubPrimitive> _prims;
+	SubPrimitive *_currentPrim;
 	Mode _mode;
-	uint _numVertices;
-	Common::Array<Math::Vector2d> _vertices;
-	Common::Array<Graphics::Color> _colors;
 	Graphics::Color _globalColor;
 	bool _useGlobalColor;
-
-	Common::HashMap<int, bool> _breaks;
 };
 
 }

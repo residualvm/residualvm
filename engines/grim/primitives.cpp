@@ -91,24 +91,22 @@ void PrimitiveObject::createRectangle(Common::Point p1, Common::Point p2, const 
 	_color = color;
 	_filled = filled;
 
+	streamDbg()<<this<<p1.x<<p1.y<<p2.x<<p2.y<<filled;
+
 	_primitive = AGLMan.createPrimitive();
+	_primitive->setGlobalColor(color);
 
 	if (filled) {
 		_primitive->begin(AGL::Primitive::Quads);
 	} else {
 		_primitive->begin(AGL::Primitive::LineLoop);
 	}
-	_primitive->vertex(Math::Vector2d(p1.x, p1.y));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
 
-	_primitive->vertex(Math::Vector2d(p2.x + 1, p1.y));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
+	_primitive->vertex(p1.x, p1.y);
+	_primitive->vertex(p2.x + 1, p1.y);
+	_primitive->vertex(p2.x + 1, p2.y + 1);
+	_primitive->vertex(p1.x, p2.y + 1);
 
-	_primitive->vertex(Math::Vector2d(p2.x + 1, p2.y + 1));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
-
-	_primitive->vertex(Math::Vector2d(p1.x, p2.y + 1));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
 	_primitive->end();
 
 	_x = _y = 0;
@@ -121,13 +119,13 @@ void PrimitiveObject::createLine(Common::Point p1, Common::Point p2, const Color
 	_color = color;
 
 	_primitive = AGLMan.createPrimitive();
+	_primitive->setGlobalColor(color);
 
 	_primitive->begin(AGL::Primitive::LineLoop);
-	_primitive->vertex(Math::Vector2d(p1.x, p1.y));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
 
-	_primitive->vertex(Math::Vector2d(p2.x, p2.y));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
+	_primitive->vertex(p1.x, p1.y);
+	_primitive->vertex(p2.x, p2.y);
+
 	_primitive->end();
 
 	_x = _y = 0;
@@ -142,21 +140,18 @@ void PrimitiveObject::createPolygon(Common::Point p1, Common::Point p2, Common::
 	_color = color;
 
 	_primitive = AGLMan.createPrimitive();
+	_primitive->setGlobalColor(color);
 
 	_primitive->begin(AGL::Primitive::LineLoop);
-	_primitive->vertex(Math::Vector2d(p1.x, p1.y));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
 
-	_primitive->vertex(Math::Vector2d(p2.x, p2.y));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
+	_primitive->vertex(p1.x, p1.y);
+	_primitive->vertex(p2.x, p2.y);
 
-	_primitive->breakPolygon();
+	_primitive->newSubPolygon();
 
-	_primitive->vertex(Math::Vector2d(p3.x, p3.y));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
+	_primitive->vertex(p3.x, p3.y);
+	_primitive->vertex(p4.x, p4.y);
 
-	_primitive->vertex(Math::Vector2d(p4.x, p4.y));
-	_primitive->color(Graphics::Color(color.getRed(), color.getGreen(), color.getBlue()));
 	_primitive->end();
 
 	_x = _y = 0;
@@ -178,10 +173,7 @@ void PrimitiveObject::setPos(int x, int y) {
 }
 
 void PrimitiveObject::setColor(const Color &color) {
-	Graphics::Color c(color.getRed(), color.getGreen(), color.getBlue());
-	for (uint i = 0; i < _primitive->getNumVertices(); ++i) {
-		_primitive->setColor(i, c);
-	}
+	_primitive->setGlobalColor(color);
 }
 
 } // end of namespace Grim

@@ -71,7 +71,7 @@ void Lua_V1::ChangeTextObject() {
 					break;
 				setTextObjectParams(textObject, paramObj);
 				textObject->reposition();
-				textObject->destroy();
+// 				textObject->destroy();
 			} else {
 				line = lua_getstring(paramObj);
 				textObject->setText(line);
