@@ -28,6 +28,7 @@
 
 namespace Common {
 class SeekableReadStream;
+class Rect;
 }
 
 namespace AGL {
@@ -125,7 +126,7 @@ public:
 	void loadText(TextSplitter *ts, Material *materials[]);
 	void changeMaterials(Material *materials[]);
 	void draw() const;
-	bool calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const;
+	bool calculate2DBoundingBox(Common::Rect *rect) const;
 	void update();
 	Mesh() : _numFaces(0) { }
 	~Mesh();
@@ -156,7 +157,7 @@ public:
 	~ModelNode();
 	void loadBinary(Common::SeekableReadStream *data, ModelNode *hierNodes, const Model::Geoset *g);
 	void draw() const;
-	bool calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const;
+	bool calculate2DBoundingBox(Common::Rect *rect) const;
 	void addChild(ModelNode *child);
 	void removeChild(ModelNode *child);
 	void setMatrix(const Math::Matrix4 &matrix);

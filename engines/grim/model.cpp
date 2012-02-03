@@ -21,6 +21,7 @@
  */
 
 #include "common/endian.h"
+#include "common/rect.h"
 
 #include "graphics/agl/mesh.h"
 #include "graphics/agl/meshface.h"
@@ -595,13 +596,13 @@ void Mesh::draw() const {
 		AGLMan.enableLighting();
 }
 
-bool Mesh::calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const {
-	int l, t, r, b;
-	if (_mesh->calculate2DBoundingBox(&l, &t, &r, &b)) {
-		*left = MIN(*left, l);
-		*top = MIN(*top, t);
-		*right = MAX(*right, r);
-		*bottom = MAX(*bottom, b);
+bool Mesh::calculate2DBoundingBox(Common::Rect *rect) const {
+	Common::Rect r;
+	if (_mesh->calculate2DBoundingBox(&r)) {
+		rect->left = MIN(rect->left, r.left);
+		rect->top = MIN(rect->top, r.top);
+		rect->right = MAX(rect->right, r.right);
+		rect->bottom = MAX(rect->bottom, r.bottom);
 
 		return true;
 	}
@@ -703,7 +704,7 @@ void ModelNode::draw() const {
 	}
 }
 
-bool ModelNode::calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const {
+bool ModelNode::calculate2DBoundingBox(Common::Rect *rect) const {
 	translateViewpoint();
 	bool ok = false;
 	if (_hierVisible) {
@@ -711,21 +712,21 @@ bool ModelNode::calculate2DBoundingBox(int *left, int *top, int *right, int *bot
 		g_driver->translateViewpoint(_pivot);
 
 		if (_mesh && _meshVisible) {
-			ok = _mesh->calculate2DBoundingBox(left, top, right, bottom);
+			ok = _mesh->calculate2DBoundingBox(rect);
 		}
 
 		g_driver->translateViewpointFinish();
 
 		if (_child) {
 			// IMPORTANT! Do NOT do 'ok = ok || c->...', since if ok is true it won't call calculate2DBoundingBox.
-			ok = _child->calculate2DBoundingBox(left, top, right, bottom) || ok;
+			ok = _child->calculate2DBoundingBox(rect) || ok;
 		}
 	}
 	translateViewpointBack();
 
 	if (_sibling) {
 		// IMPORTANT! Do NOT do 'ok = ok || c->...', since if ok is true it won't call calculate2DBoundingBox.
-		ok = _sibling->calculate2DBoundingBox(left, top, right, bottom) || ok;
+		ok = _sibling->calculate2DBoundingBox(rect) || ok;
 	}
 	return ok;
 }

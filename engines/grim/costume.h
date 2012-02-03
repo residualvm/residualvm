@@ -29,6 +29,10 @@
 
 #include "engines/grim/object.h"
 
+namespace Common {
+class Rect;
+}
+
 namespace Grim {
 
 typedef uint32 tag32;
@@ -79,7 +83,7 @@ public:
 	void animate();
 	void setupTextures();
 	virtual void draw();
-	bool calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const;
+	bool calculate2DBoundingBox(Common::Rect *rect) const;
 	void setPosRotate(const Math::Vector3d &pos, const Math::Angle &pitch,
 					  const Math::Angle &yaw, const Math::Angle &roll);
 	Math::Matrix4 getMatrix() const;

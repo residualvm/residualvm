@@ -54,7 +54,7 @@ public:
 	int getNumNodes();
 	Model *getModel() { return _obj; }
 	void draw();
-	bool calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const;
+	bool calculate2DBoundingBox(Common::Rect *rect) const;
 
 protected:
 	Common::String _filename;

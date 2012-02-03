@@ -24,7 +24,7 @@ public:
 
 	void draw(Texture *texture);
 
-	bool calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const;
+	bool calculate2DBoundingBox(Common::Rect *rect) const;
 
 	Common::Array<float> _vertices;
 	Common::Array<float> _textures;

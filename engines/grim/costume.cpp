@@ -413,13 +413,13 @@ void Costume::draw() {
 			_components[i]->draw();
 }
 
-bool Costume::calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const {
+bool Costume::calculate2DBoundingBox(Common::Rect *rect) const {
 	bool ok = false;
 	for (int i = 0; i < _numComponents; i++) {
 		ModelComponent *c = dynamic_cast<ModelComponent *>(_components[i]);
 		if (c) {
 			// IMPORTANT! Do NOT do 'ok = ok || c->...', since if ok is true it won't call calculate2DBoundingBox.
-			ok = c->calculate2DBoundingBox(left, top, right, bottom) || ok;
+			ok = c->calculate2DBoundingBox(rect) || ok;
 		}
 	}
 	return ok;

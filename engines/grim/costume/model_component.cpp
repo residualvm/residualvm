@@ -190,7 +190,7 @@ void ModelComponent::draw() {
 	translateObject(true);
 }
 
-bool ModelComponent::calculate2DBoundingBox(int *left, int *top, int *right, int *bottom) const {
+bool ModelComponent::calculate2DBoundingBox(Common::Rect *rect) const {
 	// If the object was drawn by being a component
 	// of it's parent then don't draw it
 
@@ -200,7 +200,7 @@ bool ModelComponent::calculate2DBoundingBox(int *left, int *top, int *right, int
 		// with the setup of the parent
 	translateObject(false);
 
-	bool ok = _hier->calculate2DBoundingBox(left, top, right, bottom);
+	bool ok = _hier->calculate2DBoundingBox(rect);
 
 	// Need to un-translate when done
 	translateObject(true);

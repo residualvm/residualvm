@@ -1217,24 +1217,23 @@ void Actor::draw() {
 	}
 
 	if (_mustPlaceText) {
-		Common::Rect rect(0, 0, 0, 0);
-		int x1, y1, x2, y2;
-		x1 = y1 = 1000;
-		x2 = y2 = -1000;
+		Common::Rect rect;
+		rect.left = rect.top = 1000;
+		rect.right = rect.bottom = -1000;
 		if (!_costumeStack.empty()) {
 			setModelView();
-			_costumeStack.back()->calculate2DBoundingBox(&x1, &y1, &x2, &y2);
+			_costumeStack.back()->calculate2DBoundingBox(&rect);
 			AGL::ModelView::popMatrix();
 		}
 
 		TextObject *textObject = TextObject::getPool().getObject(_sayLineText);
 		if (textObject) {
-			if (x1 == -1000 || x2 == 1000 || y2 == 1000) {
+			if (rect.isValidRect()) {
+				textObject->setX((rect.left + rect.right) / 2);
+				textObject->setY(rect.top);
+			} else {
 				textObject->setX(640 / 2);
 				textObject->setY(463);
-			} else {
-				textObject->setX((x1 + x2) / 2);
-				textObject->setY(y1);
 			}
 			textObject->reset();
 		}

@@ -42,7 +42,7 @@ void GLMesh::draw(Texture *texture) {
 
 }
 
-bool GLMesh::calculate2DBoundingBox(int *l, int *t, int *r, int *b) const {
+bool GLMesh::calculate2DBoundingBox(Common::Rect *rect) const {
 	GLdouble top = 1000;
 	GLdouble right = -1000;
 	GLdouble left = 1000;
@@ -97,10 +97,10 @@ bool GLMesh::calculate2DBoundingBox(int *l, int *t, int *r, int *b) const {
 		return false;
 	}
 
-	*l = left;
-	*t = top;
-	*r = right;
-	*b = bottom;
+	rect->left = left;
+	rect->top = top;
+	rect->right = right;
+	rect->bottom = bottom;
 	return true;
 }
 
