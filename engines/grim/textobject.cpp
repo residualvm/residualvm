@@ -54,7 +54,7 @@ TextObject::TextObject(bool blastDraw, bool isSpeech) :
 
 TextObject::TextObject() :
 	PoolObject<TextObject, MKTAG('T', 'E', 'X', 'T')>(), TextObjectCommon() {
-
+	_label = NULL;
 }
 
 TextObject::~TextObject() {
@@ -218,6 +218,7 @@ void TextObject::setupText() {
 		maxWidth = _x;
 	}
 
+	delete _label;
 	_label = AGLMan.createLabel(getFont(), msg);
 	_label->setTextColor(_fgColor);
 	_label->wrapWords(maxWidth);

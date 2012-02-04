@@ -39,6 +39,9 @@
 
 namespace Grim {
 
+bool Bitmap::s_renderBitmaps = true;
+bool Bitmap::s_renderZBitmaps = true;
+
 static bool decompress_codec3(const char *compressed, char *result, int maxBytes);
 
 Common::HashMap<Common::String, BitmapData *> *BitmapData::_bitmaps = NULL;
@@ -120,6 +123,7 @@ BitmapData::BitmapData(const Common::String &fname) {
 	_data = 0;
 	_loaded = false;
 	_keepData = true;
+	_bmps = NULL;
 }
 
 void BitmapData::load() {
@@ -257,7 +261,7 @@ BitmapData::BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const cha
 	_bpp = buf.getFormat().bytesPerPixel * 8;
 	_hasTransparency = false;
 	_colorFormat = BM_RGB565;
-	_data = new Graphics::PixelBuffer[_numImages];
+	_data = NULL;
 	_loaded = true;
 	_keepData = true;
 
@@ -268,6 +272,8 @@ BitmapData::BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const cha
 BitmapData::BitmapData() :
 	_numImages(0), _width(0), _height(0), _x(0), _y(0), _format(0), _numTex(0),
 	_bpp(0), _colorFormat(0), _texIds(0), _hasTransparency(false), _data(NULL), _refCount(1) {
+	_data = NULL;
+	_bmps = NULL;
 }
 
 BitmapData::~BitmapData() {
@@ -482,22 +488,17 @@ void Bitmap::restoreState(SaveGame *state) {
 }
 
 void Bitmap::draw() {
-	_data->load();
-	if (_currImage == 0)
-		return;
-
-
-	_data->_bmps[_currImage - 1]->draw(_data->_x, _data->_y);
+	draw(_data->_x, _data->_y);
 }
 
 void Bitmap::draw(int x, int y) {
 	_data->load();
 	if (_currImage == 0)
 		return;
+	if ((getFormat() == 1 && !s_renderBitmaps) || (getFormat() == 5 && !s_renderZBitmaps))
+		return;
 
 	_data->_bmps[_currImage - 1]->draw(x, y);
-
-// 	g_driver->drawBitmap(this, x, y);
 }
 
 void Bitmap::setActiveImage(int n) {
@@ -524,6 +525,32 @@ Bitmap::~Bitmap() {
 
 const Graphics::PixelFormat &Bitmap::getPixelFormat(int num) const {
 	return getData(num).getFormat();
+}
+
+void Bitmap::staticSaveState(SaveGame *state) {
+	state->beginSection('STVB');
+
+	state->writeBool(s_renderBitmaps);
+	state->writeBool(s_renderZBitmaps);
+
+	state->endSection();
+}
+
+void Bitmap::staticRestoreState(SaveGame *state) {
+	state->beginSection('STVB');
+
+	s_renderBitmaps = state->readBool();
+	s_renderZBitmaps = state->readBool();
+
+	state->endSection();
+}
+
+void Bitmap::renderBitmaps(bool render) {
+	s_renderBitmaps = render;
+}
+
+void Bitmap::renderZBitmaps(bool render) {
+	s_renderZBitmaps = render;
 }
 
 void BitmapData::convertToColorFormat(int num, const Graphics::PixelFormat &format) {

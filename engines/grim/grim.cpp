@@ -761,6 +761,7 @@ void GrimEngine::savegameRestore() {
 	delete _currSet;
 	_currSet = NULL;
 
+	Bitmap::staticRestoreState(_savedState);
 	Bitmap::getPool().restoreObjects(_savedState);
 	Debug::debug(Debug::Engine, "Bitmaps restored succesfully.");
 
@@ -848,7 +849,7 @@ void GrimEngine::storeSaveGameImage(SaveGame *state) {
 	EngineMode mode = g_grim->getMode();
 	g_grim->setMode(_previousMode);
 	g_grim->updateDisplayScene();
-	g_driver->storeDisplay();
+	AGLMan.getTarget()->storeContent();
 	Graphics::Surface *screenshot = AGLMan.getTarget()->getScreenshot(Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0), width, height);
 	g_grim->setMode(mode);
 	state->beginSection('SIMG');
@@ -889,6 +890,7 @@ void GrimEngine::savegameSave() {
 
 	savegameCallback();
 
+	Bitmap::staticSaveState(_savedState);
 	Bitmap::getPool().saveObjects(_savedState);
 	Debug::debug(Debug::Engine, "Bitmaps saved succesfully.");
 

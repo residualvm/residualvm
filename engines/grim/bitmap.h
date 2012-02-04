@@ -149,6 +149,11 @@ public:
 	void saveState(SaveGame *state) const;
 	void restoreState(SaveGame *state);
 
+	static void staticSaveState(SaveGame *state);
+	static void staticRestoreState(SaveGame *state);
+	static void renderBitmaps(bool render);
+	static void renderZBitmaps(bool render);
+
 	virtual ~Bitmap();
 
 private:
@@ -160,6 +165,9 @@ private:
 	 * _currImage==0 means a null image is chosen.
 	 */
 	int _currImage;
+
+	static bool s_renderBitmaps;
+	static bool s_renderZBitmaps;
 };
 
 } // end of namespace Grim

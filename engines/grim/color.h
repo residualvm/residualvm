@@ -35,6 +35,7 @@ public:
 	Color(byte r, byte g, byte b);
 	Color(const Color& c);
 	Color(uint32 c);
+	Color(const Graphics::Color &c);
 
 	byte &getRed() { return _vals[0]; }
 	byte getRed() const { return _vals[0]; }
@@ -46,7 +47,6 @@ public:
 	uint32 toEncodedValue();
 
 	Color& operator =(const Color &c);
-	Color& operator =(Color *c);
 
 	operator Graphics::Color() const;
 };

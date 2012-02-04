@@ -453,31 +453,35 @@ void Light::saveState(SaveGame *savedState) const {
 	savedState->writeBool(_enabled);
 
 	//type
-// 	savedState->writeLEString(_type);
+	savedState->writeLESint32(_light->getType());
 
-// 	savedState->writeVector3d(_pos);
-// 	savedState->writeVector3d(_dir);
-//
-// 	savedState->writeColor(_color);
-//
-// 	savedState->writeFloat(_intensity);
+	savedState->writeVector3d(_light->getPosition());
+	savedState->writeVector3d(_light->getDirection());
+
+	savedState->writeColor(Color(_light->getColor()));
+
+	savedState->writeFloat(_light->getIntensity());
+	savedState->writeFloat(_light->getCutoff());
 // 	savedState->writeFloat(_umbraangle);
-// 	savedState->writeFloat(_penumbraangle);
 }
 
 bool Light::restoreState(SaveGame *savedState) {
 	_name = savedState->readString();
 	_enabled = savedState->readBool();
-// 	_type = savedState->readString();
 
-// 	_pos           = savedState->readVector3d();
-// 	_dir           = savedState->readVector3d();
-//
-// 	_color         = savedState->readColor();
-//
-// 	_intensity     = savedState->readFloat();
+	AGL::Light::Type t = (AGL::Light::Type)savedState->readLESint32();
+	_light = AGLMan.createLight(t);
+
+	_light->setPosition(savedState->readVector3d());
+	_light->setDirection(savedState->readVector3d());
+
+	_light->setColor(savedState->readColor());
+
+	_light->setIntensity(savedState->readFloat());
+
+	float penumbraangle = savedState->readFloat();
+	_light->setCutoff(t == AGL::Light::Spot ? penumbraangle : 180.f);
 // 	_umbraangle    = savedState->readFloat();
-// 	_penumbraangle = savedState->readFloat();
 
 	return true;
 }

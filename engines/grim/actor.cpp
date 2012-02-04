@@ -54,7 +54,7 @@
 
 namespace Grim {
 
-Color Actor::s_shadowColor;
+Color Actor::s_shadowColor = Color(0, 0, 0);
 
 Actor::Actor(const Common::String &actorName) :
 		PoolObject<Actor, MKTAG('A', 'C', 'T', 'R')>(), _name(actorName), _setName(""),
@@ -233,6 +233,8 @@ void Actor::saveState(SaveGame *savedState) const {
 	for (Common::List<Math::Vector3d>::const_iterator i = _path.begin(); i != _path.end(); ++i) {
 		savedState->writeVector3d(*i);
 	}
+
+	savedState->writeLEUint32(s_shadowColor.toEncodedValue());
 }
 
 bool Actor::restoreState(SaveGame *savedState) {
@@ -330,7 +332,7 @@ bool Actor::restoreState(SaveGame *savedState) {
 
 		size = savedState->readLEUint32();
 		Set *scene = NULL;
-		for (uint32 j = 0; j < size; ++j) {
+		for (uint j = 0; j < size; ++j) {
 			Common::String setName = savedState->readString();
 			Common::String secName = savedState->readString();
 			if (!scene || scene->getName() != setName) {
@@ -364,6 +366,8 @@ bool Actor::restoreState(SaveGame *savedState) {
 	for (uint32 i = 0; i < size; ++i) {
 		_path.push_back(savedState->readVector3d());
 	}
+
+	s_shadowColor = savedState->readLEUint32();
 
 	return true;
 }

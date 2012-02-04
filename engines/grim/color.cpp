@@ -47,6 +47,10 @@ Color::Color(uint32 c) {
 	_vals[2] = c & 0xFF;
 }
 
+Color::Color(const Graphics::Color &c) {
+	memcpy(_vals, c.getData(), 3);
+}
+
 uint32 Color::toEncodedValue() {
 	return	(_vals[0] << 16) |
 			(_vals[1] << 8 ) |
@@ -57,13 +61,6 @@ Color& Color::operator =(const Color &c) {
 	_vals[0] = c._vals[0];
 	_vals[1] = c._vals[1];
 	_vals[2] = c._vals[2];
-	return *this;
-}
-
-Color& Color::operator =(Color *c) {
-	_vals[0] = c->_vals[0];
-	_vals[1] = c->_vals[1];
-	_vals[2] = c->_vals[2];
 	return *this;
 }
 

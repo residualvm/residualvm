@@ -95,7 +95,6 @@ void Lua_V1::BlastImage() {
 
 void Lua_V1::CleanBuffer() {
 	AGLMan.getTarget()->restoreContent();
-// 	g_driver->copyStoredToDisplay();
 }
 
 void Lua_V1::StartFullscreenMovie() {
@@ -551,8 +550,8 @@ void Lua_V1::IrisDown() {
 }
 
 void Lua_V1::PreRender() {
-	g_driver->renderBitmaps(getbool(1));
-	g_driver->renderZBitmaps(getbool(2));
+	Bitmap::renderBitmaps(getbool(1));
+	Bitmap::renderZBitmaps(getbool(2));
 }
 
 } // end of namespace Grim

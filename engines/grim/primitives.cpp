@@ -37,6 +37,7 @@ PrimitiveObject::PrimitiveObject() :
 	PoolObject<PrimitiveObject, MKTAG('P', 'R', 'I', 'M')>() {
 	_filled = false;
 	_type = 0;
+	_primitive = NULL;
 }
 
 PrimitiveObject::~PrimitiveObject() {
@@ -81,6 +82,15 @@ bool PrimitiveObject::restoreState(SaveGame *savedState) {
 	_p4.x = savedState->readLEUint16();
 	_p4.y = savedState->readLEUint16();
 
+	delete _primitive;
+	if (_type == RECTANGLE) {
+		createRectangle(_p1, _p2, _color, _filled);
+	} else if (_type == LINE) {
+		createLine(_p1, _p2, _color);
+	} else {
+		createPolygon(_p1, _p2, _p3, _p4, _color);
+	}
+
 	return true;
 }
 
@@ -90,8 +100,6 @@ void PrimitiveObject::createRectangle(Common::Point p1, Common::Point p2, const 
 	_p2 = p2;
 	_color = color;
 	_filled = filled;
-
-	streamDbg()<<this<<p1.x<<p1.y<<p2.x<<p2.y<<filled;
 
 	_primitive = AGLMan.createPrimitive();
 	_primitive->setGlobalColor(color);
