@@ -20,6 +20,71 @@
 
 namespace AGL {
 
+class TGLLight : public Light {
+public:
+	TGLLight(Light::Type type)
+		: Light(type),
+		  _id(-1) { }
+
+	void enable() {
+		if (_id == -1) {
+			// Find a free id.
+			int max;
+			tglGetIntegerv(TGL_MAX_LIGHTS, &max);
+			for (int i = 0; i < max; ++i) {
+				if (!tglIsEnabled(TGL_LIGHT0 + i)) {
+					_id = i;
+					break;
+				}
+			}
+		}
+
+		if (_id == -1) {
+			warning("Cannot init light.");
+			return;
+		}
+// 		assert(_id > -1);
+
+		tglEnable(TGL_LIGHTING);
+		float lightColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		float lightPos[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		float lightDir[] = { 0.0f, 0.0f, -1.0f };
+
+		float intensity = getIntensity() / 1.3f;
+		lightColor[0] = ((float)getColor().getRed() / 15.0f) * intensity;
+		lightColor[1] = ((float)getColor().getGreen() / 15.0f) * intensity;
+		lightColor[2] = ((float)getColor().getBlue() / 15.0f) * intensity;
+
+		if (getType() == Light::Point) {
+			memcpy(lightPos, getPosition().getData(), 3 * sizeof(float));
+		} else if (getType() == Light::Directional) {
+			lightPos[0] = -getDirection().x();
+			lightPos[1] = -getDirection().y();
+			lightPos[2] = -getDirection().z();
+			lightPos[3] = 0;
+		} else if (getType() == Light::Spot) {
+			memcpy(lightPos, getPosition().getData(), 3 * sizeof(float));
+			memcpy(lightDir, getDirection().getData(), 3 * sizeof(float));
+		}
+
+		tglDisable(TGL_LIGHT0 + _id);
+		tglLightfv(TGL_LIGHT0 + _id, TGL_DIFFUSE, lightColor);
+		tglLightfv(TGL_LIGHT0 + _id, TGL_POSITION, lightPos);
+		tglLightfv(TGL_LIGHT0 + _id, TGL_SPOT_DIRECTION, lightDir);
+		tglLightf(TGL_LIGHT0 + _id, TGL_SPOT_CUTOFF, getCutoff());
+		tglEnable(TGL_LIGHT0 + _id);
+	}
+	void disable() {
+		if (_id < 0)
+			return;
+
+		tglDisable(TGL_LIGHT0 + _id);
+		_id = -1;
+	}
+
+	int _id;
+};
+
 static void tglShadowProjection(Math::Vector3d light, Math::Vector3d plane, Math::Vector3d normal, bool dontNegate) {
 	// Based on GPL shadow projection example by
 	// (c) 2002-2003 Phaetos <phaetos@gaffga.de>
@@ -341,7 +406,7 @@ Mesh *TinyGLRenderer::createMesh() {
 }
 
 Light *TinyGLRenderer::createLight(Light::Type type) {
-	return NULL;
+	return new TGLLight(type);
 }
 
 Primitive *TinyGLRenderer::createPrimitive() {
