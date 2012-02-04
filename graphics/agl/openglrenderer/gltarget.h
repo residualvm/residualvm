@@ -12,9 +12,12 @@ public:
 
 	void clear();
 	void dim(float amount);
+	void dimRegion(int x, int y, int w, int h, float level);
 
 	void storeContent();
 	void restoreContent();
+
+	Graphics::Surface *getScreenshot(const Graphics::PixelFormat &format, int width, int height) const;
 
 	byte *_storedDisplay;
 };

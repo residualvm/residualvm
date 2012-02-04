@@ -842,7 +842,6 @@ void GrimEngine::restoreGRIM() {
 
 void GrimEngine::storeSaveGameImage(SaveGame *state) {
 	int width = 250, height = 188;
-	Bitmap *screenshot;
 
 	debug("GrimEngine::StoreSaveGameImage() started.");
 
@@ -850,13 +849,12 @@ void GrimEngine::storeSaveGameImage(SaveGame *state) {
 	g_grim->setMode(_previousMode);
 	g_grim->updateDisplayScene();
 	g_driver->storeDisplay();
-	screenshot = g_driver->getScreenshot(width, height);
+	Graphics::Surface *screenshot = AGLMan.getTarget()->getScreenshot(Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0), width, height);
 	g_grim->setMode(mode);
 	state->beginSection('SIMG');
 	if (screenshot) {
-		int size = screenshot->getWidth() * screenshot->getHeight();
-		screenshot->setActiveImage(0);
-		uint16 *data = (uint16 *)screenshot->getData().getRawBuffer();
+		int size = screenshot->w * screenshot->h;
+		uint16 *data = (uint16 *)screenshot->pixels;
 		for (int l = 0; l < size; l++) {
 			state->writeLEUint16(data[l]);
 		}

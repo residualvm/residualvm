@@ -29,6 +29,7 @@
 
 namespace Graphics {
 class PixelBuffer;
+class Surface;
 }
 
 namespace AGL {
@@ -115,6 +116,7 @@ public:
 	 */
 	Bitmap(const Common::String &filename);
 	Bitmap(const Graphics::PixelBuffer &buf, int width, int height, const char *filename);
+	Bitmap(Graphics::Surface *surface);
 	Bitmap();
 
 	static Bitmap *create(const Common::String &filename);

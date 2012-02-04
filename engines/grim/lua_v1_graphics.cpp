@@ -26,6 +26,8 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_mkdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_unlink
 
+#include "graphics/surface.h"
+
 #include "graphics/agl/manager.h"
 #include "graphics/agl/target.h"
 
@@ -467,7 +469,7 @@ void Lua_V1::DimRegion() {
 	int w = (int)lua_getnumber(lua_getparam(3));
 	int h = (int)lua_getnumber(lua_getparam(4));
 	float level = lua_getnumber(lua_getparam(5));
-	g_driver->dimRegion(x, y, w, h, level);
+	AGLMan.getTarget()->dimRegion(x, y, w, h, level);
 }
 
 void Lua_V1::ScreenShot() {
@@ -476,10 +478,13 @@ void Lua_V1::ScreenShot() {
 	GrimEngine::EngineMode mode = g_grim->getMode();
 	g_grim->setMode(GrimEngine::NormalMode);
 	g_grim->updateDisplayScene();
-	Bitmap *screenshot = g_driver->getScreenshot(width, height);
+
+	Graphics::PixelFormat format(2, 5, 6, 5, 0, 11, 5, 0, 0);
+	Graphics::Surface *screenshot = AGLMan.getTarget()->getScreenshot(format, width, height);
 	g_grim->setMode(mode);
 	if (screenshot) {
-		lua_pushusertag(screenshot->getId(), MKTAG('V','B','U','F'));
+		Bitmap *bitmap = new Bitmap(screenshot);
+		lua_pushusertag(bitmap->getId(), MKTAG('V','B','U','F'));
 	} else {
 		lua_pushnil();
 	}

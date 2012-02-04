@@ -52,11 +52,19 @@ public:
 		}
 	}
 
+	void dimRegion(int x, int y, int w, int h, float level) {
+
+	}
+
 	void storeContent() {
 		_storedDisplay.copyBuffer(0, _screenSize, _renderer->_zb->pbuf);
 	}
 	void restoreContent() {
 		_renderer->_zb->pbuf.copyBuffer(0, _screenSize, _storedDisplay);
+	}
+
+	Graphics::Surface *getScreenshot(const Graphics::PixelFormat &format, int width, int height) const {
+
 	}
 
 	TinyGLRenderer *_renderer;

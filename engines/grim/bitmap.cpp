@@ -26,6 +26,7 @@
 
 #include "graphics/colormasks.h"
 #include "graphics/pixelbuffer.h"
+#include "graphics/surface.h"
 
 #include "graphics/agl/manager.h"
 #include "graphics/agl/bitmap2d.h"
@@ -257,12 +258,11 @@ BitmapData::BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const cha
 	_hasTransparency = false;
 	_colorFormat = BM_RGB565;
 	_data = new Graphics::PixelBuffer[_numImages];
-	_data[0].create(buf.getFormat(), w * h, DisposeAfterUse::YES);
-	_data[0].copyBuffer(0, w * h, buf);
 	_loaded = true;
 	_keepData = true;
 
-	g_driver->createBitmap(this);
+	_bmps = new AGL::Bitmap2D*[_numImages];
+	_bmps[0] = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, buf, _width, _height);
 }
 
 BitmapData::BitmapData() :
@@ -436,6 +436,13 @@ Bitmap::Bitmap(const Graphics::PixelBuffer &buf, int w, int h, const char *fname
 	_data = new BitmapData(buf, w, h, fname);
 	_currImage = 1;
 }
+
+Bitmap::Bitmap(Graphics::Surface *s) :
+		PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>() {
+	_data = new BitmapData(Graphics::PixelBuffer(s->format, (byte *)s->pixels), s->w, s->h, "");
+	_currImage = 1;
+}
+
 
 Bitmap::Bitmap() :
 		PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>() {
