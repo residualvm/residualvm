@@ -47,10 +47,10 @@ public:
 	virtual ShadowPlane *createShadowPlane() = 0;
 	virtual Label *createLabel() = 0;
 
-	virtual void pushMatrix() { }
-	virtual void translate(float x, float y, float z) { }
-	virtual void rotate(float deg, float x, float y, float z) { }
-	virtual void popMatrix() { }
+	virtual void pushMatrix() = 0;
+	virtual void translate(float x, float y, float z) = 0;
+	virtual void rotate(float deg, float x, float y, float z) = 0;
+	virtual void popMatrix() = 0;
 
 	virtual const char *prettyString() const = 0;
 

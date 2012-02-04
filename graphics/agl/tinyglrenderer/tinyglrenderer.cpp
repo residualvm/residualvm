@@ -7,12 +7,16 @@
 
 #include "math/vector3d.h"
 
-#include "graphics/agl/tinyglrenderer/tinyglrenderer.h"
+#include "graphics/agl/manager.h"
 #include "graphics/agl/bitmap2d.h"
 #include "graphics/agl/target.h"
 #include "graphics/agl/shadowplane.h"
+#include "graphics/agl/texture.h"
 
 #include "graphics/tinygl/zgl.h"
+
+#include "graphics/agl/tinyglrenderer/tinyglrenderer.h"
+#include "graphics/agl/tinyglrenderer/tglmesh.h"
 
 namespace AGL {
 
@@ -70,18 +74,9 @@ public:
 	TGLShadowPlane()
 		: ShadowPlane() {
 
-		const int _gameWidth = 640;
-		const int _gameHeight = 480;
+		_shadowMaskSize = AGLMan.getTarget()->getWidth() * AGLMan.getTarget()->getHeight();
+		_shadowMask = new byte[_shadowMaskSize];
 
-		_shadowMask = new byte[_gameWidth * _gameHeight];
-		_shadowMaskSize = _gameWidth * _gameHeight;
-	}
-
-	~TGLShadowPlane() {
-		delete[] _shadowMask;
-	}
-
-	void enable(const Math::Vector3d &pos, const Graphics::Color &color) {
 		tglEnable(TGL_SHADOW_MASK_MODE);
 		memset(_shadowMask, 0, _shadowMaskSize);
 
@@ -96,20 +91,27 @@ public:
 		}
 		tglSetShadowMaskBuf(NULL);
 		tglDisable(TGL_SHADOW_MASK_MODE);
+	}
 
+	~TGLShadowPlane() {
+		delete[] _shadowMask;
+	}
 
-		tglSetShadowColor(1,1,1);
+	void enable(const Math::Vector3d &pos, const Graphics::Color &color) {
+		tglSetShadowColor(color.getRed(), color.getGreen(), color.getBlue());
 		tglSetShadowMaskBuf(_shadowMask);
 		tglPushMatrix();
 		tglShadowProjection(pos, getSectors()[0]._vertices[0], getSectors()[0]._normal, false);
 	}
 
 	void disable() {
+		tglPopMatrix();
 		tglSetShadowMaskBuf(NULL);
 	}
 
 	byte *_shadowMask;
 	int _shadowMaskSize;
+
 };
 
 class TGLBitmap2D : public Bitmap2D {
@@ -139,6 +141,8 @@ public:
 	}
 	void clear() {
 		_renderer->_zb->pbuf.clear(_screenSize);
+		memset(_renderer->_zb->zbuf, 0, _screenSize * 2);
+		memset(_renderer->_zb->zbuf2, 0, _screenSize * 4);
 	}
 
 	void dim(float amount) {
@@ -168,6 +172,36 @@ public:
 	TinyGLRenderer *_renderer;
 	int _screenSize;
 	Graphics::PixelBuffer _storedDisplay;
+};
+
+class TGLTexture : public Texture {
+public:
+	TGLTexture(const Graphics::PixelBuffer &buf, int width, int height)
+		: Texture(buf.getFormat(), width, height) {
+		TGLuint format = 0;
+		TGLuint internalFormat = 0;
+// 		if (material->_colorFormat == BM_RGBA) {
+			format = TGL_RGBA;
+			internalFormat = TGL_RGBA;
+// 		} else {	// The only other colorFormat we load right now is BGR
+// 		format = GL_BGR;
+// 		internalFormat = GL_RGB;
+// 		}
+
+		tglGenTextures(1, &_texId);
+		tglBindTexture(TGL_TEXTURE_2D, _texId);
+		tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_WRAP_S, TGL_REPEAT);
+		tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_WRAP_T, TGL_REPEAT);
+		tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_MAG_FILTER, TGL_LINEAR);
+		tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_MIN_FILTER, TGL_LINEAR);
+		tglTexImage2D(TGL_TEXTURE_2D, 0, 3, width, height, 0, format, TGL_UNSIGNED_BYTE, buf.getRawBuffer());
+	}
+
+	void bind() {
+		tglBindTexture(TGL_TEXTURE_2D, _texId);
+	}
+
+	TGLuint _texId;
 };
 
 // below funcs lookAt, transformPoint and tgluProject are from Mesa glu sources
@@ -234,7 +268,7 @@ static void lookAt(TGLfloat eyex, TGLfloat eyey, TGLfloat eyez, TGLfloat centerx
 	tglMultMatrixf(m);
 
 	tglTranslatef(-eyex, -eyey, -eyez);
-				   }
+}
 
 
 TinyGLRenderer::TinyGLRenderer() {
@@ -299,19 +333,19 @@ Bitmap2D *TinyGLRenderer::createBitmap2D(Bitmap2D::Type type, const Graphics::Pi
 }
 
 Texture *TinyGLRenderer::createTexture(const Graphics::PixelBuffer &buf, int width, int height) {
-	return NULL;
+	return new TGLTexture(buf, width, height);
 }
 
 Mesh *TinyGLRenderer::createMesh() {
-
+	return new TGLMesh();
 }
 
 Light *TinyGLRenderer::createLight(Light::Type type) {
-
+	return NULL;
 }
 
 Primitive *TinyGLRenderer::createPrimitive() {
-
+	return NULL;
 }
 
 ShadowPlane *TinyGLRenderer::createShadowPlane() {
@@ -319,7 +353,21 @@ ShadowPlane *TinyGLRenderer::createShadowPlane() {
 }
 
 Label *TinyGLRenderer::createLabel() {
+	return NULL;
+}
 
+void TinyGLRenderer::pushMatrix() {
+	tglMatrixMode(TGL_MODELVIEW);
+	tglPushMatrix();
+}
+void TinyGLRenderer::translate(float x, float y, float z) {
+	tglTranslatef(x, y, z);
+}
+void TinyGLRenderer::rotate(float deg, float x, float y, float z) {
+	tglRotatef(deg, x, y, z);
+}
+void TinyGLRenderer::popMatrix() {
+	tglPopMatrix();
 }
 
 const char *TinyGLRenderer::prettyString() const {

@@ -31,6 +31,11 @@ public:
 	ShadowPlane *createShadowPlane();
 	Label *createLabel();
 
+	void pushMatrix();
+	void translate(float x, float y, float z);
+	void rotate(float deg, float x, float y, float z);
+	void popMatrix();
+
 	const char *prettyString() const;
 
 // private:
