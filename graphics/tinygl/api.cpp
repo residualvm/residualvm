@@ -192,6 +192,18 @@ void tglDisable(int cap) {
 	TinyGL::gl_add_op(p);
 }
 
+bool tglIsEnabled(int cap) {
+	TinyGL::GLParam p[3];
+
+	p[0].op = TinyGL::OP_IsEnabled;
+	p[1].i = cap;
+	p[2].i = 0;
+
+	TinyGL::gl_add_op(p);
+
+	return p[2].i;
+}
+
 // glBegin, glEnd
 
 void tglBegin(int mode) {

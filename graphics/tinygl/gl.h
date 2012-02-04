@@ -675,6 +675,7 @@ typedef int				TGLsizei;
 
 void tglEnable(int code);
 void tglDisable(int code);
+bool tglIsEnabled(int code);
 
 void tglShadeModel(int mode);
 void tglCullFace(int mode);

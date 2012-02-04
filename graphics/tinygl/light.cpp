@@ -187,6 +187,11 @@ void gl_enable_disable_light(GLContext *c, int light, int v) {
 	}
 }
 
+bool gl_light_enabled(GLContext *c, int light) {
+	GLLight *l = &c->lights[light];
+	return l->enabled;
+}
+
 // non optimized lightening model
 void gl_shade_vertex(GLContext *c, GLVertex *v) {
 	float R, G, B, A;

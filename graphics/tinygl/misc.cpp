@@ -66,31 +66,31 @@ void glopEnableDisable(GLContext *c, GLParam *p) {
 			c->offset_states |= TGL_OFFSET_FILL;
 		else
 			c->offset_states &= ~TGL_OFFSET_FILL;
-		break; 
+		break;
 	case TGL_POLYGON_OFFSET_POINT:
 		if (v)
 			c->offset_states |= TGL_OFFSET_POINT;
 		else
 			c->offset_states &= ~TGL_OFFSET_POINT;
-		break; 
+		break;
 	case TGL_POLYGON_OFFSET_LINE:
 		if (v)
 			c->offset_states |= TGL_OFFSET_LINE;
 		else
 			c->offset_states &= ~TGL_OFFSET_LINE;
-		break; 
+		break;
 	case TGL_SHADOW_MASK_MODE:
 		if (v)
 			c->shadow_mode |= 1;
 		else
 			c->shadow_mode &= ~1;
-		break; 
+		break;
 	case TGL_SHADOW_MODE:
 		if (v)
 			c->shadow_mode |= 2;
 		else
 			c->shadow_mode &= ~2;
-		break; 
+		break;
 	default:
 		if (code >= TGL_LIGHT0 && code < TGL_LIGHT0 + T_MAX_LIGHTS) {
 			gl_enable_disable_light(c, code - TGL_LIGHT0, v);
@@ -98,6 +98,54 @@ void glopEnableDisable(GLContext *c, GLParam *p) {
 			//warning("glEnableDisable: 0x%X not supported.", code);
 		}
 		break;
+	}
+}
+
+void glopIsEnabled(GLContext *c, GLParam *p) {
+	int code = p[1].i;
+	int &v = p[2].i;
+
+	switch (code) {
+		case TGL_CULL_FACE:
+			v = c->cull_face_enabled;
+			break;
+		case TGL_LIGHTING:
+			v = c->lighting_enabled;
+			break;
+		case TGL_COLOR_MATERIAL:
+			v = c->color_material_enabled;
+			break;
+		case TGL_TEXTURE_2D:
+			v = c->texture_2d_enabled;
+			break;
+		case TGL_NORMALIZE:
+			v = c->normalize_enabled;
+			break;
+		case TGL_DEPTH_TEST:
+			v = c->depth_test;
+			break;
+		case TGL_POLYGON_OFFSET_FILL:
+			v = c->offset_states & TGL_OFFSET_FILL;
+			break;
+		case TGL_POLYGON_OFFSET_POINT:
+			v = c->offset_states & TGL_OFFSET_POINT;
+			break;
+		case TGL_POLYGON_OFFSET_LINE:
+			v = c->offset_states & TGL_OFFSET_LINE;
+			break;
+		case TGL_SHADOW_MASK_MODE:
+			v = c->shadow_mode & 1;
+			break;
+		case TGL_SHADOW_MODE:
+			v = c->shadow_mode & 2;
+			break;
+		default:
+			if (code >= TGL_LIGHT0 && code < TGL_LIGHT0 + T_MAX_LIGHTS) {
+				v = gl_light_enabled(c, code - TGL_LIGHT0);
+			} else {
+				//warning("glEnableDisable: 0x%X not supported.", code);
+			}
+			break;
 	}
 }
 
@@ -119,7 +167,7 @@ void glopFrontFace(GLContext *c, GLParam *p) {
 void glopPolygonMode(GLContext *c, GLParam *p) {
 	int face = p[1].i;
 	int mode = p[2].i;
-  
+
 	switch(face) {
 	case TGL_BACK:
 		c->polygon_mode_back = mode;
