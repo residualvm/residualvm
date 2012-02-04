@@ -1,6 +1,7 @@
 
 #include "common/system.h"
 #include "common/rect.h"
+#include "common/foreach.h"
 
 #include "graphics/pixelbuffer.h"
 
@@ -9,10 +10,107 @@
 #include "graphics/agl/tinyglrenderer/tinyglrenderer.h"
 #include "graphics/agl/bitmap2d.h"
 #include "graphics/agl/target.h"
+#include "graphics/agl/shadowplane.h"
 
 #include "graphics/tinygl/zgl.h"
 
 namespace AGL {
+
+static void tglShadowProjection(Math::Vector3d light, Math::Vector3d plane, Math::Vector3d normal, bool dontNegate) {
+	// Based on GPL shadow projection example by
+	// (c) 2002-2003 Phaetos <phaetos@gaffga.de>
+	float d, c;
+	float mat[16];
+	float nx, ny, nz, lx, ly, lz, px, py, pz;
+
+	nx = normal.x();
+	ny = normal.y();
+	nz = normal.z();
+	// for some unknown for me reason normal need negation
+	if (!dontNegate) {
+		nx = -nx;
+		ny = -ny;
+		nz = -nz;
+	}
+	lx = light.x();
+	ly = light.y();
+	lz = light.z();
+	px = plane.x();
+	py = plane.y();
+	pz = plane.z();
+
+	d = nx * lx + ny * ly + nz * lz;
+	c = px * nx + py * ny + pz * nz - d;
+
+	mat[0] = lx * nx + c;
+	mat[4] = ny * lx;
+	mat[8] = nz * lx;
+	mat[12] = -lx * c - lx * d;
+
+	mat[1] = nx * ly;
+	mat[5] = ly * ny + c;
+	mat[9] = nz * ly;
+	mat[13] = -ly * c - ly * d;
+
+	mat[2] = nx * lz;
+	mat[6] = ny * lz;
+	mat[10] = lz * nz + c;
+	mat[14] = -lz * c - lz * d;
+
+	mat[3] = nx;
+	mat[7] = ny;
+	mat[11] = nz;
+	mat[15] = -d;
+
+	tglMultMatrixf(mat);
+}
+
+class TGLShadowPlane : public ShadowPlane {
+public:
+	TGLShadowPlane()
+		: ShadowPlane() {
+
+		const int _gameWidth = 640;
+		const int _gameHeight = 480;
+
+		_shadowMask = new byte[_gameWidth * _gameHeight];
+		_shadowMaskSize = _gameWidth * _gameHeight;
+	}
+
+	~TGLShadowPlane() {
+		delete[] _shadowMask;
+	}
+
+	void enable(const Math::Vector3d &pos, const Graphics::Color &color) {
+		tglEnable(TGL_SHADOW_MASK_MODE);
+		memset(_shadowMask, 0, _shadowMaskSize);
+
+		tglSetShadowMaskBuf(_shadowMask);
+		foreach (const Sector &s, getSectors()) {
+			tglBegin(TGL_POLYGON);
+			int num = s._vertices.size();
+			for (int k = 0; k < num; k++) {
+				tglVertex3fv(s._vertices[k].getData());
+			}
+			tglEnd();
+		}
+		tglSetShadowMaskBuf(NULL);
+		tglDisable(TGL_SHADOW_MASK_MODE);
+
+
+		tglSetShadowColor(1,1,1);
+		tglSetShadowMaskBuf(_shadowMask);
+		tglPushMatrix();
+		tglShadowProjection(pos, getSectors()[0]._vertices[0], getSectors()[0]._normal, false);
+	}
+
+	void disable() {
+		tglSetShadowMaskBuf(NULL);
+	}
+
+	byte *_shadowMask;
+	int _shadowMaskSize;
+};
 
 class TGLBitmap2D : public Bitmap2D {
 public:
@@ -217,7 +315,7 @@ Primitive *TinyGLRenderer::createPrimitive() {
 }
 
 ShadowPlane *TinyGLRenderer::createShadowPlane() {
-
+	return new TGLShadowPlane();
 }
 
 Label *TinyGLRenderer::createLabel() {

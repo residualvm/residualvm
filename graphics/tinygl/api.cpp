@@ -23,7 +23,7 @@ void tglVertex3f(float x, float y, float z)  {
 	tglVertex4f(x, y, z, 1);
 }
 
-void tglVertex3fv(float *v)  {
+void tglVertex3fv(const float *v)  {
 	tglVertex4f(v[0], v[1], v[2], 1);
 }
 
@@ -40,7 +40,7 @@ void tglNormal3f(float x, float y, float z) {
 	TinyGL::gl_add_op(p);
 }
 
-void tglNormal3fv(float *v)  {
+void tglNormal3fv(const float *v)  {
 	tglNormal3f(v[0], v[1], v[2]);
 }
 
@@ -61,7 +61,7 @@ void tglColor4f(float r, float g, float b, float a) {
 	gl_add_op(p);
 }
 
-void tglColor4fv(float *v) {
+void tglColor4fv(const float *v) {
 	TinyGL::GLParam p[8];
 
 	p[0].op = TinyGL::OP_Color;
@@ -80,7 +80,7 @@ void tglColor3f(float x, float y, float z) {
 	tglColor4f(x, y, z, 1);
 }
 
-void glColor3fv(float *v)  {
+void glColor3fv(const float *v)  {
   tglColor4f(v[0], v[1], v[2], 1);
 }
 
@@ -106,7 +106,7 @@ void tglTexCoord2f(float s, float t) {
 	tglTexCoord4f(s, t, 0, 1);
 }
 
-void tglTexCoord2fv(float *v) {
+void tglTexCoord2fv(const float *v) {
 	tglTexCoord4f(v[0], v[1], 0, 1);
 }
 
@@ -493,7 +493,7 @@ void tglBindTexture(int target, int texture) {
 
 void tglTexEnvi(int target, int pname, int param) {
 	TinyGL::GLParam p[8];
-  
+
 	p[0].op = TinyGL::OP_TexEnv;
 	p[1].i = target;
 	p[2].i = pname;
@@ -508,7 +508,7 @@ void tglTexEnvi(int target, int pname, int param) {
 
 void tglTexParameteri(int target, int pname, int param) {
 	TinyGL::GLParam p[8];
-  
+
 	p[0].op = TinyGL::OP_TexParameter;
 	p[1].i = target;
 	p[2].i = pname;
