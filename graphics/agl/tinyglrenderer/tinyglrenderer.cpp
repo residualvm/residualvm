@@ -20,6 +20,7 @@
 
 #include "graphics/agl/tinyglrenderer/tinyglrenderer.h"
 #include "graphics/agl/tinyglrenderer/tglmesh.h"
+#include "graphics/agl/tinyglrenderer/tglbitmap2d.h"
 
 namespace AGL {
 
@@ -268,22 +269,6 @@ public:
 
 };
 
-class TGLBitmap2D : public Bitmap2D {
-public:
-	TGLBitmap2D(Bitmap2D::Type type, const Graphics::PixelBuffer &buf, int width, int height)
-		: Bitmap2D(type, width, height) {
-		_buf.create(buf.getFormat(), width * height, DisposeAfterUse::YES);
-		_buf.copyBuffer(0, width * height, buf);
-	}
-
-	void draw(int x, int y) {
-		_renderer->_zb->pbuf.copyBuffer(0, getWidth()*getHeight(), _buf);
-	}
-
-	TinyGLRenderer *_renderer;
-	Graphics::PixelBuffer _buf;
-};
-
 class TGLTarget : public Target {
 public:
 	TGLTarget(int width, int height, int bpp, const Graphics::PixelFormat &format)
@@ -481,8 +466,7 @@ void TinyGLRenderer::disableLighting() {
 }
 
 Bitmap2D *TinyGLRenderer::createBitmap2D(Bitmap2D::Type type, const Graphics::PixelBuffer &buf, int width, int height) {
-	TGLBitmap2D *b = new TGLBitmap2D(type, buf, width, height);
-	b->_renderer = this;
+	TGLBitmap2D *b = new TGLBitmap2D(this, type, buf, width, height);
 	return b;
 }
 

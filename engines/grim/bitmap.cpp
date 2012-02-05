@@ -488,6 +488,8 @@ void Bitmap::restoreState(SaveGame *state) {
 }
 
 void Bitmap::draw() {
+	_data->load();
+
 	draw(_data->_x, _data->_y);
 }
 

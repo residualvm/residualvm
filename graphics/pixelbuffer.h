@@ -177,6 +177,8 @@ public:
 	 */
 	inline void shiftBy(int amount) { _buffer += amount * _format.bytesPerPixel; }
 
+	inline PixelBuffer shiftedBy(int amount) const { return PixelBuffer(_format, _buffer + amount * _format.bytesPerPixel); }
+
 	/**
 	 * Return the encoded value of the pixel at the given index.
 	 */

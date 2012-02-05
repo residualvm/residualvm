@@ -33,6 +33,7 @@ MODULE_OBJS := \
 	agl/rendererfactory.o \
 	agl/tinyglrenderer/tinyglrenderer.o \
 	agl/tinyglrenderer/tglmesh.o \
+	agl/tinyglrenderer/tglbitmap2d.o \
 	agl/openglrenderer/openglrenderer.o \
 	agl/openglrenderer/glbitmap2d.o \
 	agl/openglrenderer/glmesh.o \
