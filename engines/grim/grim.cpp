@@ -326,7 +326,7 @@ Common::Error GrimEngine::run() {
 	}
 
 	_fpsFont = g_resourceloader->loadFont("ComicSans18.laf");
-	_fpsLabel = AGLMan.createLabel(_fpsFont);
+	_fpsLabel = AGLMan.createLabel(_fpsFont->getFont());
 	_fpsLabel->setTextColor(Color(255, 255, 255));
 
 	g_grim->setMode(NormalMode);
@@ -523,50 +523,41 @@ void GrimEngine::updateDisplayScene() {
 		// need to render underneath the animation or you can't see what's going on
 		// This should not occur on top of everything though or Manny gets covered
 		// up when he's next to Glottis's service room
-		if (g_movie->isPlaying()) {
-			_movieTime = g_movie->getMovieTime();
-			if (g_movie->isUpdateNeeded()) {
-				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
-				g_movie->clearUpdateNeeded();
-			}
-			if (g_movie->getFrame() >= 0)
-				_movieFrame->draw(g_movie->getX(), g_movie->getY());
-			else
-				delete _movieFrame;
-		}
-
-		// Draw Primitives
-		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
-			p->draw();
-		}
+// 		if (g_movie->isPlaying()) {
+// 			_movieTime = g_movie->getMovieTime();
+// 			if (g_movie->isUpdateNeeded()) {
+// 				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
+// 				g_movie->clearUpdateNeeded();
+// 			}
+// 			if (g_movie->getFrame() >= 0)
+// 				_movieFrame->draw(g_movie->getX(), g_movie->getY());
+// 			else
+// 				delete _movieFrame;
+// 		}
 //
+// 		// Draw Primitives
+// 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
+// 			p->draw();
+// 		}
+// //
 		_currSet->setupCamera();
-<<<<<<< HEAD
 
-		g_driver->set3DMode();
+// 		g_driver->set3DMode();
 
 		// Draw actors
-=======
-//
-// 		g_driver->set3DMode();
-//
-		_currSet->setupLights();
-//
-// 		// Draw actors
->>>>>>> AGL: First draft of the Abstract Graphics Layer
 		foreach (Actor *a, Actor::getPool()) {
 			if (a->isInSet(_currSet->getName()) && a->isVisible())
 				a->draw();
 			a->undraw(a->isInSet(_currSet->getName()) && a->isVisible());
 		}
 // 		flagRefreshShadowMask(false);
-
-		// Draw overlying scene components
-		// The overlay objects should be drawn on top of everything else,
-		// including 3D objects such as Manny and the message tube
-		_currSet->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
-
-		drawPrimitives();
+//
+// 		// Draw overlying scene components
+// 		// The overlay objects should be drawn on top of everything else,
+// 		// including 3D objects such as Manny and the message tube
+// 		_currSet->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
+//
+// 		drawPrimitives();
 	} else if (_mode == DrawMode) {
 		_doFlip = false;
 		_prevSmushFrame = 0;

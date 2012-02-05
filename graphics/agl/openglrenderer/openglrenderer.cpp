@@ -39,6 +39,24 @@ PFNGLDELETEPROGRAMSARBPROC glDeleteProgramsARB;
 
 namespace AGL {
 
+class GLFont : public Font {
+public:
+	GLFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height)
+		: Font(metric) {
+		_texture = AGLMan.createTexture(buf, width, height);
+	}
+
+	~GLFont() {
+		delete _texture;
+	}
+
+	void bind() {
+		_texture->bind();
+	}
+
+	Texture *_texture;
+};
+
 class GLLabel : public Label {
 public:
 	GLLabel()
@@ -65,11 +83,12 @@ public:
 		glEnable(GL_TEXTURE_2D);
 		glDepthMask(GL_FALSE);
 
-		Font *font = getFont();
+		GLFont *font = static_cast<GLFont *>(getFont());
 
 		glColor3ubv(getTextColor().getData());
 
 		font->bind();
+		FontMetric *metric = font->getMetric();
 
 		int numLines = getNumLines();
 		for (int j = 0; j < numLines; ++j) {
@@ -81,8 +100,8 @@ public:
 
 			for (uint i = 0; i < line.size(); ++i) {
 				uint8 character = line[i];
-				Math::Rect2d texrect = font->getCharTextureRect(character);
-				Math::Rect2d quadrect = font->getCharQuadRect(character);
+				Math::Rect2d texrect = metric->getCharTextureRect(character);
+				Math::Rect2d quadrect = metric->getCharQuadRect(character);
 
 				quadrect.translate(Math::Vector2d(lx, ly));
 
@@ -100,7 +119,7 @@ public:
 				glVertex2fv(quadrect.getBottomLeft().getData());
 				glEnd();
 
-				lx += font->getCharWidth(character);
+				lx += metric->getCharWidth(character);
 			}
 		}
 
@@ -491,6 +510,10 @@ Primitive *OpenGLRenderer::createPrimitive() {
 
 ShadowPlane *OpenGLRenderer::createShadowPlane() {
 	return new GLShadowPlane();
+}
+
+Font *OpenGLRenderer::createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height) {
+	return new GLFont(metric, buf, width, height);
 }
 
 Label *OpenGLRenderer::createLabel() {

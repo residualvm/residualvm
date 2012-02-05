@@ -47,6 +47,7 @@ Font::Font(const Common::String &filename, Common::SeekableReadStream *data) :
 Font::Font() :
 		PoolObject<Font, MKTAG('F', 'O', 'N', 'T')>() {
 	_charIndex = NULL;
+	_font = NULL;
 }
 
 Font::~Font() {
@@ -55,6 +56,7 @@ Font::~Font() {
 		delete[] _charHeaders;
 		delete[] _fontData;
 	}
+	delete _font;
 }
 
 void Font::load(const Common::String &filename, Common::SeekableReadStream *data) {
@@ -172,7 +174,7 @@ void Font::load(const Common::String &filename, Common::SeekableReadStream *data
 	}
 
 	Graphics::PixelFormat f(4, 8, 8, 8, 8, 0, 8, 16, 24);
-	setTexture(AGLMan.createTexture(Graphics::PixelBuffer(f, temp), _quadSize * charsWide, _quadSize * charsHigh));
+	_font = AGLMan.createFont(this, Graphics::PixelBuffer(f, temp), _quadSize * charsWide, _quadSize * charsHigh);
 }
 
 uint16 Font::getCharIndex(unsigned char c) const {

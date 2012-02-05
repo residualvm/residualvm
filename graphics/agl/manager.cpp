@@ -96,6 +96,10 @@ ShadowPlane *Manager::createShadowPlane() {
 	return _renderer->createShadowPlane();
 }
 
+Font *Manager::createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height) {
+	return _renderer->createFont(metric, buf, width, height);
+}
+
 Label *Manager::createLabel(Font *font) {
 	Label *l = _renderer->createLabel();
 	l->setFont(font);

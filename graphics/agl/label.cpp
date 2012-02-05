@@ -48,20 +48,21 @@ void Label::wrapWords(int maxWidth) {
 	int numberLines = 1;
 	int lineWidth = 0;
 	int maxLineWidth = 0;
+	FontMetric *metric = _font->getMetric();
 	for (uint i = 0; i < msg.size(); i++) {
-		lineWidth += _font->getCharWidth(msg[i]);
+		lineWidth += metric->getCharWidth(msg[i]);
 		if (lineWidth > maxWidth) {
 			bool wordSplit = false;
 			if (currLine.contains(' ')) {
 				while (msg[i] != ' ' && i > 0) {
-					lineWidth = _font->getCharWidth(msg[i]);
+					lineWidth = metric->getCharWidth(msg[i]);
 					message.deleteLastChar();
 					--i;
 				}
 			} else if (msg[i] != ' ') { // if it is a unique word
-				int dashWidth = _font->getCharWidth('-');
+				int dashWidth = metric->getCharWidth('-');
 				while (lineWidth + dashWidth > maxWidth) {
-					lineWidth -= _font->getCharWidth(msg[i]);
+					lineWidth -= metric->getCharWidth(msg[i]);
 					message.deleteLastChar();
 					--i;
 				}
@@ -78,7 +79,7 @@ void Label::wrapWords(int maxWidth) {
 			lineWidth = 0;
 
 			if (wordSplit) {
-				lineWidth += _font->getCharWidth(msg[i]);
+				lineWidth += metric->getCharWidth(msg[i]);
 			} else {
 				continue; // don't add the space back
 			}
@@ -105,7 +106,7 @@ void Label::wrapWords(int maxWidth) {
 		Common::String currentLine(message.c_str(), message.c_str() + nextLinePos);
 		_lines[j] = currentLine;
 
-		int width = _font->getStringLength(currentLine);
+		int width = metric->getStringLength(currentLine);
 		if (width > _maxLineWidth)
 			_maxLineWidth = width;
 		for (int count = 0; count < cutLen; count++)
@@ -114,12 +115,12 @@ void Label::wrapWords(int maxWidth) {
 }
 
 Common::Rect Label::getBoundingRect() const {
-	return Common::Rect(0, 0, _maxLineWidth, _font->getHeight() * getNumLines());
+	return Common::Rect(0, 0, _maxLineWidth, _font->getMetric()->getHeight() * getNumLines());
 }
 
 Common::Rect Label::getLineRect(int line) const {
-	int length = _font->getStringLength(_lines[line]);
-	int height = _font->getHeight();
+	int length = _font->getMetric()->getStringLength(_lines[line]);
+	int height = _font->getMetric()->getHeight();
 	int x = 0;
 	if (_alignment == Center)
 		x = -( length/ 2);

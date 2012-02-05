@@ -35,7 +35,7 @@ namespace Grim {
 
 class SaveGame;
 
-class Font : public PoolObject<Font, MKTAG('F', 'O', 'N', 'T')>, public AGL::Font {
+class Font : public PoolObject<Font, MKTAG('F', 'O', 'N', 'T')>, public AGL::FontMetric {
 public:
 	Font(const Common::String &filename, Common::SeekableReadStream *data);
 	Font();
@@ -53,6 +53,7 @@ public:
 	int32 getCharOffset(unsigned char c) const { return _charHeaders[getCharIndex(c)].offset; }
 	const byte *getCharData(unsigned char c) const { return _fontData + (_charHeaders[getCharIndex(c)].offset); }
 
+	AGL::Font *getFont() const { return _font; }
 	const byte *getFontData() const { return _fontData; }
 	uint32 getDataSize() const { return _dataSize; }
 
@@ -86,6 +87,7 @@ private:
 	byte *_fontData;
 	Common::String _filename;
 	int _quadSize;
+	AGL::Font *_font;
 };
 
 } // end of namespace Grim

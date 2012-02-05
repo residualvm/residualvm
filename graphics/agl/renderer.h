@@ -26,6 +26,7 @@ class Mesh;
 class ShadowPlane;
 class Label;
 class Font;
+class FontMetric;
 
 class Renderer {
 public:
@@ -45,6 +46,7 @@ public:
 	virtual Light *createLight(Light::Type type) = 0;
 	virtual Primitive *createPrimitive() = 0;
 	virtual ShadowPlane *createShadowPlane() = 0;
+	virtual Font *createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height) = 0;
 	virtual Label *createLabel() = 0;
 
 	virtual void pushMatrix() = 0;

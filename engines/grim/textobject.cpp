@@ -219,7 +219,7 @@ void TextObject::setupText() {
 	}
 
 	delete _label;
-	_label = AGLMan.createLabel(getFont(), msg);
+	_label = AGLMan.createLabel(getFont()->getFont(), msg);
 	_label->setTextColor(_fgColor);
 	_label->wrapWords(maxWidth);
 	AGL::Label::Alignment al;

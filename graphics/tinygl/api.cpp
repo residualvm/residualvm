@@ -19,6 +19,10 @@ void tglVertex2f(float x, float y)  {
 	tglVertex4f(x, y, 0, 1);
 }
 
+void tglVertex2fv(const float *v)  {
+	tglVertex4f(v[0], v[1], 0, 1);
+}
+
 void tglVertex3f(float x, float y, float z)  {
 	tglVertex4f(x, y, z, 1);
 }

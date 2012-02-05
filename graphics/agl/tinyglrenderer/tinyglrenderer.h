@@ -29,6 +29,7 @@ public:
 	Light *createLight(Light::Type type);
 	Primitive *createPrimitive();
 	ShadowPlane *createShadowPlane();
+	Font *createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height);
 	Label *createLabel();
 
 	void pushMatrix();

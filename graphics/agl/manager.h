@@ -29,6 +29,7 @@ class Primitive;
 class ShadowPlane;
 class Label;
 class Font;
+class FontMetric;
 
 class Manager : public Common::Singleton<Manager> {
 public:
@@ -53,6 +54,7 @@ public:
 	Light *createLight(Light::Type type);
 	Primitive *createPrimitive();
 	ShadowPlane *createShadowPlane();
+	Font *createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height);
 	Label *createLabel(Font *font, const Common::String &string);
 	Label *createLabel(Font *font);
 

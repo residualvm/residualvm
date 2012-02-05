@@ -10,17 +10,15 @@ namespace Math {
 class Rect2d;
 }
 
+namespace Graphics {
+class PixelBuffer;
+}
+
 namespace AGL {
 
-class Texture;
-
-class Font {
+class FontMetric {
 public:
-	Font();
-	virtual ~Font();
-
-	void setTexture(Texture *texture);
-	void bind();
+	virtual ~FontMetric();
 
 	int getStringLength(const Common::String &text) const;
 
@@ -28,9 +26,16 @@ public:
 	virtual Math::Rect2d getCharQuadRect(unsigned char c) const = 0;
 	virtual int getCharWidth(unsigned char c) const = 0;
 	virtual int getHeight() const = 0;
+};
+
+class Font {
+public:
+	Font(FontMetric *metric);
+
+	inline FontMetric *getMetric() const { return _metric; }
 
 private:
-	Texture *_texture;
+	FontMetric *_metric;
 };
 
 }

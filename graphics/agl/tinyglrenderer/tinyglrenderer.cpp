@@ -6,12 +6,15 @@
 #include "graphics/pixelbuffer.h"
 
 #include "math/vector3d.h"
+#include "math/rect2d.h"
 
 #include "graphics/agl/manager.h"
 #include "graphics/agl/bitmap2d.h"
 #include "graphics/agl/target.h"
 #include "graphics/agl/shadowplane.h"
 #include "graphics/agl/texture.h"
+#include "graphics/agl/label.h"
+#include "graphics/agl/font.h"
 
 #include "graphics/tinygl/zgl.h"
 
@@ -19,6 +22,92 @@
 #include "graphics/agl/tinyglrenderer/tglmesh.h"
 
 namespace AGL {
+
+class TGLFont : public Font {
+public:
+	TGLFont(FontMetric *metric, const Graphics::PixelBuffer &buffer, int width, int height)
+		: Font(metric),
+		  _buffer(buffer),
+		  _width(width),
+		  _height(height) {
+	}
+
+	int getCharPos(unsigned char c, int line) const {
+		Math::Rect2d rect(getMetric()->getCharTextureRect(c));
+		int cx = rect.getTopLeft().getX() * _width;
+		int cy = rect.getTopLeft().getY() * _height;
+
+		return (cy + line) * _width + cx;
+	}
+
+	Graphics::PixelBuffer _buffer;
+	int _width;
+	int _height;
+};
+
+class TGLLabel : public Label {
+public:
+	TGLLabel()
+		: Label() {
+
+	}
+
+	void draw(int x, int y) const {
+		const int numLines = getNumLines();
+		const TGLFont *font = static_cast<TGLFont *>(getFont());
+		const FontMetric *metric = font->getMetric();
+		const Graphics::Color &fgColor = getTextColor();
+		Graphics::PixelBuffer src(font->_buffer);
+
+		for (int j = 0; j < numLines; j++) {
+			const Common::String &currentLine = getLine(j);
+
+			int width = metric->getStringLength(currentLine) + 1;
+			int height = metric->getHeight();
+
+			Common::Rect lineRect = getLineRect(j);
+
+			int lx = x + lineRect.left;
+			int ly = y + lineRect.top;
+
+			uint8 *_textBitmap = new uint8[height * width];
+			memset(_textBitmap, 0, height * width);
+
+			int startOffset = 0;
+			for (unsigned int d = 0; d < currentLine.size(); d++) {
+				unsigned char ch = currentLine[d];
+
+				Math::Rect2d quadrect = metric->getCharQuadRect(ch);
+
+				int8 startingLine = quadrect.getTopLeft().getY();
+				int8 startingCol = quadrect.getTopLeft().getX();
+				int32 charDataWidth = quadrect.getWidth();
+				int32 charWidth = metric->getCharWidth(ch);
+
+				int32 charDataHeight = quadrect.getHeight();
+
+				//FIXME TODO: save this into a bitmap.
+				for (int i = 0; i < charDataHeight; ++i) {
+					for (int row = 0; row < charDataWidth; ++row) {
+						int pos = (i + startingLine + ly) * 640 + startOffset + startingCol + lx + row;
+						uint8 a, r, g, b;
+						src.getARGBAt(font->getCharPos(ch, i) + row, a, r, g, b);
+						a = (a * fgColor.getAlpha()) / 256;
+						r = (r * fgColor.getRed()) / 256;
+						g = (g * fgColor.getGreen()) / 256;
+						b = (b * fgColor.getBlue()) / 256;
+						if (a > 0.f)
+							_renderer->_zb->pbuf.setPixelAt(pos, r, g, b);
+					}
+				}
+
+				startOffset += charWidth;
+			}
+		}
+	}
+
+	TinyGLRenderer *_renderer;
+};
 
 class TGLLight : public Light {
 public:
@@ -163,7 +252,7 @@ public:
 	}
 
 	void enable(const Math::Vector3d &pos, const Graphics::Color &color) {
-		tglSetShadowColor(color.getRed(), color.getGreen(), color.getBlue());
+		tglSetShadowColor(color.getRed() / 255.f, color.getGreen() / 255.f, color.getBlue() / 255.f);
 		tglSetShadowMaskBuf(_shadowMask);
 		tglPushMatrix();
 		tglShadowProjection(pos, getSectors()[0]._vertices[0], getSectors()[0]._normal, false);
@@ -312,7 +401,7 @@ static void lookAt(TGLfloat eyex, TGLfloat eyey, TGLfloat eyez, TGLfloat centerx
 		y[2] /= mag;
 	}
 
-	#define M(row,col)  m[col * 4 + row]
+#define M(row,col)  m[col * 4 + row]
 	M(0, 0) = x[0];
 	M(0, 1) = x[1];
 	M(0, 2) = x[2];
@@ -329,7 +418,7 @@ static void lookAt(TGLfloat eyex, TGLfloat eyey, TGLfloat eyez, TGLfloat centerx
 	M(3, 1) = 0.0f;
 	M(3, 2) = 0.0f;
 	M(3, 3) = 1.0f;
-	#undef M
+#undef M
 	tglMultMatrixf(m);
 
 	tglTranslatef(-eyex, -eyey, -eyez);
@@ -417,8 +506,14 @@ ShadowPlane *TinyGLRenderer::createShadowPlane() {
 	return new TGLShadowPlane();
 }
 
+Font *TinyGLRenderer::createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height) {
+	return new TGLFont(metric, buf, width, height);
+}
+
 Label *TinyGLRenderer::createLabel() {
-	return NULL;
+	TGLLabel *l = new TGLLabel();
+	l->_renderer = this;
+	return l;
 }
 
 void TinyGLRenderer::pushMatrix() {
