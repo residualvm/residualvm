@@ -807,6 +807,8 @@ void tglTexCoordPointer(TGLint size, TGLenum type, TGLsizei stride, const TGLvoi
 // opengl 1.2 polygon offset
 void tglPolygonOffset(TGLfloat factor, TGLfloat units);
 
+void tglOrtho(float left, float right,float bottom, float top,float near, float far);
+
 void tglDebug(int mode);
 
 #endif

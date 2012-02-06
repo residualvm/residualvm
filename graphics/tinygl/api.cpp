@@ -636,3 +636,24 @@ void tglSetShadowColor(unsigned char r, unsigned char g, unsigned char b) {
 	c->zb->shadow_color_g = g << 8;
 	c->zb->shadow_color_b = b << 8;
 }
+
+void tglOrtho(float left, float right,float bottom, float top,float near, float far) {
+	//See www.opengl.org/sdk/docs/man/xhtml/glOrtho.xml for documentation
+
+	float a = 2.0f / (right - left);
+	float b = 2.0f / (top - bottom);
+	float c = -2.0f / (far - near);
+
+	float tx = - (right + left) / (right - left);
+	float ty = - (top + bottom) / (top - bottom);
+	float tz = - (far + near) / (far - near);
+
+	float ortho[16] = {
+		a, 0, 0, 0,
+		0, b, 0, 0,
+		0, 0, c, 0,
+		tx, ty, tz, 1
+	};
+
+	tglMultMatrixf(ortho);
+}
