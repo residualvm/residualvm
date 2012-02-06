@@ -32,8 +32,12 @@ protected:
 
 	inline const Common::Array<Sector> &getSectors() const { return _sectors; }
 
+	void resetShouldUpdateFlag();
+	inline bool shouldUpdate() const { return _shouldUpdate; }
+
 private:
 	Common::Array<Sector> _sectors;
+	bool _shouldUpdate;
 };
 
 }

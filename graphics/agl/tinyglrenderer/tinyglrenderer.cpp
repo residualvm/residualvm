@@ -358,8 +358,15 @@ public:
 
 		_shadowMaskSize = AGLMan.getTarget()->getWidth() * AGLMan.getTarget()->getHeight();
 		_shadowMask = new byte[_shadowMaskSize];
+	}
 
+	~TGLShadowPlane() {
+		delete[] _shadowMask;
+	}
+
+	void createMask() {
 		tglEnable(TGL_SHADOW_MASK_MODE);
+
 		memset(_shadowMask, 0, _shadowMaskSize);
 
 		tglSetShadowMaskBuf(_shadowMask);
@@ -375,11 +382,14 @@ public:
 		tglDisable(TGL_SHADOW_MASK_MODE);
 	}
 
-	~TGLShadowPlane() {
-		delete[] _shadowMask;
-	}
-
 	void enable(const Math::Vector3d &pos, const Graphics::Color &color) {
+		if (shouldUpdate()) {
+			createMask();
+			resetShouldUpdateFlag();
+		}
+
+		tglEnable(TGL_SHADOW_MODE);
+
 		tglSetShadowColor(color.getRed() / 255.f, color.getGreen() / 255.f, color.getBlue() / 255.f);
 		tglSetShadowMaskBuf(_shadowMask);
 		tglPushMatrix();
@@ -389,6 +399,7 @@ public:
 	void disable() {
 		tglPopMatrix();
 		tglSetShadowMaskBuf(NULL);
+		tglDisable(TGL_SHADOW_MODE);
 	}
 
 	byte *_shadowMask;
