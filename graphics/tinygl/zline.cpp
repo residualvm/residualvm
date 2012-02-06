@@ -50,8 +50,8 @@ static void ZB_line_interp(ZBuffer *zb, ZBufferPoint *p1, ZBufferPoint *p2) {
 void ZB_line_z(ZBuffer *zb, ZBufferPoint *p1, ZBufferPoint *p2) {
 	int color1, color2;
 
-	color1 = RGB_TO_PIXEL(p1->r, p1->g, p1->b);
-	color2 = RGB_TO_PIXEL(p2->r, p2->g, p2->b);
+	color1 = RGB_TO_PIXEL(p1->r >> 8, p1->g >> 8, p1->b >> 8);
+	color2 = RGB_TO_PIXEL(p2->r >> 8, p2->g >> 8, p2->b >> 8);
 
     // choose if the line should have its color interpolated or not
 	if (color1 == color2) {

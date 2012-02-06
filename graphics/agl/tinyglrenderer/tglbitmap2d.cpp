@@ -1,6 +1,9 @@
 
 #include "graphics/tinygl/zbuffer.h"
 
+#include "graphics/agl/manager.h"
+#include "graphics/agl/target.h"
+
 #include "graphics/agl/tinyglrenderer/tglbitmap2d.h"
 #include "graphics/agl/tinyglrenderer/tinyglrenderer.h"
 
@@ -39,7 +42,7 @@ public:
 			for (int r = 0; r < width; ++r) {
 				uint8 a, red, g, b;
 				srcBuf.getARGBAt(r, a, red, g, b);
-				bool transparent = a < 50; //FIXME is 0.5f ok?
+				bool transparent = a < 50; //FIXME is 50 ok?
 				// We found a transparent pixel, so save a line from 'start' to the pixel before this.
 				if (transparent && start >= 0) {
 					newLine(start, l, r - start, srcBuf.shiftedBy(start));
@@ -123,15 +126,16 @@ TGLBitmap2D::~TGLBitmap2D() {
 }
 
 void TGLBitmap2D::draw(int x, int y) {
+	const int width = AGLMan.getTarget()->getWidth();
 	if (getType() == Bitmap2D::Image) {
 		BlitImage::Line *l = _img->_lines;
 		while (l) {
-			memcpy(_renderer->_zb->pbuf.getRawBuffer((y + l->y) * 640 + x + l->x), l->pixels, l->length * _img->_format.bytesPerPixel);
+			memcpy(_renderer->_zb->pbuf.getRawBuffer((y + l->y) * width + x + l->x), l->pixels, l->length * _img->_format.bytesPerPixel);
 			l = l->next;
 		}
 	} else {
 		for (int l = 0; l < getHeight(); ++l) {
-			uint16 *dst = _renderer->_zb->zbuf + (y + l) * 640 + x;
+			uint16 *dst = _renderer->_zb->zbuf + (y + l) * width + x;
 			memcpy(dst, _zimg + l * getWidth(), getWidth() * 2);
 		}
 	}

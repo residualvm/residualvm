@@ -15,6 +15,7 @@
 #include "graphics/agl/texture.h"
 #include "graphics/agl/label.h"
 #include "graphics/agl/font.h"
+#include "graphics/agl/primitive.h"
 
 #include "graphics/tinygl/zgl.h"
 
@@ -23,6 +24,72 @@
 #include "graphics/agl/tinyglrenderer/tglbitmap2d.h"
 
 namespace AGL {
+
+class TGLPrimitive : public Primitive {
+public:
+	TGLPrimitive()
+		: Primitive() {
+
+	}
+
+	void draw(float x, float y) {
+		const int screenWidth = AGLMan.getTarget()->getWidth();
+		const int screenHeight = AGLMan.getTarget()->getHeight();
+
+		tglMatrixMode(TGL_PROJECTION);
+		tglLoadIdentity();
+		tglOrtho(0, screenWidth, screenHeight, 0, 0, 1);
+		tglMatrixMode(TGL_MODELVIEW);
+		tglLoadIdentity();
+		tglTranslatef(x, y, 0);
+
+		tglDisable(TGL_LIGHTING);
+		tglDisable(TGL_DEPTH_TEST);
+
+		TGLenum mode;
+		switch(getMode()) {
+			case Points:
+				mode = TGL_POINTS;
+				break;
+			case Lines:
+				mode = TGL_LINES;
+				break;
+			case LineLoop:
+				mode = TGL_LINE_LOOP;
+				break;
+			case Quads:
+				mode = TGL_QUADS;
+		}
+
+		const bool globalColor = useGlobalColor();
+		if (globalColor) {
+			tglColor4ub(getGlobalColor().getRed(), getGlobalColor().getGreen(), getGlobalColor().getBlue(), getGlobalColor().getAlpha());
+		}
+
+		uint num = getNumSubs();
+		for (uint i = 0; i < num; ++i) {
+			const byte *colors = getColorPointer(i);
+			const float *vertices = getVertexPointer(i);
+			const uint numVertices = getNumVertices(i);
+
+			tglBegin(mode);
+			for (uint j = 0; j < numVertices; ++j) {
+				if (!globalColor) {
+					tglColor4ub(colors[0], colors[1], colors[2], colors[3]);
+					colors += 4;
+				}
+				tglVertex2f(vertices[0], vertices[1]);
+				vertices += 2;
+			}
+			tglEnd();
+		}
+
+		tglColor3f(1.0f, 1.0f, 1.0f);
+
+		tglEnable(TGL_DEPTH_TEST);
+		tglEnable(TGL_LIGHTING);
+	}
+};
 
 class TGLFont : public Font {
 public:
@@ -483,7 +550,7 @@ Light *TinyGLRenderer::createLight(Light::Type type) {
 }
 
 Primitive *TinyGLRenderer::createPrimitive() {
-	return NULL;
+	return new TGLPrimitive();
 }
 
 ShadowPlane *TinyGLRenderer::createShadowPlane() {

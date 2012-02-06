@@ -535,11 +535,11 @@ void GrimEngine::updateDisplayScene() {
 // 				delete _movieFrame;
 // 		}
 //
-// 		// Draw Primitives
-// 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
-// 			p->draw();
-// 		}
-// //
+		// Draw Primitives
+		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
+			p->draw();
+		}
+
 		_currSet->setupCamera();
 
 // 		g_driver->set3DMode();
@@ -557,7 +557,7 @@ void GrimEngine::updateDisplayScene() {
 // 		// including 3D objects such as Manny and the message tube
 // 		_currSet->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
 //
-// 		drawPrimitives();
+		drawPrimitives();
 	} else if (_mode == DrawMode) {
 		_doFlip = false;
 		_prevSmushFrame = 0;

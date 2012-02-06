@@ -24,6 +24,7 @@
 #define GRAPHICS_COLOR_H
 
 #include "common/system.h"
+#include "common/streamdebug.h"
 
 namespace Graphics {
 
@@ -53,7 +54,8 @@ private:
 	uint8 _vals[4];
 };
 
-
 }
+
+Common::Debug &operator<<(Common::Debug dbg, const Graphics::Color &c);
 
 #endif
