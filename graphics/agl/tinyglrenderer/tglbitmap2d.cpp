@@ -37,25 +37,29 @@ public:
 		Graphics::PixelBuffer srcBuf = buf;
 		// A line of pixels can not wrap more that one line of the image, since it would break
 		// blitting of bitmaps with a non-zero x position.
+		bool hasTransparency = buf.getFormat().aBits() > 0;
 		for (int l = 0; l < height; l++) {
-			int start = -1;
+			if (hasTransparency) {
+				int start = -1;
+				for (int r = 0; r < width; ++r) {
+					uint8 a, red, g, b;
+					srcBuf.getARGBAt(r, a, red, g, b);
+					bool transparent = a < 50; //FIXME is 50 ok?
+					// We found a transparent pixel, so save a line from 'start' to the pixel before this.
+					if (transparent && start >= 0) {
+						newLine(start, l, r - start, srcBuf.shiftedBy(start));
 
-			for (int r = 0; r < width; ++r) {
-				uint8 a, red, g, b;
-				srcBuf.getARGBAt(r, a, red, g, b);
-				bool transparent = a < 50; //FIXME is 50 ok?
-				// We found a transparent pixel, so save a line from 'start' to the pixel before this.
-				if (transparent && start >= 0) {
-					newLine(start, l, r - start, srcBuf.shiftedBy(start));
-
-					start = -1;
-				} else if (!transparent && start == -1) {
-					start = r;
+						start = -1;
+					} else if (!transparent && start == -1) {
+						start = r;
+					}
 				}
-			}
-			// end of the bitmap line. if start is an actual pixel save the line.
-			if (start >= 0) {
-				newLine(start, l, width - start, srcBuf.shiftedBy(start));
+				// end of the bitmap line. if start is an actual pixel save the line.
+				if (start >= 0) {
+					newLine(start, l, width - start, srcBuf.shiftedBy(start));
+				}
+			} else {
+				newLine(0, l, width, srcBuf);
 			}
 
 			srcBuf.shiftBy(width);
