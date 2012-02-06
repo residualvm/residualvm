@@ -523,18 +523,18 @@ void GrimEngine::updateDisplayScene() {
 		// need to render underneath the animation or you can't see what's going on
 		// This should not occur on top of everything though or Manny gets covered
 		// up when he's next to Glottis's service room
-// 		if (g_movie->isPlaying()) {
-// 			_movieTime = g_movie->getMovieTime();
-// 			if (g_movie->isUpdateNeeded()) {
-// 				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
-// 				g_movie->clearUpdateNeeded();
-// 			}
-// 			if (g_movie->getFrame() >= 0)
-// 				_movieFrame->draw(g_movie->getX(), g_movie->getY());
-// 			else
-// 				delete _movieFrame;
-// 		}
-//
+		if (g_movie->isPlaying()) {
+			_movieTime = g_movie->getMovieTime();
+			if (g_movie->isUpdateNeeded()) {
+				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
+				g_movie->clearUpdateNeeded();
+			}
+			if (g_movie->getFrame() >= 0)
+				_movieFrame->draw(g_movie->getX(), g_movie->getY());
+			else
+				delete _movieFrame;
+		}
+
 		// Draw Primitives
 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
 			p->draw();
@@ -551,12 +551,12 @@ void GrimEngine::updateDisplayScene() {
 			a->undraw(a->isInSet(_currSet->getName()) && a->isVisible());
 		}
 // 		flagRefreshShadowMask(false);
-//
-// 		// Draw overlying scene components
-// 		// The overlay objects should be drawn on top of everything else,
-// 		// including 3D objects such as Manny and the message tube
-// 		_currSet->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
-//
+
+		// Draw overlying scene components
+		// The overlay objects should be drawn on top of everything else,
+		// including 3D objects such as Manny and the message tube
+		_currSet->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
+
 		drawPrimitives();
 	} else if (_mode == DrawMode) {
 		_doFlip = false;
