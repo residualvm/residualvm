@@ -27,6 +27,7 @@ public:
 		Line *temp = _lines;
 		while (temp != NULL) {
 			_lines = temp->next;
+			delete[] temp->pixels;
 			delete temp;
 			temp = _lines;
 		}
