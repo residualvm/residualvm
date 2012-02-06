@@ -16,6 +16,7 @@
 #include "graphics/agl/shadowplane.h"
 #include "graphics/agl/label.h"
 #include "graphics/agl/font.h"
+#include "graphics/agl/sprite.h"
 
 #include "graphics/agl/openglrenderer/openglrenderer.h"
 #include "graphics/agl/openglrenderer/gltarget.h"
@@ -38,6 +39,65 @@ PFNGLDELETEPROGRAMSARBPROC glDeleteProgramsARB;
 #endif
 
 namespace AGL {
+
+class GLSprite: public Sprite {
+public:
+	GLSprite(float width, float height)
+		: Sprite(width, height) {
+
+	}
+
+	void draw(Texture *tex, float x, float y, float z) const {
+		tex->bind();
+
+		glMatrixMode(GL_TEXTURE);
+		glLoadIdentity();
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glTranslatef(x, y, z);
+
+		GLdouble modelview[16];
+		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+
+		// We want screen-aligned sprites so reset the rotation part of the matrix.
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				if (i == j) {
+					modelview[i * 4 + j] = 1.0f;
+				} else {
+					modelview[i * 4 + j] = 0.0f;
+				}
+			}
+		}
+		glLoadMatrixd(modelview);
+
+		glEnable(GL_TEXTURE_2D);
+
+		glAlphaFunc(GL_GREATER, 0.5);
+		glEnable(GL_ALPHA_TEST);
+		glDisable(GL_LIGHTING);
+
+		const float w = getWidth() / 2.f;
+		const float h = getHeight();
+
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(w, h, 0.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(w, 0.0f, 0.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(-w, 0.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(-w, h, 0.0f);
+		glEnd();
+
+		glEnable(GL_LIGHTING);
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_TEXTURE_2D);
+
+		glPopMatrix();
+	}
+};
 
 class GLFont : public Font {
 public:
@@ -383,7 +443,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, buf.getRawBuffer());
 	}
 
-	void bind() {
+	void bind() const {
 		glBindTexture(GL_TEXTURE_2D, _texId);
 	}
 
@@ -518,6 +578,10 @@ Font *OpenGLRenderer::createFont(FontMetric *metric, const Graphics::PixelBuffer
 
 Label *OpenGLRenderer::createLabel() {
 	return new GLLabel();
+}
+
+Sprite *OpenGLRenderer::createSprite(float width, float height) {
+	return new GLSprite(width, height);
 }
 
 void OpenGLRenderer::pushMatrix() {

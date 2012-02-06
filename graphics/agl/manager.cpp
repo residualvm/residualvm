@@ -115,4 +115,8 @@ Label *Manager::createLabel(Font *font, const Common::String &string) {
 	return l;
 }
 
+Sprite *Manager::createSprite(float width, float height) {
+	return _renderer->createSprite(width, height);
+}
+
 }

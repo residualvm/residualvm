@@ -14,7 +14,7 @@ class Texture {
 public:
 	virtual ~Texture();
 
-	virtual void bind() = 0;
+	virtual void bind() const = 0;
 
 	inline bool hasAlpha() const { return _hasAlpha; }
 

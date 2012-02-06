@@ -27,6 +27,7 @@ class ShadowPlane;
 class Label;
 class Font;
 class FontMetric;
+class Sprite;
 
 class Renderer {
 public:
@@ -48,6 +49,7 @@ public:
 	virtual ShadowPlane *createShadowPlane() = 0;
 	virtual Font *createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height) = 0;
 	virtual Label *createLabel() = 0;
+	virtual Sprite *createSprite(float width, float height) = 0;
 
 	virtual void pushMatrix() = 0;
 	virtual void translate(float x, float y, float z) = 0;

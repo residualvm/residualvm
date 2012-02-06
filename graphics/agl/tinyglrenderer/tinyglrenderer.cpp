@@ -16,6 +16,7 @@
 #include "graphics/agl/label.h"
 #include "graphics/agl/font.h"
 #include "graphics/agl/primitive.h"
+#include "graphics/agl/sprite.h"
 
 #include "graphics/tinygl/zgl.h"
 
@@ -24,6 +25,64 @@
 #include "graphics/agl/tinyglrenderer/tglbitmap2d.h"
 
 namespace AGL {
+
+class TGLSprite: public Sprite {
+public:
+	TGLSprite(float width, float height)
+		: Sprite(width, height) {
+
+	}
+
+	void draw(Texture *tex, float x, float y, float z) const {
+		tex->bind();
+
+		tglMatrixMode(TGL_TEXTURE);
+		tglLoadIdentity();
+		tglMatrixMode(TGL_MODELVIEW);
+		tglPushMatrix();
+		tglTranslatef(x, y, z);
+
+		TGLfloat modelview[16];
+		tglGetFloatv(TGL_MODELVIEW_MATRIX, modelview);
+
+		// We want screen-aligned sprites so reset the rotation part of the matrix.
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				if (i == j) {
+					modelview[i * 4 + j] = 1.0f;
+				} else {
+					modelview[i * 4 + j] = 0.0f;
+				}
+			}
+		}
+		tglLoadMatrixf(modelview);
+
+		tglEnable(TGL_TEXTURE_2D);
+
+		tglEnable(TGL_ALPHA_TEST);
+		tglDisable(TGL_LIGHTING);
+
+		const float w = getWidth() / 2.f;
+		const float h = getHeight();
+
+		tglBegin(TGL_QUADS);
+		tglTexCoord2f(0.0f, 0.0f);
+		tglVertex3f(w, h, 0.0f);
+		tglTexCoord2f(0.0f, 1.0f);
+		tglVertex3f(w, 0.0f, 0.0f);
+		tglTexCoord2f(1.0f, 1.0f);
+		tglVertex3f(-w, 0.0f, 0.0f);
+		tglTexCoord2f(1.0f, 0.0f);
+		tglVertex3f(-w, h, 0.0f);
+		tglEnd();
+
+		tglEnable(TGL_LIGHTING);
+		tglDisable(TGL_ALPHA_TEST);
+		tglDisable(TGL_TEXTURE_2D);
+
+		tglPopMatrix();
+	}
+};
 
 class TGLPrimitive : public Primitive {
 public:
@@ -403,7 +462,7 @@ public:
 		tglTexImage2D(TGL_TEXTURE_2D, 0, 3, width, height, 0, format, TGL_UNSIGNED_BYTE, buf.getRawBuffer());
 	}
 
-	void bind() {
+	void bind() const {
 		tglBindTexture(TGL_TEXTURE_2D, _texId);
 	}
 
@@ -482,17 +541,9 @@ TinyGLRenderer::TinyGLRenderer() {
 
 Target *TinyGLRenderer::setupScreen(int screenW, int screenH, bool fullscreen, int bpp) {
 	Graphics::PixelBuffer buf = g_system->setupScreen(screenW, screenH, fullscreen, false);
-// 	byte *buffer = buf.getRawBuffer();
 
-// 	_pixelFormat = buf.getFormat();
 	_zb = TinyGL::ZB_open(screenW, screenH, buf);
 	TinyGL::glInit(_zb);
-
-// 	_screenSize = 640 * 480 * _pixelFormat.bytesPerPixel;
-// 	_storedDisplay.create(_pixelFormat, 640 * 480, DisposeAfterUse::YES);
-// 	_storedDisplay.clear(640 * 480);
-
-// 	_currentShadowArray = NULL;
 
 	TGLfloat ambientSource[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	tglLightModelfv(TGL_LIGHT_MODEL_AMBIENT, ambientSource);
@@ -566,6 +617,11 @@ Label *TinyGLRenderer::createLabel() {
 	l->_renderer = this;
 	return l;
 }
+
+Sprite *TinyGLRenderer::createSprite(float width, float height) {
+	return new TGLSprite(width, height);
+}
+
 
 void TinyGLRenderer::pushMatrix() {
 	tglMatrixMode(TGL_MODELVIEW);

@@ -34,6 +34,7 @@ class Rect;
 namespace AGL {
 class MeshFace;
 class Mesh;
+class Sprite;
 }
 
 namespace Grim {
@@ -52,6 +53,7 @@ struct Sprite {
 	float _height;
 	bool _visible;
 	Material *_material;
+	AGL::Sprite *_sprite;
 	Sprite *_next;
 };
 

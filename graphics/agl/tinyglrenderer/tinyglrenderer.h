@@ -31,6 +31,7 @@ public:
 	ShadowPlane *createShadowPlane();
 	Font *createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height);
 	Label *createLabel();
+	Sprite *createSprite(float width, float height);
 
 	void pushMatrix();
 	void translate(float x, float y, float z);

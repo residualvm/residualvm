@@ -27,6 +27,7 @@
 #include "graphics/agl/meshface.h"
 #include "graphics/agl/manager.h"
 #include "graphics/agl/modelview.h"
+#include "graphics/agl/sprite.h"
 
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
@@ -43,8 +44,7 @@ void Sprite::draw() const {
 	if (!_visible)
 		return;
 
-	_material->select();
-	g_driver->drawSprite(this);
+	_sprite->draw(_material->getData()->_textures[_material->getActiveTexture()]._tex, _pos);
 }
 
 /**
@@ -683,7 +683,7 @@ void ModelNode::draw() const {
 		if (!g_driver->isShadowModeActive()) {
 			Sprite *sprite = _sprite;
 			while (sprite) {
-// 				sprite->draw();
+				sprite->draw();
 				sprite = sprite->_next;
 			}
 		}

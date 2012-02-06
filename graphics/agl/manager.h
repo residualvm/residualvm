@@ -30,6 +30,7 @@ class ShadowPlane;
 class Label;
 class Font;
 class FontMetric;
+class Sprite;
 
 class Manager : public Common::Singleton<Manager> {
 public:
@@ -57,6 +58,7 @@ public:
 	Font *createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height);
 	Label *createLabel(Font *font, const Common::String &string);
 	Label *createLabel(Font *font);
+	Sprite *createSprite(float width, float height);
 
 private:
 	Renderer *_renderer;
