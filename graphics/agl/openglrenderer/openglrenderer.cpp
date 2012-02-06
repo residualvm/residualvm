@@ -594,6 +594,9 @@ void OpenGLRenderer::translate(float x, float y, float z) {
 void OpenGLRenderer::rotate(float deg, float x, float y, float z) {
 	glRotatef(deg, x, y, z);
 }
+void OpenGLRenderer::scale(float x, float y, float z) {
+	glScalef(x, y, z);
+}
 void OpenGLRenderer::popMatrix() {
 	glPopMatrix();
 }

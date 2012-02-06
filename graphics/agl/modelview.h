@@ -21,6 +21,9 @@ public:
 	inline static void rotate(const Math::Angle &angle, const Math::Vector3d &axis) { rotate(angle, axis.x(), axis.y(), axis.z()); }
 	static void rotate(const Math::Angle &angle, float x, float y, float z);
 
+	static void scale(float x, float y, float z);
+	inline static void scale(float factor) { scale(Math::Vector3d(factor, factor, factor)); }
+	inline static void scale(const Math::Vector3d &factor) { scale(factor.x(), factor.y(), factor.z()); }
 };
 
 }

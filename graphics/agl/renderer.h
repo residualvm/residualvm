@@ -54,6 +54,7 @@ public:
 	virtual void pushMatrix() = 0;
 	virtual void translate(float x, float y, float z) = 0;
 	virtual void rotate(float deg, float x, float y, float z) = 0;
+	virtual void scale(float x, float y, float z) = 0;
 	virtual void popMatrix() = 0;
 
 	virtual Common::String prettyName() const = 0;

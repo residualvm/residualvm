@@ -667,6 +667,9 @@ void TinyGLRenderer::translate(float x, float y, float z) {
 void TinyGLRenderer::rotate(float deg, float x, float y, float z) {
 	tglRotatef(deg, x, y, z);
 }
+void TinyGLRenderer::scale(float x, float y, float z) {
+	tglScalef(x, y, z);
+}
 void TinyGLRenderer::popMatrix() {
 	tglPopMatrix();
 }

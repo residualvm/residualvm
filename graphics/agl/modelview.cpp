@@ -21,4 +21,8 @@ void ModelView::rotate(const Math::Angle &angle, float x, float y, float z) {
 	AGLMan._renderer->rotate(angle.getDegrees(), x, y, z);
 }
 
+void ModelView::scale(float x, float y, float z) {
+	AGLMan._renderer->scale(x, y, z);
+}
+
 }

@@ -1604,6 +1604,7 @@ void Actor::setShadowColor(const Color &color) {
 void Actor::setModelView() {
 	AGL::ModelView::pushMatrix();
 	AGL::ModelView::translate(_pos);
+	AGL::ModelView::scale(_scale);
 	AGL::ModelView::rotate(_yaw, 0, 0, 1);
 	AGL::ModelView::rotate(_pitch, 1, 0, 0);
 	AGL::ModelView::rotate(_roll, 0, 1, 0);

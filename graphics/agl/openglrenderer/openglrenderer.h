@@ -40,6 +40,7 @@ public:
 	void pushMatrix();
 	void translate(float x, float y, float z);
 	void rotate(float deg, float x, float y, float z);
+	void scale(float x, float y, float z);
 	void popMatrix();
 
 	Common::String prettyName() const;
