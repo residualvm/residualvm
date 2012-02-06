@@ -4,6 +4,7 @@
 #include "common/foreach.h"
 
 #include "graphics/pixelbuffer.h"
+#include "graphics/surface.h"
 
 #include "math/vector3d.h"
 #include "math/rect2d.h"
@@ -420,7 +421,14 @@ public:
 	}
 
 	void dimRegion(int x, int y, int w, int h, float level) {
-
+		for (int ly = y; ly < y + h; ly++) {
+			for (int lx = x; lx < x + w; lx++) {
+				uint8 r, g, b;
+				_renderer->_zb->pbuf.getRGBAt(ly * getWidth() + lx, r, g, b);
+				uint32 color = (uint32)(((r + g + b) / 3) * level);
+				_renderer->_zb->pbuf.setPixelAt(ly * getWidth() + lx, color, color, color);
+			}
+		}
 	}
 
 	void storeContent() {
@@ -430,8 +438,34 @@ public:
 		_renderer->_zb->pbuf.copyBuffer(0, _screenSize, _storedDisplay);
 	}
 
-	Graphics::Surface *getScreenshot(const Graphics::PixelFormat &format, int width, int height) const {
+	Graphics::Surface *getScreenshot(const Graphics::PixelFormat &format, int w, int h) const {
+		Graphics::Surface *s = new Graphics::Surface;
+		s->create(w, h, format);
+		Graphics::PixelBuffer buffer(format, (byte *)s->pixels);
 
+		int i1 = (getWidth() * w - 1) / getWidth() + 1;
+		int j1 = (getHeight() * h - 1) / getHeight() + 1;
+
+		for (int j = 0; j < j1; j++) {
+			for (int i = 0; i < i1; i++) {
+				int x0 = i * getWidth() / w;
+				int x1 = ((i + 1) * getWidth() - 1) / w + 1;
+				int y0 = j * getHeight() / h;
+				int y1 = ((j + 1) * getHeight() - 1) / h + 1;
+				uint32 color = 0;
+				for (int y = y0; y < y1; y++) {
+					for (int x = x0; x < x1; x++) {
+						uint8 lr, lg, lb;
+						_renderer->_zb->pbuf.getRGBAt(y * getWidth() + x, lr, lg, lb);
+						color += (lr + lg + lb) / 3;
+					}
+				}
+				color /= (x1 - x0) * (y1 - y0);
+				buffer.setPixelAt(j * w + i, color, color, color);
+			}
+		}
+
+		return s;
 	}
 
 	TinyGLRenderer *_renderer;
