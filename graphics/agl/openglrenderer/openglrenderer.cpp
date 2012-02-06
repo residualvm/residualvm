@@ -598,13 +598,9 @@ void OpenGLRenderer::popMatrix() {
 	glPopMatrix();
 }
 
-const char *OpenGLRenderer::prettyString() const {
-	char GLDriver[1024];
-	sprintf(GLDriver, "ResidualVM: %s/%s", glGetString(GL_VENDOR), glGetString(GL_RENDERER));
-	return GLDriver;
+Common::String OpenGLRenderer::prettyName() const {
+	return Common::String::format("ResidualVM: %s/%s", glGetString(GL_VENDOR), glGetString(GL_RENDERER));
 }
-
-
 
 
 class OpenGLPlugin : public RendererPluginObject {

@@ -671,11 +671,9 @@ void TinyGLRenderer::popMatrix() {
 	tglPopMatrix();
 }
 
-const char *TinyGLRenderer::prettyString() const {
+Common::String TinyGLRenderer::prettyName() const {
 	return "ResidualVM: Software 3D Renderer";
 }
-
-
 
 
 class TinyGLPlugin : public RendererPluginObject {

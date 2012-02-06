@@ -56,7 +56,7 @@ public:
 	virtual void rotate(float deg, float x, float y, float z) = 0;
 	virtual void popMatrix() = 0;
 
-	virtual const char *prettyString() const = 0;
+	virtual Common::String prettyName() const = 0;
 
 };
 

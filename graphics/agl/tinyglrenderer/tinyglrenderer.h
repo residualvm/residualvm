@@ -38,7 +38,7 @@ public:
 	void rotate(float deg, float x, float y, float z);
 	void popMatrix();
 
-	const char *prettyString() const;
+	Common::String prettyName() const;
 
 // private:
 	TinyGL::ZBuffer *_zb;

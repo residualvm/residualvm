@@ -38,7 +38,7 @@ Target *Manager::setupScreen(int screenW, int screenH, bool fullscreen, int bpp)
 	fullscreen = g_system->getFeatureState(OSystem::kFeatureFullscreenMode);
 
 	g_system->showMouse(!fullscreen);
-	g_system->setWindowCaption(_renderer->prettyString());
+	g_system->setWindowCaption(_renderer->prettyName().c_str());
 
 	return _target;
 }
