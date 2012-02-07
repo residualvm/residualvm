@@ -38,7 +38,6 @@
 #include "engines/grim/bitmap.h"
 #include "engines/grim/primitives.h"
 #include "engines/grim/iris.h"
-#include "engines/grim/gfx_base.h"
 
 #include "engines/grim/movie/movie.h"
 
@@ -458,8 +457,6 @@ void Lua_V1::KillPrimitive() {
 void Lua_V1::DimScreen() {
 	AGLMan.getTarget()->storeContent();
 	AGLMan.getTarget()->dim(0.1f);
-// 	g_driver->storeDisplay();
-// 	g_driver->dimScreen();
 }
 
 void Lua_V1::DimRegion() {
@@ -502,7 +499,7 @@ void Lua_V1::SetGamma() {
 
 void Lua_V1::Display() {
 	if (g_grim->getFlipEnable()) {
-		g_driver->flipBuffer();
+		AGLMan.flipBuffer();
 	}
 }
 

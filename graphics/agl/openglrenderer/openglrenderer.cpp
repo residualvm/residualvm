@@ -48,6 +48,10 @@ public:
 	}
 
 	void draw(Texture *tex, float x, float y, float z) const {
+		if (_renderer->_shadowActive) {
+			return;
+		}
+
 		tex->bind();
 
 		glMatrixMode(GL_TEXTURE);
@@ -97,6 +101,8 @@ public:
 
 		glPopMatrix();
 	}
+
+	OpenGLRenderer *_renderer;
 };
 
 class GLFont : public Font {
@@ -360,7 +366,9 @@ public:
 	GLShadowPlane()
 		: ShadowPlane() { }
 
-		void enable(const Math::Vector3d &pos, const Graphics::Color &color) {
+	void enable(const Math::Vector3d &pos, const Graphics::Color &color) {
+		_renderer->_shadowActive = true;
+
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_FALSE);
 		glClearStencil(~0);
@@ -404,7 +412,11 @@ public:
 
 		glDisable(GL_STENCIL_TEST);
 		glDepthMask(GL_TRUE);
+
+		_renderer->_shadowActive = false;
 	}
+
+	OpenGLRenderer *_renderer;
 };
 
 class GLTexture : public Texture {
@@ -566,7 +578,9 @@ Primitive *OpenGLRenderer::createPrimitive() {
 }
 
 ShadowPlane *OpenGLRenderer::createShadowPlane() {
-	return new GLShadowPlane();
+	GLShadowPlane *s = new GLShadowPlane();
+	s->_renderer = this;
+	return s;
 }
 
 Font *OpenGLRenderer::createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height) {
@@ -578,7 +592,9 @@ Label *OpenGLRenderer::createLabel() {
 }
 
 Sprite *OpenGLRenderer::createSprite(float width, float height) {
-	return new GLSprite(width, height);
+	GLSprite *s = new GLSprite(width, height);
+	s->_renderer = this;
+	return s;
 }
 
 void OpenGLRenderer::pushMatrix() {
@@ -600,6 +616,14 @@ void OpenGLRenderer::popMatrix() {
 
 Common::String OpenGLRenderer::prettyName() const {
 	return Common::String::format("ResidualVM: %s/%s", glGetString(GL_VENDOR), glGetString(GL_RENDERER));
+}
+
+Common::String OpenGLRenderer::getName() const {
+	return "OpenGL Renderer";
+}
+
+bool OpenGLRenderer::isHardwareAccelerated() const {
+	return true;
 }
 
 GLenum OpenGLRenderer::drawMode(DrawMode mode) {

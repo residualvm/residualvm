@@ -30,7 +30,6 @@
 #include "engines/grim/grim.h"
 #include "engines/grim/debug.h"
 #include "engines/grim/material.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/colormap.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/textsplit.h"
@@ -75,7 +74,6 @@ void MaterialData::initGrim(Common::SeekableReadStream *data, CMap *cmap) {
 		t->_height = data->readUint32LE();
 		t->_hasAlpha = data->readUint32LE();
 		t->_texture = NULL;
-		t->_colorFormat = BM_RGBA;
 		t->_data = NULL;
 		if (t->_width == 0 || t->_height == 0) {
 			Debug::warning(Debug::Materials, "skip load texture: bad texture size (%dx%d) for texture %d of material %s",
@@ -132,11 +130,9 @@ void loadTGA(Common::SeekableReadStream *data, Texture *t) {
 
 	int bpp = data->readByte();
 	if (bpp == 32) {
-		t->_colorFormat = BM_RGBA;
 		t->_bpp = 4;
 		pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
 	} else {
-		t->_colorFormat = BM_BGR888;
 		t->_bpp = 3;
 		pf = Graphics::PixelFormat(3, 8, 8, 8, 0, 16, 8, 0, 0);
 	}
@@ -220,7 +216,7 @@ MaterialData::~MaterialData() {
 	for (int i = 0; i < _numImages; ++i) {
 		Texture *t = _textures + i;
 		if (t->_width && t->_height && t->_texture)
-			g_driver->destroyMaterial(t);
+			delete t->_tex;
 		delete[] t->_data;
 	}
 	delete[] _textures;
@@ -270,12 +266,6 @@ void Material::reload(CMap *cmap) {
 void Material::select() const {
 	Texture *t = _data->_textures + _currImage;
 	if (t->_width && t->_height) {
-// 		if (!t->_texture) {
-// 			g_driver->createMaterial(t, t->_data, _data->_cmap);
-// 			delete[] t->_data;
-// 			t->_data = NULL;
-// 		}
-// 		g_driver->selectMaterial(t);
 		t->_tex->bind();
 	}
 }

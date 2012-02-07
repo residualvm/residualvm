@@ -25,7 +25,6 @@
 #include "engines/grim/resource.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/set.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/colormap.h"
 #include "engines/grim/animation.h"
 

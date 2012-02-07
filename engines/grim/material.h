@@ -37,7 +37,6 @@ class Texture {
 public:
 	int _width;
 	int _height;
-	int _colorFormat;
 	int _bpp;
 	bool _hasAlpha;
 	void *_texture;

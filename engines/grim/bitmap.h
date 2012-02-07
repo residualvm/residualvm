@@ -91,7 +91,6 @@ public:
 	int _format;
 	int _numTex;
 	int _bpp;
-	int _colorFormat;
 	void *_texIds;
 	bool _hasTransparency;
 	bool _loaded;

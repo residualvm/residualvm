@@ -44,8 +44,12 @@ public:
 	void popMatrix();
 
 	Common::String prettyName() const;
+	Common::String getName() const;
+	bool isHardwareAccelerated() const;
 
 	static GLenum drawMode(DrawMode mode);
+
+	bool _shadowActive;
 
 private:
 	void initExtensions();

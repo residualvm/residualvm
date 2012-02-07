@@ -19,10 +19,11 @@ namespace AGL {
 extern	RendererFactory *_instance;
 
 Manager::Manager() {
-
+	_renderer = NULL;
 }
 
 void Manager::init(const Common::String &renderer) {
+	delete _renderer;
 	_renderer = NULL;
 
 	RendererPlugin *p = RendererFactory::instance().getPlugin(renderer);
@@ -35,12 +36,24 @@ void Manager::init(const Common::String &renderer) {
 Target *Manager::setupScreen(int screenW, int screenH, bool fullscreen, int bpp) {
 	_target = _renderer->setupScreen(screenW, screenH, fullscreen, bpp);
 
-	fullscreen = g_system->getFeatureState(OSystem::kFeatureFullscreenMode);
+	_fullscreen = g_system->getFeatureState(OSystem::kFeatureFullscreenMode);
 
 	g_system->showMouse(!fullscreen);
 	g_system->setWindowCaption(_renderer->prettyName().c_str());
 
 	return _target;
+}
+
+bool Manager::isFullscreen() const {
+	return _fullscreen;
+}
+
+bool Manager::isHardwareAccelerated() const {
+	return _renderer->isHardwareAccelerated();
+}
+
+Common::String Manager::getRendererName() const {
+	return _renderer->getName();
 }
 
 void Manager::setupCamera(float fov, float nclip, float fclip, float roll) {

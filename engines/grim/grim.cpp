@@ -67,7 +67,6 @@
 #include "engines/grim/registry.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/localize.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/bitmap.h"
 #include "engines/grim/font.h"
 #include "engines/grim/primitives.h"
@@ -83,7 +82,6 @@
 namespace Grim {
 
 GrimEngine *g_grim = NULL;
-GfxBase *g_driver = NULL;
 int g_imuseState = -1;
 
 GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, Common::Platform platform, Common::Language language) :
@@ -197,8 +195,6 @@ GrimEngine::~GrimEngine() {
 	g_localizer = NULL;
 	delete g_resourceloader;
 	g_resourceloader = NULL;
-	delete g_driver;
-	g_driver = NULL;
 	delete _iris;
 	delete _fpsLabel;
 // 	delete _fpsFont;
@@ -260,19 +256,7 @@ Common::Error GrimEngine::run() {
 		AGLMan.init("OpenGL");
 #endif
 
-
-
 	AGLMan.setupScreen(640, 480, fullscreen, 24);
-
-
-// 	if (_softRenderer)
-		g_driver = CreateGfxTinyGL();
-// #ifdef USE_OPENGL
-// 	else
-// 		g_driver = CreateGfxOpenGL();
-// #endif
-
-// 	g_driver->setupScreen(640, 480, fullscreen);
 
 	if (getGameType() == GType_MONKEY4 && SearchMan.hasFile("AMWI.m4b")) {
 		// TODO: Play EMI Mac Aspyr logo
@@ -489,8 +473,6 @@ void GrimEngine::updateDisplayScene() {
 					_doFlip = false;
 			} else
 				delete _movieFrame;
-
-			g_movie->stop();
 		}
 		// Draw Primitives
 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
@@ -548,8 +530,6 @@ void GrimEngine::updateDisplayScene() {
 
 		_currSet->setupCamera();
 
-// 		g_driver->set3DMode();
-
 		// Draw actors
 		foreach (Actor *a, Actor::getPool()) {
 			if (a->isInSet(_currSet->getName()) && a->isVisible())
@@ -583,7 +563,7 @@ void GrimEngine::doFlip() {
 	}
 
 	if (_flipEnable)
-		g_driver->flipBuffer();
+		AGLMan.flipBuffer();
 
 	if (_showFps && _mode != DrawMode) {
 		unsigned int currentTime = g_system->getMillis();
@@ -630,15 +610,15 @@ void GrimEngine::mainLoop() {
 
 		if (_changeHardwareState || _changeFullscreenState) {
 			_changeHardwareState = false;
-			bool fullscreen = g_driver->isFullscreen();
+			bool fullscreen = AGLMan.isFullscreen();
 			if (_changeFullscreenState) {
 				fullscreen = !fullscreen;
 			}
 			g_system->setFeatureState(OSystem::kFeatureFullscreenMode, fullscreen);
 			g_registry->set("fullscreen", (fullscreen ? "true" : "false"));
 
-			uint screenWidth = g_driver->getScreenWidth();
-			uint screenHeight = g_driver->getScreenHeight();
+			uint screenWidth = AGLMan.getTarget()->getWidth();
+			uint screenHeight = AGLMan.getTarget()->getHeight();
 
 			EngineMode mode = getMode();
 
@@ -646,21 +626,20 @@ void GrimEngine::mainLoop() {
 			savegameSave();
 			clearPools();
 
-			delete g_driver;
 			if (tolower(g_registry->get("soft_renderer", "false")[0]) == 't') {
-				g_driver = CreateGfxTinyGL();
-// 			} else {
-// 				g_driver = CreateGfxOpenGL();
+				AGLMan.init("TinyGL");
+			} else {
+				AGLMan.init("OpenGL");
 			}
 
-			g_driver->setupScreen(screenWidth, screenHeight, fullscreen);
+			AGLMan.setupScreen(screenWidth, screenHeight, fullscreen, 32);
 			savegameRestore();
 
 			if (mode == DrawMode) {
 				setMode(GrimEngine::NormalMode);
 				updateDisplayScene();
-				g_driver->storeDisplay();
-				g_driver->dimScreen();
+				AGLMan.getTarget()->storeContent();
+				AGLMan.getTarget()->dim(0.1f);
 			}
 			setMode(mode);
 			_changeFullscreenState = false;
@@ -782,9 +761,6 @@ void GrimEngine::savegameRestore() {
 
 	restoreGRIM();
 	Debug::debug(Debug::Engine, "Engine restored succesfully.");
-
-	g_driver->restoreState(_savedState);
-	Debug::debug(Debug::Engine, "Renderer restored succesfully.");
 
 	g_imuse->restoreState(_savedState);
 	Debug::debug(Debug::Engine, "iMuse restored succesfully.");
@@ -911,9 +887,6 @@ void GrimEngine::savegameSave() {
 
 	saveGRIM();
 	Debug::debug(Debug::Engine, "Engine saved succesfully.");
-
-	g_driver->saveState(_savedState);
-	Debug::debug(Debug::Engine, "Renderer saved succesfully.");
 
 	g_imuse->saveState(_savedState);
 	Debug::debug(Debug::Engine, "iMuse saved succesfully.");

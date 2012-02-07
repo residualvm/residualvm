@@ -12,6 +12,7 @@ public:
 	virtual ~MeshFace() { }
 
 	virtual void setNormal(float x, float y, float z) = 0;
+	inline void setNormal(const Math::Vector3d &n) { setNormal(n.x(), n.y(), n.z()); }
 
 	virtual void vertex(int index) = 0;
 	virtual void texture(int index) = 0;

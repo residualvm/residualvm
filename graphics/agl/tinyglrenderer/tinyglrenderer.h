@@ -42,13 +42,13 @@ public:
 	void popMatrix();
 
 	Common::String prettyName() const;
+	Common::String getName() const;
+	bool isHardwareAccelerated() const;
 
 	static TGLenum drawMode(DrawMode mode);
 
-// private:
 	TinyGL::ZBuffer *_zb;
-
-	friend class TGLBitmap2D;
+	bool _shadowActive;
 };
 
 }

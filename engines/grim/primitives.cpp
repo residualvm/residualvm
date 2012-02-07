@@ -23,7 +23,6 @@
 #include "graphics/agl/primitive.h"
 #include "graphics/agl/manager.h"
 
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/primitives.h"
 #include "engines/grim/savegame.h"
 #include "engines/grim/colormap.h"

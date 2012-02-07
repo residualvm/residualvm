@@ -37,7 +37,6 @@
 #include "engines/grim/savegame.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/bitmap.h"
-#include "engines/grim/gfx_base.h"
 
 #include "engines/grim/sound.h"
 

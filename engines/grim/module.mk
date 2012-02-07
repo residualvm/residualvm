@@ -80,8 +80,6 @@ MODULE_OBJS := \
 	debug.o \
 	detection.o \
 	font.o \
-	gfx_base.o \
-	gfx_tinygl.o \
 	grim.o \
 	grim_controls.o \
 	inputdialog.o \

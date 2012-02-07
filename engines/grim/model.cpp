@@ -34,7 +34,6 @@
 #include "engines/grim/model.h"
 #include "engines/grim/material.h"
 #include "engines/grim/textsplit.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/colormap.h"
 
@@ -44,7 +43,7 @@ void Sprite::draw() const {
 	if (!_visible)
 		return;
 
-	_sprite->draw(_material->getData()->_textures[_material->getActiveTexture()]._tex, _pos);
+	_sprite->draw(_material->getCurrentTexture(), _pos);
 }
 
 /**
@@ -397,10 +396,7 @@ void MeshFace::changeMaterial(Material *material) {
 }
 
 void MeshFace::draw(float *vertices, float *vertNormals, float *textureVerts) const {
-// 	_material->select();
-// 	g_driver->drawModelFace(this, vertices, vertNormals, textureVerts);
-
-	_face->draw(_material->getData()->_textures[_material->getActiveTexture()]._tex);
+	_face->draw(_material->getCurrentTexture());
 }
 
 /**
@@ -450,15 +446,6 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 	_mesh->setUseAbsoluteTexCoords(true);
 	_mesh->setDrawMode(AGL::Polygon);
 
-	for (int i = 0; i < _numVertices;++i) {
-		float *v = _vertices + 3 * i;
-		_mesh->pushVertex(v[0], v[1], v[2]);
-	}
-	for (int i = 0; i < _numTextureVerts;++i) {
-		float *t = _textureVerts + 2 * i;
-		_mesh->pushTexVertex(t[0], t[1]);
-	}
-
 	for (int i = 0; i < _numFaces; i++) {
 		_faces[i]._face = _mesh->createFace();
 		_materialid[i] = _faces[i].loadBinary(data, materials,_vertices,_vertNormals,_textureVerts);
@@ -468,7 +455,15 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 		_vertNormals[i] = get_float(f);
 	}
 
-	for (int i = 0; i < _numVertices;++i) {
+	for (int i = 0; i < _numVertices; ++i) {
+		float *v = _vertices + 3 * i;
+		_mesh->pushVertex(v[0], v[1], v[2]);
+	}
+	for (int i = 0; i < _numTextureVerts; ++i) {
+		float *t = _textureVerts + 2 * i;
+		_mesh->pushTexVertex(t[0], t[1]);
+	}
+	for (int i = 0; i < _numVertices; ++i) {
 		float *n = _vertNormals + 3 * i;
 		_mesh->pushNormal(n[0], n[1], n[2]);
 	}
@@ -496,6 +491,10 @@ void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 	_vertices = new float[3 * _numVertices];
 	_verticesI = new float[_numVertices];
 	_vertNormals = new float[3 * _numVertices];
+
+	_mesh = AGLMan.createMesh();
+	_mesh->setUseAbsoluteTexCoords(true);
+	_mesh->setDrawMode(AGL::Polygon);
 
 	for (int i = 0; i < _numVertices; i++) {
 		int num;
@@ -528,7 +527,18 @@ void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 		_vertNormals[3 * num + 2] = z;
 	}
 
-	_mesh = NULL;
+	for (int i = 0; i < _numVertices; ++i) {
+		float *v = _vertices + 3 * i;
+		_mesh->pushVertex(v[0], v[1], v[2]);
+	}
+	for (int i = 0; i < _numTextureVerts; ++i) {
+		float *t = _textureVerts + 2 * i;
+		_mesh->pushTexVertex(t[0], t[1]);
+	}
+	for (int i = 0; i < _numVertices; ++i) {
+		float *n = _vertNormals + 3 * i;
+		_mesh->pushNormal(n[0], n[1], n[2]);
+	}
 
 	ts->scanString("faces %d", 1, &_numFaces);
 	_faces = new MeshFace[_numFaces];
@@ -556,6 +566,7 @@ void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 		_faces[num]._numVertices = verts;
 		_faces[num]._vertices = new int[verts];
 		_faces[num]._texVertices = new int[verts];
+
 		for (int j = 0; j < verts; j++) {
 			int readlen2;
 
@@ -574,6 +585,14 @@ void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 		float x, y, z;
 		ts->scanString(" %d: %f %f %f", 4, &num, &x, &y, &z);
 		_faces[num]._normal = Math::Vector3d(x, y, z);
+
+		_faces[num]._face = _mesh->createFace();
+		_faces[num]._face->setNormal(_faces[num]._normal);
+		for (int j = 0; j < _faces[num]._numVertices; ++j) {
+			_faces[num]._face->vertex(_faces[num]._vertices[j]);
+			_faces[num]._face->texture(_faces[num]._texVertices[j]);
+			_faces[num]._face->normal(_faces[num]._vertices[j]);
+		}
 	}
 }
 
@@ -680,12 +699,10 @@ void ModelNode::draw() const {
 		AGL::ModelView::pushMatrix();
 		AGL::ModelView::translate(_pivot);
 
-		if (!g_driver->isShadowModeActive()) {
-			Sprite *sprite = _sprite;
-			while (sprite) {
-				sprite->draw();
-				sprite = sprite->_next;
-			}
+		Sprite *sprite = _sprite;
+		while (sprite) {
+			sprite->draw();
+			sprite = sprite->_next;
 		}
 
 		if (_mesh && _meshVisible) {
@@ -708,14 +725,14 @@ bool ModelNode::calculate2DBoundingBox(Common::Rect *rect) const {
 	translateViewpoint();
 	bool ok = false;
 	if (_hierVisible) {
-		g_driver->translateViewpointStart();
-		g_driver->translateViewpoint(_pivot);
+		AGL::ModelView::pushMatrix();
+		AGL::ModelView::translate(_pivot);
 
 		if (_mesh && _meshVisible) {
 			ok = _mesh->calculate2DBoundingBox(rect);
 		}
 
-		g_driver->translateViewpointFinish();
+		AGL::ModelView::popMatrix();
 
 		if (_child) {
 			// IMPORTANT! Do NOT do 'ok = ok || c->...', since if ok is true it won't call calculate2DBoundingBox.

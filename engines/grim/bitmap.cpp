@@ -35,7 +35,6 @@
 #include "engines/grim/grim.h"
 #include "engines/grim/bitmap.h"
 #include "engines/grim/resource.h"
-#include "engines/grim/gfx_base.h"
 
 namespace Grim {
 
@@ -175,7 +174,6 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 	data->seek(128, SEEK_SET);
 	_width = data->readUint32LE();
 	_height = data->readUint32LE();
-	_colorFormat = BM_RGB565;
 	_hasTransparency = false;
 
 	_data = new Graphics::PixelBuffer[_numImages];
@@ -242,7 +240,6 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 	_numTex = 0;
 	_texIds = NULL;
 
-// 	g_driver->createBitmap(this);
 	return true;
 }
 
@@ -260,7 +257,6 @@ BitmapData::BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const cha
 	_texIds = NULL;
 	_bpp = buf.getFormat().bytesPerPixel * 8;
 	_hasTransparency = false;
-	_colorFormat = BM_RGB565;
 	_data = NULL;
 	_loaded = true;
 	_keepData = true;
@@ -271,7 +267,7 @@ BitmapData::BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const cha
 
 BitmapData::BitmapData() :
 	_numImages(0), _width(0), _height(0), _x(0), _y(0), _format(0), _numTex(0),
-	_bpp(0), _colorFormat(0), _texIds(0), _hasTransparency(false), _data(NULL), _refCount(1) {
+	_bpp(0), _texIds(0), _hasTransparency(false), _data(NULL), _refCount(1) {
 	_data = NULL;
 	_bmps = NULL;
 }
@@ -323,7 +319,6 @@ bool BitmapData::loadTGA(Common::SeekableReadStream *data) {
 	int bpp = data->readByte();
 	Graphics::PixelFormat pixelFormat;
 	if (bpp == 32) {
-		_colorFormat = BM_RGBA;
 		pixelFormat = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
 		_bpp = 4;
 	} else {
@@ -357,7 +352,6 @@ bool BitmapData::loadTGA(Common::SeekableReadStream *data) {
 	}
 
 	_numImages = 1;
-	g_driver->createBitmap(this);
 	return true;
 }
 
@@ -403,12 +397,10 @@ bool BitmapData::loadTile(Common::SeekableReadStream *o) {
 	delete[] data;
 	Graphics::PixelFormat pixelFormat;
 	if (_bpp == 16) {
-		_colorFormat = BM_RGB1555;
 		pixelFormat = Graphics::createPixelFormat<1555>();
 		//convertToColorFormat(0, BM_RGBA);
 	} else {
 		pixelFormat = Graphics::PixelFormat(4, 8,8,8,8, 0, 8, 16, 24);
-		_colorFormat = BM_RGBA;
 	}
 
 	_width = 640;

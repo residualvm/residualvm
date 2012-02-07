@@ -58,6 +58,8 @@ public:
 	virtual void popMatrix() = 0;
 
 	virtual Common::String prettyName() const = 0;
+	virtual Common::String getName() const = 0;
+	virtual bool isHardwareAccelerated() const = 0;
 
 };
 

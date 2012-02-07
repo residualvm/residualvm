@@ -29,7 +29,6 @@
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/material.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/emi/modelemi.h"
 #include "engines/grim/emi/animationemi.h"

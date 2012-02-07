@@ -35,6 +35,10 @@ public:
 	}
 
 	void draw(Texture *tex, float x, float y, float z) const {
+		if (_renderer->_shadowActive) {
+			return;
+		}
+
 		tex->bind();
 
 		tglMatrixMode(TGL_TEXTURE);
@@ -83,6 +87,8 @@ public:
 
 		tglPopMatrix();
 	}
+
+	TinyGLRenderer *_renderer;
 };
 
 class TGLPrimitive : public Primitive {
@@ -370,6 +376,8 @@ public:
 	}
 
 	void enable(const Math::Vector3d &pos, const Graphics::Color &color) {
+		_renderer->_shadowActive = true;
+
 		if (shouldUpdate()) {
 			createMask();
 			resetShouldUpdateFlag();
@@ -387,10 +395,13 @@ public:
 		tglPopMatrix();
 		tglSetShadowMaskBuf(NULL);
 		tglDisable(TGL_SHADOW_MODE);
+
+		_renderer->_shadowActive = false;
 	}
 
 	byte *_shadowMask;
 	int _shadowMaskSize;
+	TinyGLRenderer *_renderer;
 
 };
 
@@ -647,7 +658,9 @@ Primitive *TinyGLRenderer::createPrimitive() {
 }
 
 ShadowPlane *TinyGLRenderer::createShadowPlane() {
-	return new TGLShadowPlane();
+	TGLShadowPlane *s = new TGLShadowPlane();
+	s->_renderer = this;
+	return s;
 }
 
 Font *TinyGLRenderer::createFont(FontMetric *metric, const Graphics::PixelBuffer &buf, int width, int height) {
@@ -661,7 +674,9 @@ Label *TinyGLRenderer::createLabel() {
 }
 
 Sprite *TinyGLRenderer::createSprite(float width, float height) {
-	return new TGLSprite(width, height);
+	TGLSprite *s = new TGLSprite(width, height);
+	s->_renderer = this;
+	return s;
 }
 
 
@@ -684,6 +699,14 @@ void TinyGLRenderer::popMatrix() {
 
 Common::String TinyGLRenderer::prettyName() const {
 	return "ResidualVM: Software 3D Renderer";
+}
+
+Common::String TinyGLRenderer::getName() const {
+	return "TinyGL Software Renderer";
+}
+
+bool TinyGLRenderer::isHardwareAccelerated() const {
+	return false;
 }
 
 TGLenum TinyGLRenderer::drawMode(DrawMode mode) {

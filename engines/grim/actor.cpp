@@ -47,7 +47,6 @@
 #include "engines/grim/resource.h"
 #include "engines/grim/savegame.h"
 #include "engines/grim/set.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/model.h"
 
 #include "common/foreach.h"
@@ -1178,16 +1177,6 @@ void Actor::draw() {
 		c->setupTextures();
 	}
 
-	if (!g_driver->isHardwareAccelerated() && g_grim->getFlagRefreshShadowMask()) {
-		for (int l = 0; l < MAX_SHADOWS; l++) {
-			if (!_shadowArray[l].active)
-				continue;
-// 			g_driver->setShadow(&_shadowArray[l]);
-// 			g_driver->drawShadowPlanes();
-// 			g_driver->setShadow(NULL);
-		}
-	}
-
 	if (!_costumeStack.empty()) {
 		g_grim->getCurrSet()->setupLights(_pos);
 
@@ -1195,15 +1184,6 @@ void Actor::draw() {
 		for (int l = 0; l < MAX_SHADOWS; l++) {
 			if (!shouldDrawShadow(l))
 				continue;
-// 			g_driver->setShadow(&_shadowArray[l]);
-// 			g_driver->setShadowMode();
-// 			if (g_driver->isHardwareAccelerated())
-// 				g_driver->drawShadowPlanes();
-// 			g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
-// 			costume->draw();
-// 			g_driver->finishActorDraw();
-// 			g_driver->clearShadowMode();
-// 			g_driver->setShadow(NULL);
 
 			_shadowArray[l].plane->enable(_shadowArray[l].pos, s_shadowColor);
 

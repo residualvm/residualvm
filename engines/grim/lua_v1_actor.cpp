@@ -27,7 +27,6 @@
 #include "engines/grim/costume.h"
 #include "engines/grim/set.h"
 #include "engines/grim/model.h"
-#include "engines/grim/gfx_base.h"
 
 #include "engines/grim/lua/lauxlib.h"
 
