@@ -24,8 +24,8 @@
 #define AGL_TARGET_H
 
 namespace Graphics {
-class PixelFormat;
-class Surface;
+struct PixelFormat;
+struct Surface;
 }
 
 namespace AGL {

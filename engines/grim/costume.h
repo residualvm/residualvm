@@ -30,7 +30,7 @@
 #include "engines/grim/object.h"
 
 namespace Common {
-class Rect;
+struct Rect;
 }
 
 namespace Grim {

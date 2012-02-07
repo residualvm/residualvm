@@ -28,7 +28,7 @@
 
 namespace Common {
 class SeekableReadStream;
-class Rect;
+struct Rect;
 }
 
 namespace AGL {

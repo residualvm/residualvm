@@ -26,7 +26,7 @@
 #include "engines/grim/costume/component.h"
 
 namespace Common {
-class Rect;
+struct Rect;
 }
 
 namespace Grim {

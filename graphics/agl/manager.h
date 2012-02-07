@@ -37,7 +37,7 @@ class String;
 
 namespace Graphics {
 class PixelBuffer;
-class Surface;
+struct Surface;
 }
 
 namespace AGL {

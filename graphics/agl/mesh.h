@@ -32,7 +32,7 @@
 #include "graphics/agl/manager.h"
 
 namespace Common {
-class Rect;
+struct Rect;
 }
 
 namespace AGL {

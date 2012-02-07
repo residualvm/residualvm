@@ -26,7 +26,7 @@
 #include "common/rect.h"
 
 namespace Graphics {
-class PixelFormat;
+struct PixelFormat;
 }
 
 namespace AGL {
