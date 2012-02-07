@@ -36,7 +36,7 @@ public:
 
 	virtual Target *setupScreen(int screenW, int screenH, bool fullscreen, int bpp) = 0;
 	virtual void setupCamera(float fov, float nclip, float fclip, float roll) = 0;
-	virtual void positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest) = 0;
+	virtual void positionCamera(const Math::Matrix3x3 &worldRot, const Math::Vector3d &pos, const Math::Vector3d &interest) = 0;
 
 	virtual void enableLighting() = 0;
 	virtual void disableLighting() = 0;

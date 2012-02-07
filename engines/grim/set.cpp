@@ -27,6 +27,8 @@
 #include "graphics/agl/manager.h"
 #include "graphics/agl/light.h"
 
+#include "math/matrix3.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/set.h"
 #include "engines/grim/textsplit.h"
@@ -496,7 +498,13 @@ void Set::Setup::setupCamera() const {
 	// zbuffer transformation in bitmap.cpp to take nclip_ and
 	// fclip_ into account.
 	AGLMan.setupCamera(_fov, 0.01f, 3276.8f, _roll);
-	AGLMan.positionCamera(_pos, _interest);
+	Math::Matrix3x3 m;
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		m.buildFromForwardRightUp(Math::Vector3d(0, 1, 0), Math::Vector3d(1, 0, 0), Math::Vector3d(0, 0, 1));
+	} else {
+		m.buildFromForwardRightUp(Math::Vector3d(1, 0, 0), Math::Vector3d(0, 1, 0), Math::Vector3d(0, 0, 1));
+	}
+	AGLMan.positionCamera(m, _pos, _interest);
 }
 
 class Sorter {

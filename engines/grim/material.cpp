@@ -128,13 +128,17 @@ void loadTGA(Common::SeekableReadStream *data, Texture *t) {
 	t->_hasAlpha = false;
 	t->_texture = NULL;
 
+	Graphics::PixelFormat pf;
+
 	int bpp = data->readByte();
 	if (bpp == 32) {
 		t->_colorFormat = BM_RGBA;
 		t->_bpp = 4;
+		pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
 	} else {
 		t->_colorFormat = BM_BGR888;
 		t->_bpp = 3;
+		pf = Graphics::PixelFormat(3, 8, 8, 8, 0, 16, 8, 0, 0);
 	}
 
 	uint8 desc = data->readByte();
@@ -155,6 +159,9 @@ void loadTGA(Common::SeekableReadStream *data, Texture *t) {
 	} else {
 		data->read(t->_data, t->_width * t->_height * (bpp / 8));
 	}
+
+	Graphics::PixelBuffer buf(pf, (byte *)t->_data);
+	t->_tex = AGLMan.createTexture(buf, t->_width, t->_height);
 }
 
 void MaterialData::initEMI(Common::SeekableReadStream *data) {
@@ -290,6 +297,18 @@ int Material::getNumTextures() const {
 
 int Material::getActiveTexture() const {
 	return _currImage;
+}
+
+AGL::Texture *Material::getCurrentTexture() const {
+	if (_currImage < 0 || _currImage >= _data->_numImages) {
+		return NULL;
+	}
+
+	Texture *t = _data->_textures + _currImage;
+	if (t->_width && t->_height) {
+		return t->_tex;
+	}
+	return NULL;
 }
 
 const Common::String &Material::getFilename() const {

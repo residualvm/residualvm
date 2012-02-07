@@ -12,7 +12,7 @@ Primitive::~Primitive() {
 
 }
 
-void Primitive::begin(Mode mode) {
+void Primitive::begin(DrawMode mode) {
 	_mode = mode;
 }
 

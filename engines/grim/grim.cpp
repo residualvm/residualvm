@@ -140,6 +140,7 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 	_savedState = NULL;
 	_fps[0] = 0;
 	_iris = new Iris();
+	_movieFrame = NULL;
 
 	Color c(0, 0, 0);
 
@@ -201,6 +202,7 @@ GrimEngine::~GrimEngine() {
 	delete _iris;
 	delete _fpsLabel;
 // 	delete _fpsFont;
+	delete _movieFrame;
 
 	DebugMan.clearAllDebugChannels();
 }
@@ -470,6 +472,7 @@ void GrimEngine::updateDisplayScene() {
 		if (g_movie->isPlaying()) {
 			_movieTime = g_movie->getMovieTime();
 			if (g_movie->isUpdateNeeded()) {
+				delete _movieFrame;
 				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
 				g_movie->clearUpdateNeeded();
 			}
@@ -486,6 +489,8 @@ void GrimEngine::updateDisplayScene() {
 					_doFlip = false;
 			} else
 				delete _movieFrame;
+
+			g_movie->stop();
 		}
 		// Draw Primitives
 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
@@ -526,6 +531,7 @@ void GrimEngine::updateDisplayScene() {
 		if (g_movie->isPlaying()) {
 			_movieTime = g_movie->getMovieTime();
 			if (g_movie->isUpdateNeeded()) {
+				delete _movieFrame;
 				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
 				g_movie->clearUpdateNeeded();
 			}

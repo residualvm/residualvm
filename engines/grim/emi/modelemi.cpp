@@ -21,6 +21,11 @@
  */
 
 #include "common/endian.h"
+
+#include "graphics/agl/manager.h"
+#include "graphics/agl/mesh.h"
+#include "graphics/agl/meshface.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/material.h"
@@ -75,16 +80,33 @@ void EMIMeshFace::loadFace(Common::SeekableReadStream *data) {
 	} else {
 		readsize = 2;
 	}
+
 	for (uint32 i = 0; i < _faceLength; i ++) {
 		data->read((char *)&x, readsize);
 		data->read((char *)&y, readsize);
 		data->read((char *)&z, readsize);
 		_indexes[j++].setVal(x,y,z);
+
+		_face->vertex(x);
+		_face->color(x);
+		_face->texture(x);
+		_face->normal(x);
+
+		_face->vertex(y);
+		_face->color(y);
+		_face->texture(y);
+		_face->normal(y);
+
+		_face->vertex(z);
+		_face->color(z);
+		_face->texture(z);
+		_face->normal(z);
 	}
 }
 
 EMIMeshFace::~EMIMeshFace() {
 	delete[] _indexes;
+	delete _face;
 }
 
 void EMIModel::setTex(int index) {
@@ -127,16 +149,20 @@ void EMIModel::loadMesh(Common::SeekableReadStream *data) {
 
 	_numVertices = data->readUint32LE();
 
+	_mesh = AGLMan.createMesh();
+
 	// Vertices
 	_vertices = new Math::Vector3d[_numVertices];
 	_drawVertices = new Math::Vector3d[_numVertices];
 	for (int i = 0; i < _numVertices; i++) {
 		_vertices[i].readFromStream(data);
 		_drawVertices[i] = _vertices[i];
+		_mesh->pushVertex(_drawVertices[i]);
 	}
 	_normals = new Math::Vector3d[_numVertices];
 	for (int i = 0; i < _numVertices; i++) {
 		_normals[i].readFromStream(data);
+		_mesh->pushNormal(_normals[i]);
 	}
 	_colorMap = new EMIColormap[_numVertices];
 	for (int i = 0; i < _numVertices; ++i) {
@@ -144,10 +170,14 @@ void EMIModel::loadMesh(Common::SeekableReadStream *data) {
 		_colorMap[i].g = data->readByte();
 		_colorMap[i].b = data->readByte();
 		_colorMap[i].a = data->readByte();
+
+		_mesh->pushColor(_colorMap[i].r, _colorMap[i].g, _colorMap[i].b, _colorMap[i].a);
 	}
 	_texVerts = new Math::Vector2d[_numVertices];
 	for (int i = 0; i < _numVertices; i++) {
 		_texVerts[i].readFromStream(data);
+
+		_mesh->pushTexVertex(_texVerts[i]);
 	}
 
 	// Faces
@@ -164,6 +194,7 @@ void EMIModel::loadMesh(Common::SeekableReadStream *data) {
 	_faces = new EMIMeshFace[_numFaces];
 
 	for(uint32 j = 0;j < _numFaces; j++) {
+		_faces[j]._face = _mesh->createFace();
 		_faces[j].setParent(this);
 		_faces[j].loadFace(data);
 	}
@@ -237,8 +268,10 @@ void EMIModel::prepareForRender() {
 		return;
 	for (int i = 0; i < _numVertices; i++) {
 		_drawVertices[i] = _vertices[i];
+		float *vert = _mesh->getVerticesArray() + 3 * i;
+		memcpy(vert, _vertices[i].getData(), 3 * sizeof(float));
 		int animIndex = _vertexBoneInfo[_vertexBone[i]];
-		_skeleton->_joints[animIndex]._finalMatrix.transform(_drawVertices + i, true);
+		_skeleton->_joints[animIndex]._finalMatrix.transform(vert, true);
 	}
 }
 
@@ -256,9 +289,15 @@ void EMIModel::draw() {
 	prepareForRender();
 	// We will need to add a call to the skeleton, to get the modified vertices, but for now,
 	// I'll be happy with just static drawing
+	AGLMan.disableLighting();
+
 	for(uint32 i = 0; i < _numFaces; i++) {
-		_faces[i].render();
-		g_driver->drawEMIModelFace(this, &_faces[i]);
+		if (_faces[i]._hasTexture) {
+			Material *m = _mats[_faces[i]._texID];
+			_faces[i]._face->draw(m->getCurrentTexture());
+		} else {
+			_faces[i]._face->draw(NULL);
+		}
 	}
 }
 
@@ -286,6 +325,7 @@ EMIModel::EMIModel(const Common::String &filename, Common::SeekableReadStream *d
 	_boxData2 = new Math::Vector3d();
 	_numTexSets = 0;
 	_setType = 0;
+	_mesh = NULL;
 
 	loadMesh(data);
 }
@@ -306,6 +346,7 @@ EMIModel::~EMIModel() {
 	delete _sphereData;
 	delete _boxData;
 	delete _boxData2;
+	delete _mesh;
 }
 
 } // end of namespace Grim

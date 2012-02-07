@@ -59,7 +59,7 @@ void Iris::play(Iris::Direction dir, int x, int y, int lenght) {
 
 		const float dummy = 0.f;
 
-		_primitive->begin(AGL::Primitive::Quads);
+		_primitive->begin(AGL::Quads);
 
 		_primitive->vertex(Math::Vector2d(0.f, 0.f));
 		_primitive->vertex(Math::Vector2d(dummy, 0.f));

@@ -105,9 +105,9 @@ void PrimitiveObject::createRectangle(Common::Point p1, Common::Point p2, const 
 	_primitive->setGlobalColor(color);
 
 	if (filled) {
-		_primitive->begin(AGL::Primitive::Quads);
+		_primitive->begin(AGL::Quads);
 	} else {
-		_primitive->begin(AGL::Primitive::LineLoop);
+		_primitive->begin(AGL::LineLoop);
 	}
 
 	_primitive->vertex(p1.x, p1.y);
@@ -129,7 +129,7 @@ void PrimitiveObject::createLine(Common::Point p1, Common::Point p2, const Color
 	_primitive = AGLMan.createPrimitive();
 	_primitive->setGlobalColor(color);
 
-	_primitive->begin(AGL::Primitive::LineLoop);
+	_primitive->begin(AGL::LineLoop);
 
 	_primitive->vertex(p1.x, p1.y);
 	_primitive->vertex(p2.x, p2.y);
@@ -150,7 +150,7 @@ void PrimitiveObject::createPolygon(Common::Point p1, Common::Point p2, Common::
 	_primitive = AGLMan.createPrimitive();
 	_primitive->setGlobalColor(color);
 
-	_primitive->begin(AGL::Primitive::LineLoop);
+	_primitive->begin(AGL::LineLoop);
 
 	_primitive->vertex(p1.x, p1.y);
 	_primitive->vertex(p2.x, p2.y);

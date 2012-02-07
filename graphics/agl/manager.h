@@ -32,6 +32,15 @@ class Font;
 class FontMetric;
 class Sprite;
 
+enum DrawMode {
+	Points,
+	Lines,
+	LineLoop,
+	Triangles,
+	Quads,
+	Polygon
+};
+
 class Manager : public Common::Singleton<Manager> {
 public:
 	Manager();
@@ -41,7 +50,7 @@ public:
 	Target *getTarget() const { return _target; }
 
 	void setupCamera(float fov, float nclip, float fclip, float roll);
-	void positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest);
+	void positionCamera(const Math::Matrix3x3 &worldRot, const Math::Vector3d &pos, const Math::Vector3d &interest);
 	void flipBuffer();
 
 	void enableLighting();

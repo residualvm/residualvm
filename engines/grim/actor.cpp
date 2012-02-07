@@ -1605,9 +1605,17 @@ void Actor::setModelView() {
 	AGL::ModelView::pushMatrix();
 	AGL::ModelView::translate(_pos);
 	AGL::ModelView::scale(_scale);
-	AGL::ModelView::rotate(_yaw, 0, 0, 1);
-	AGL::ModelView::rotate(_pitch, 1, 0, 0);
-	AGL::ModelView::rotate(_roll, 0, 1, 0);
+
+	// EMI uses Y axis as down-up, so we need to rotate differently.
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		AGL::ModelView::rotate(_yaw, 0, -1, 0);
+		AGL::ModelView::rotate(_pitch, 1, 0, 0);
+		AGL::ModelView::rotate(_roll, 0, 0, 1);
+	} else {
+		AGL::ModelView::rotate(_yaw, 0, 0, 1);
+		AGL::ModelView::rotate(_pitch, 1, 0, 0);
+		AGL::ModelView::rotate(_roll, 0, 1, 0);
+	}
 }
 
 

@@ -47,8 +47,8 @@ void Manager::setupCamera(float fov, float nclip, float fclip, float roll) {
 	_renderer->setupCamera(fov, nclip, fclip, roll);
 }
 
-void Manager::positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest) {
-	_renderer->positionCamera(pos, interest);
+void Manager::positionCamera(const Math::Matrix3x3 &worldRot,  const Math::Vector3d &pos, const Math::Vector3d &interest) {
+	_renderer->positionCamera(worldRot, pos, interest);
 }
 
 void Manager::flipBuffer() {

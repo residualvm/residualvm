@@ -28,6 +28,7 @@
 #include "math/utils.h"
 #include "math/transform.h"
 #include "math/angle.h"
+#include "math/vector3d.h"
 
 namespace Math {
 
@@ -37,6 +38,8 @@ public:
 	Rotation3D();
 
 	void buildFromPitchYawRoll(const Angle &pitch, const Angle &yaw, const Angle &roll);
+
+	void buildFromForwardRightUp(const Math::Vector3d &forward, const Math::Vector3d &right, const Math::Vector3d &up);
 
 	void buildAroundPitch(const Angle &pitch);
 	void buildAroundYaw(const Angle &yaw);
@@ -69,6 +72,15 @@ void Rotation3D<T>::buildFromPitchYawRoll(const Angle &pitch, const Angle &yaw, 
 	temp.buildAroundRoll(roll); // Rotate about +Y
 	this->getMatrix() = this->getMatrix() * temp;
 	// The created matrix has the Euler order ZXY. (M*v)
+}
+
+template<class T>
+void Rotation3D<T>::buildFromForwardRightUp(const Math::Vector3d &forward, const Math::Vector3d &right, const Math::Vector3d &up) {
+	T &m = this->getMatrix();
+
+	m.getRow(0) << forward.x() << forward.y() << forward.z();
+	m.getRow(1) << right.x() << right.y() << right.z();
+	m.getRow(2) << up.x() << up.y() << up.z();
 }
 
 // at. Rotates about the +X axis.

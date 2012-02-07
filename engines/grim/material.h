@@ -79,6 +79,8 @@ public:
 	int getNumTextures() const;
 	int getActiveTexture() const;
 
+	AGL::Texture *getCurrentTexture() const;
+
 	const Common::String &getFilename() const;
 	MaterialData *getData() const;
 

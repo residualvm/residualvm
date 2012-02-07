@@ -215,20 +215,7 @@ public:
 		glDisable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
 
-		GLenum mode;
-		switch(getMode()) {
-			case Points:
-				mode = GL_POINTS;
-				break;
-			case Lines:
-				mode = GL_LINES;
-				break;
-			case LineLoop:
-				mode = GL_LINE_LOOP;
-				break;
-			case Quads:
-				mode = GL_QUADS;
-		}
+		GLenum mode = OpenGLRenderer::drawMode(getMode());
 
 		const bool globalColor = useGlobalColor();
 		if (globalColor) {
@@ -426,13 +413,14 @@ public:
 		: Texture(buf.getFormat(), width, height) {
 		GLuint format = 0;
 		GLuint internalFormat = 0;
-// 		if (material->_colorFormat == BM_RGBA) {
+
+		if (buf.getFormat() == Graphics::PixelFormat(3, 8, 8, 8, 0, 16, 8, 0, 0)) {
+			format = GL_BGR;
+			internalFormat = GL_RGB;
+		} else {
 			format = GL_RGBA;
 			internalFormat = GL_RGBA;
-// 		} else {	// The only other colorFormat we load right now is BGR
-// 		format = GL_BGR;
-// 		internalFormat = GL_RGB;
-// 		}
+		}
 
 		glGenTextures(1, &_texId);
 		glBindTexture(GL_TEXTURE_2D, _texId);
@@ -483,8 +471,17 @@ void OpenGLRenderer::setupCamera(float fov, float nclip, float fclip, float roll
 	glRotatef(roll, 0, 0, -1);
 }
 
-void OpenGLRenderer::positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest) {
-	Math::Vector3d up_vec(0, 0, 1);
+void OpenGLRenderer::positionCamera(const Math::Matrix3x3 &m, const Math::Vector3d &pos, const Math::Vector3d &interest) {
+	Math::Vector3d up_vec(m(2, 0), m(2, 1), (2, 2));
+
+	const float mat[] = {
+		m(0, 0), m(0, 1), m(0, 2), 0,
+		m(1, 0), m(1, 1), m(1, 2), 0,
+		m(2, 0), m(2, 1), m(2, 2), 0,
+		0,       0,       0,       1
+	};
+
+	glLoadMatrixf(mat);
 
 	if (pos.x() == interest.x() && pos.y() == interest.y())
 		up_vec = Math::Vector3d(0, 1, 0);
@@ -603,6 +600,25 @@ void OpenGLRenderer::popMatrix() {
 
 Common::String OpenGLRenderer::prettyName() const {
 	return Common::String::format("ResidualVM: %s/%s", glGetString(GL_VENDOR), glGetString(GL_RENDERER));
+}
+
+GLenum OpenGLRenderer::drawMode(DrawMode mode) {
+	switch(mode) {
+		case Points:
+			return GL_POINTS;
+		case Lines:
+			return GL_LINES;
+		case LineLoop:
+			return GL_LINE_LOOP;
+		case Triangles:
+			return GL_TRIANGLES;
+		case Quads:
+			return GL_QUADS;
+		case Polygon:
+			return GL_POLYGON;
+	}
+
+	return GL_TRIANGLES;
 }
 
 

@@ -9,6 +9,8 @@
 
 #include "graphics/color.h"
 
+#include "graphics/agl/manager.h"
+
 namespace Graphics {
 class Color;
 }
@@ -17,17 +19,10 @@ namespace AGL {
 
 class Primitive {
 public:
-	enum Mode {
-		Points,
-		Lines,
-		LineLoop,
-		Quads
-	};
-
 	Primitive();
 	virtual ~Primitive();
 
-	void begin(Mode mode);
+	void begin(DrawMode mode);
 
 	void vertex(float x, float y);
 	void vertex(const Math::Vector2d &vertex);
@@ -45,7 +40,7 @@ public:
 	virtual void draw(float x, float y) = 0;
 
 protected:
-	inline Mode getMode() const { return _mode; }
+	inline DrawMode getMode() const { return _mode; }
 	inline uint getNumSubs() const { return _prims.size(); }
 	inline uint getNumVertices(uint sub) const { return _prims[sub]._numVertices; }
 
@@ -63,7 +58,7 @@ private:
 	};
 	Common::Array<SubPrimitive> _prims;
 	SubPrimitive *_currentPrim;
-	Mode _mode;
+	DrawMode _mode;
 	Graphics::Color _globalColor;
 	bool _useGlobalColor;
 };

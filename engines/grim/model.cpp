@@ -448,6 +448,7 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 
 	_mesh = AGLMan.createMesh();
 	_mesh->setUseAbsoluteTexCoords(true);
+	_mesh->setDrawMode(AGL::Polygon);
 
 	for (int i = 0; i < _numVertices;++i) {
 		float *v = _vertices + 3 * i;

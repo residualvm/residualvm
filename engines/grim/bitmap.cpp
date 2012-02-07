@@ -418,7 +418,8 @@ bool BitmapData::loadTile(Common::SeekableReadStream *o) {
 	_data[0].create(pixelFormat, _width * _height, DisposeAfterUse::YES);
 	_data[0].set(pixelFormat, (byte *)bMap);
 
-	g_driver->createBitmap(this);
+	_bmps = new AGL::Bitmap2D*[1];
+	_bmps[0] = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, _data[0], _width, _height);
 #endif // ENABLE_MONKEY4
 	return true;
 }

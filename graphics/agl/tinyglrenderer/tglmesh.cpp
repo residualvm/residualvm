@@ -3,33 +3,10 @@
 
 #include "graphics/agl/texture.h"
 
+#include "graphics/agl/tinyglrenderer/tinyglrenderer.h"
 #include "graphics/agl/tinyglrenderer/tglmesh.h"
 
 namespace AGL {
-
-void TGLMesh::pushVertex(float x, float y, float z) {
-	_vertices.push_back(x);
-	_vertices.push_back(y);
-	_vertices.push_back(z);
-}
-
-void TGLMesh::pushTexVertex(float u, float v) {
-	_textures.push_back(u);
-	_textures.push_back(v);
-}
-
-void TGLMesh::pushNormal(float x, float y, float z) {
-	_normals.push_back(x);
-	_normals.push_back(y);
-	_normals.push_back(z);
-}
-
-void TGLMesh::pushColor(float r, float g, float b, float a) {
-	_colors.push_back(r);
-	_colors.push_back(g);
-	_colors.push_back(b);
-	_colors.push_back(a);
-}
 
 MeshFace *TGLMesh::createFace() {
 	TGLMeshFace *f = new TGLMeshFace(this);
@@ -96,7 +73,7 @@ bool TGLMesh::calculate2DBoundingBox(Common::Rect *rect) const {
 			tglGetIntegerv(TGL_VIEWPORT, viewPort);
 
 			int n = 3 * face->_vertices[j];
-			Math::Vector3d v(_vertices.begin() + n);
+			Math::Vector3d v(getVerticesArray() + n);
 
 			tgluProject(v.x(), v.y(), v.z(), modelView, projection, viewPort, &winX, &winY, &winZ);
 
@@ -171,47 +148,53 @@ void TGLMeshFace::color(int index) {
 }
 
 void TGLMeshFace::draw(Texture *tex) {
-	tex->bind();
+	if (tex) {
+		tex->bind();
 
-	if (_parent->getUseAbsoluteTexCoords()) {
-		tglPushMatrix();
-		tglMatrixMode(TGL_TEXTURE);
-		tglLoadIdentity();
-		tglScalef(1.0f / tex->getWidth(), 1.0f / tex->getHeight(), 1);
-		tglMatrixMode(TGL_MODELVIEW);
-		tglPopMatrix();
+		if (_parent->getUseAbsoluteTexCoords()) {
+			tglPushMatrix();
+			tglMatrixMode(TGL_TEXTURE);
+			tglLoadIdentity();
+			tglScalef(1.0f / tex->getWidth(), 1.0f / tex->getHeight(), 1);
+			tglMatrixMode(TGL_MODELVIEW);
+			tglPopMatrix();
+		}
+
+		tglEnable(TGL_TEXTURE_2D);
+		if (tex->hasAlpha()) {
+			tglEnable(TGL_ALPHA_TEST);
+		}
 	}
 
-	tglEnable(TGL_TEXTURE_2D);
-	if (tex->hasAlpha()) {
-		tglEnable(TGL_ALPHA_TEST);
-	}
+	TGLenum mode = TinyGLRenderer::drawMode(_parent->getDrawMode());
 
 	tglNormal3fv(_normal.getData());
-	tglBegin(TGL_POLYGON);
+	tglBegin(mode);
 	int num = _vertices.size();
 	for (int i = 0; i < num; ++i) {
 		int n = 3 * _normals[i];
-		tglNormal3f(_parent->_normals[n], _parent->_normals[n + 1], _parent->_normals[n + 2]);
+		tglNormal3fv(_parent->getNormalsArray() + n);
 
 		if (_useTexture) {
 			int t = 2 * _textures[i];
-			tglTexCoord2fv(_parent->_textures.begin() + t);
+			tglTexCoord2fv(_parent->getTexCoordsArray() + t);
 		}
 		if (_useColors) {
 			int c = 4 * _colors[i];
-			tglColor4fv(_parent->_colors.begin() + c);
+			tglColor4fv(_parent->getColorsArray() + c);
 		}
 
 		int v = 3 * _vertices[i];
-		tglVertex3f(_parent->_vertices[v], _parent->_vertices[v + 1], _parent->_vertices[v + 2]);
+		tglVertex3fv(_parent->getVerticesArray() + v);
 	}
 	tglEnd();
 
-	if (tex->hasAlpha()) {
-		tglDisable(TGL_ALPHA_TEST);
+	if (tex) {
+		if (tex->hasAlpha()) {
+			tglDisable(TGL_ALPHA_TEST);
+		}
+		tglDisable(TGL_TEXTURE_2D);
 	}
-	tglDisable(TGL_TEXTURE_2D);
 }
 
 

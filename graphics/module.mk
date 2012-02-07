@@ -29,6 +29,7 @@ MODULE_OBJS := \
 	agl/primitive.o \
 	agl/shadowplane.o \
 	agl/sprite.o \
+	agl/mesh.o \
 	agl/modelview.o \
 	agl/renderer.o \
 	agl/rendererfactory.o \

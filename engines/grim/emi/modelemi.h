@@ -33,6 +33,11 @@ namespace Common {
 class SeekableReadStream;
 }
 
+namespace AGL {
+class Mesh;
+class MeshFace;
+}
+
 namespace Grim {
 
 class Material;
@@ -58,6 +63,7 @@ public:
 	uint32 _texID;
 	uint32 _flags;
 	EMIModel *_parent;
+	AGL::MeshFace *_face;
 
 	EMIMeshFace() : _numFaces(0), _hasTexture(0), _texID(0), _flags(0), _indexes(NULL), _parent(NULL) { }
 	~EMIMeshFace();
@@ -83,6 +89,8 @@ public:
 	uint32 _numTextures;
 	Common::String *_texNames;
 	Material **_mats;
+
+	AGL::Mesh *_mesh;
 
 	Skeleton *_skeleton;
 

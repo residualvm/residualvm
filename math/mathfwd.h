@@ -30,6 +30,9 @@ template<int r, int c> class Matrix;
 typedef Matrix<2, 1> Vector2d;
 typedef Matrix<3, 1> Vector3d;
 
+typedef Matrix<3, 3> Matrix3x3;
+typedef Matrix<4, 4> Matrix4x4;
+
 }
 
 #endif

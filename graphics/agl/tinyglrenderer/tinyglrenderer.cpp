@@ -106,20 +106,7 @@ public:
 		tglDisable(TGL_LIGHTING);
 		tglDisable(TGL_DEPTH_TEST);
 
-		TGLenum mode;
-		switch(getMode()) {
-			case Points:
-				mode = TGL_POINTS;
-				break;
-			case Lines:
-				mode = TGL_LINES;
-				break;
-			case LineLoop:
-				mode = TGL_LINE_LOOP;
-				break;
-			case Quads:
-				mode = TGL_QUADS;
-		}
+		TGLenum mode = TinyGLRenderer::drawMode(getMode());
 
 		const bool globalColor = useGlobalColor();
 		if (globalColor) {
@@ -490,13 +477,14 @@ public:
 		: Texture(buf.getFormat(), width, height) {
 		TGLuint format = 0;
 		TGLuint internalFormat = 0;
-// 		if (material->_colorFormat == BM_RGBA) {
+
+		if (buf.getFormat() == Graphics::PixelFormat(3, 8, 8, 8, 0, 16, 8, 0, 0)) {
+			format = TGL_BGR;
+			internalFormat = TGL_RGB;
+		} else {
 			format = TGL_RGBA;
 			internalFormat = TGL_RGBA;
-// 		} else {	// The only other colorFormat we load right now is BGR
-// 		format = GL_BGR;
-// 		internalFormat = GL_RGB;
-// 		}
+		}
 
 		tglGenTextures(1, &_texId);
 		tglBindTexture(TGL_TEXTURE_2D, _texId);
@@ -611,8 +599,17 @@ void TinyGLRenderer::setupCamera(float fov, float nclip, float fclip, float roll
 	tglRotatef(roll, 0, 0, -1);
 }
 
-void TinyGLRenderer::positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest) {
-	Math::Vector3d up_vec(0, 0, 1);
+void TinyGLRenderer::positionCamera(const Math::Matrix3x3 &m, const Math::Vector3d &pos, const Math::Vector3d &interest) {
+	Math::Vector3d up_vec(m(2, 0), m(2, 1), (2, 2));
+
+	const float mat[] = {
+		m(0, 0), m(0, 1), m(0, 2), 0,
+		m(1, 0), m(1, 1), m(1, 2), 0,
+		m(2, 0), m(2, 1), m(2, 2), 0,
+		0,       0,       0,       1
+	};
+
+	tglLoadMatrixf(mat);
 
 	if (pos.x() == interest.x() && pos.y() == interest.y())
 		up_vec = Math::Vector3d(0, 1, 0);
@@ -687,6 +684,25 @@ void TinyGLRenderer::popMatrix() {
 
 Common::String TinyGLRenderer::prettyName() const {
 	return "ResidualVM: Software 3D Renderer";
+}
+
+TGLenum TinyGLRenderer::drawMode(DrawMode mode) {
+	switch(mode) {
+		case Points:
+			return TGL_POINTS;
+		case Lines:
+			return TGL_LINES;
+		case LineLoop:
+			return TGL_LINE_LOOP;
+		case Triangles:
+			return TGL_TRIANGLES;
+		case Quads:
+			return TGL_QUADS;
+		case Polygon:
+			return TGL_POLYGON;
+	}
+
+	return TGL_TRIANGLES;
 }
 
 
