@@ -11,12 +11,12 @@ class MeshFace {
 public:
 	virtual ~MeshFace() { }
 
-	virtual void prepare(uint size) { }
 	virtual void setNormal(float x, float y, float z) = 0;
 
 	virtual void vertex(int index) = 0;
 	virtual void texture(int index) = 0;
 	virtual void normal(int index) = 0;
+	virtual void color(int index) = 0;
 
 	virtual void draw(Texture *texture) = 0;
 

@@ -24,6 +24,7 @@ public:
 	virtual void pushVertex(float x, float y, float z) = 0;
 	virtual void pushTexVertex(float u, float v) = 0;
 	virtual void pushNormal(float x, float y, float z) = 0;
+	virtual void pushColor(float r, float g, float b, float a) = 0;
 
 	virtual void draw(Texture *texture) = 0;
 

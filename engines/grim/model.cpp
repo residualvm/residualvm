@@ -382,7 +382,6 @@ int MeshFace::loadBinary(Common::SeekableReadStream *data, Material *materials[]
 		_material = materials[materialPtr];
 	}
 
-	_face->prepare(_numVertices);
 	_face->setNormal(_normal.x(), _normal.y(), _normal.z());
 	for (int i = 0; i < _numVertices; ++i) {
 		_face->vertex(_vertices[i]);

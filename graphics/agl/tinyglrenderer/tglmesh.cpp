@@ -24,6 +24,13 @@ void TGLMesh::pushNormal(float x, float y, float z) {
 	_normals.push_back(z);
 }
 
+void TGLMesh::pushColor(float r, float g, float b, float a) {
+	_colors.push_back(r);
+	_colors.push_back(g);
+	_colors.push_back(b);
+	_colors.push_back(a);
+}
+
 MeshFace *TGLMesh::createFace() {
 	TGLMeshFace *f = new TGLMeshFace(this);
 	_faces.push_back(f);
@@ -79,7 +86,8 @@ bool TGLMesh::calculate2DBoundingBox(Common::Rect *rect) const {
 	for (Faces::const_iterator i = _faces.begin(); i != _faces.end(); ++i) {
 		TGLMeshFace *face = static_cast<TGLMeshFace *>(*i);
 
-		for (int j = 0; j < face->_i + 1; ++j) {
+		int num = face->_vertices.size();
+		for (int j = 0; j < num; ++j) {
 			TGLfloat modelView[16], projection[16];
 			TGLint viewPort[4];
 
@@ -136,12 +144,8 @@ TGLMeshFace::TGLMeshFace(TGLMesh *parent)
 	: MeshFace(parent),
 		_parent(parent) {
 
-}
-void TGLMeshFace::prepare(uint size) {
-	_vertices = new int[size];
-	_textures = new int[size];
-	_normals = new int[size];
-	_i = -1;
+	_useTexture = false;
+	_useColors = false;
 }
 
 void TGLMeshFace::setNormal(float x, float y, float z) {
@@ -149,49 +153,62 @@ void TGLMeshFace::setNormal(float x, float y, float z) {
 }
 
 void TGLMeshFace::vertex(int index) {
-	++_i;
-	_vertices[_i] = index;
-}
-void TGLMeshFace::texture(int index) {
-	_textures[_i] = index;
-}
-void TGLMeshFace::normal(int index) {
-	_normals[_i] = index;
+	_vertices.push_back(index);
 }
 
-void TGLMeshFace::draw(Texture *texture) {
-	texture->bind();
+void TGLMeshFace::texture(int index) {
+	_textures.push_back(index);
+	_useTexture = true;
+}
+
+void TGLMeshFace::normal(int index) {
+	_normals.push_back(index);
+}
+
+void TGLMeshFace::color(int index) {
+	_colors.push_back(index);
+	_useColors = true;
+}
+
+void TGLMeshFace::draw(Texture *tex) {
+	tex->bind();
 
 	if (_parent->getUseAbsoluteTexCoords()) {
 		tglPushMatrix();
 		tglMatrixMode(TGL_TEXTURE);
 		tglLoadIdentity();
-		tglScalef(1.0f / texture->getWidth(), 1.0f / texture->getHeight(), 1);
+		tglScalef(1.0f / tex->getWidth(), 1.0f / tex->getHeight(), 1);
 		tglMatrixMode(TGL_MODELVIEW);
 		tglPopMatrix();
 	}
 
 	tglEnable(TGL_TEXTURE_2D);
-	if (texture->hasAlpha()) {
+	if (tex->hasAlpha()) {
 		tglEnable(TGL_ALPHA_TEST);
 	}
 
 	tglNormal3fv(_normal.getData());
 	tglBegin(TGL_POLYGON);
-	for (int i = 0; i < _i + 1; ++i) {
+	int num = _vertices.size();
+	for (int i = 0; i < num; ++i) {
 		int n = 3 * _normals[i];
 		tglNormal3f(_parent->_normals[n], _parent->_normals[n + 1], _parent->_normals[n + 2]);
 
-// 			if (face->_texVertices)
+		if (_useTexture) {
 			int t = 2 * _textures[i];
-			tglTexCoord2f(_parent->_textures[t], _parent->_textures[t + 1]);
+			tglTexCoord2fv(_parent->_textures.begin() + t);
+		}
+		if (_useColors) {
+			int c = 4 * _colors[i];
+			tglColor4fv(_parent->_colors.begin() + c);
+		}
 
 		int v = 3 * _vertices[i];
 		tglVertex3f(_parent->_vertices[v], _parent->_vertices[v + 1], _parent->_vertices[v + 2]);
 	}
 	tglEnd();
 
-	if (texture->hasAlpha()) {
+	if (tex->hasAlpha()) {
 		tglDisable(TGL_ALPHA_TEST);
 	}
 	tglDisable(TGL_TEXTURE_2D);
