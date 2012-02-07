@@ -632,7 +632,7 @@ void TinyGLRenderer::setupCamera(float fov, float nclip, float fclip, float roll
 }
 
 void TinyGLRenderer::positionCamera(const Math::Matrix3x3 &m, const Math::Vector3d &pos, const Math::Vector3d &interest) {
-	Math::Vector3d up_vec(m(2, 0), m(2, 1), (2, 2));
+	Math::Vector3d up_vec(m(2, 0), m(2, 1), m(2, 2));
 
 	const float mat[] = {
 		m(0, 0), m(0, 1), m(0, 2), 0,
