@@ -513,7 +513,7 @@ public:
 	}
 
 	bool operator()(Light *l1, Light *l2) const {
-		return (l1->_pos - _pos).getSquareMagnitude() < (l2->_pos - _pos).getSquareMagnitude();
+		return (l1->_light->getPosition() - _pos).getSquareMagnitude() < (l2->_light->getPosition() - _pos).getSquareMagnitude();
 	}
 
 	Math::Vector3d _pos;
@@ -529,7 +529,6 @@ void Set::setupLights(const Math::Vector3d &pos) {
 	Sorter sorter(pos);
 	Common::sort(_lightsList.begin(), _lightsList.end(), sorter);
 
-	int count = 0;
 	foreach (Light *l, _lightsList) {
 		if (l->_enabled) {
 			l->_light->enable();
@@ -539,7 +538,6 @@ void Set::setupLights(const Math::Vector3d &pos) {
 
 void Set::turnOffLights() {
 	_enableLights = false;
-	int count = 0;
 	for (int i = 0; i < _numLights; i++) {
 		Light *l = &_lights[i];
 		if (l->_enabled) {
