@@ -32,6 +32,11 @@
 namespace Common {
 	class SeekableReadStream;
 }
+
+namespace AGL {
+class Light;
+}
+
 namespace Grim {
 
 class SaveGame;
@@ -152,11 +157,8 @@ public:
 	bool restoreState(SaveGame *savedState);
 
 	Common::String _name;
-	Common::String _type;
-	Math::Vector3d _pos, _dir;
-	Color _color;
-	float _intensity, _umbraangle, _penumbraangle;
 	bool _enabled;
+	AGL::Light *_light;
 };
 
 } // end of namespace Grim

@@ -1,5 +1,5 @@
 {
-	int n, dx, dy, sx, pp_inc_1, pp_inc_2;
+	int n, dx, dy, sx;
 	register int a;
 	register PIXEL *pp;
 #if defined(INTERP_RGB)
@@ -23,6 +23,8 @@
 	}
 	sx = zb->xsize;
 	pp = (PIXEL *)((char *) zb->pbuf.getRawBuffer() + zb->linesize * p1->y + p1->x * PSZB);
+	Graphics::PixelBuffer buf(zb->pbuf);
+	buf = pp;
 #ifdef INTERP_Z
 	pz = zb->zbuf + (p1->y * sx + p1->x);
 	pz_2 = zb->zbuf2 + (p1->y * sx + p1->x);
@@ -39,10 +41,10 @@
 
 #ifdef INTERP_RGB
 #define RGB(x) x
-#define RGBPIXEL *pp = RGB_TO_PIXEL(r >> 8,g >> 8,b >> 8)
+#define RGBPIXEL buf.setPixelAt(0, r >> 8, g >> 8, b >> 8)
 #else // INTERP_RGB
 #define RGB(x)
-#define RGBPIXEL *pp = color
+#define RGBPIXEL buf.setPixelAt(0, color)
 #endif // INTERP_RGB
 
 #ifdef INTERP_Z
@@ -69,19 +71,17 @@
 	a = 2 * dy - dx;					\
 	dy = 2 * dy;						\
 	dx = 2 * dx - dy;					\
-	pp_inc_1 = (inc_1) * PSZB;			\
-	pp_inc_2 = (inc_2) * PSZB;			\
 	do {								\
 		PUTPIXEL();						\
 		ZZ(z += zinc);					\
 		RGB(r += rinc; g += ginc; b += binc); \
 		if (a > 0) {					\
-			pp = (PIXEL *)((char *)pp + pp_inc_1); \
+			buf.shiftBy(inc_1);			\
 			ZZ(pz+=(inc_1));			\
 			ZZ(pz_2+=(inc_1));			\
 			a -= dx;					\
 		} else {						\
-			pp = (PIXEL *)((char *)pp + pp_inc_2); \
+			buf.shiftBy(inc_2);			\
 			ZZ(pz += (inc_2)); \
 			ZZ(pz_2 += (inc_2)); \
 			a += dy; \

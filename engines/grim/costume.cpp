@@ -413,13 +413,16 @@ void Costume::draw() {
 			_components[i]->draw();
 }
 
-void Costume::getBoundingBox(int *x1, int *y1, int *x2, int *y2) {
+bool Costume::calculate2DBoundingBox(Common::Rect *rect) const {
+	bool ok = false;
 	for (int i = 0; i < _numComponents; i++) {
 		ModelComponent *c = dynamic_cast<ModelComponent *>(_components[i]);
 		if (c) {
-			c->getBoundingBox(x1, y1, x2, y2);
+			// IMPORTANT! Do NOT do 'ok = ok || c->...', since if ok is true it won't call calculate2DBoundingBox.
+			ok = c->calculate2DBoundingBox(rect) || ok;
 		}
 	}
+	return ok;
 }
 
 int Costume::update(uint time) {

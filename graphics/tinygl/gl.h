@@ -85,7 +85,7 @@ enum {
 	TGL_T2F_C4F_N3F_V3F				= 0x2A2C,
 	TGL_T4F_C4F_N3F_V4F				= 0x2A2D,
 
-	// Matrix Mode 
+	// Matrix Mode
 	TGL_MATRIX_MODE					= 0x0BA0,
 	TGL_MODELVIEW					= 0x1700,
 	TGL_PROJECTION					= 0x1701,
@@ -626,7 +626,7 @@ enum {
 	TGL_INDEX_ARRAY_POINTER_EXT		= 0x8091,
 	TGL_TEXTURE_COORD_ARRAY_POINTER_EXT = 0x8092,
 	TGL_EDGE_FLAG_ARRAY_POINTER_EXT	= 0x8093,
-	
+
 	// Color-types from 1.2, from SDL_opengl.h
 	TGL_BGR                         = 0x80E0,
 	TGL_BGRA                        = 0x80E1
@@ -675,6 +675,7 @@ typedef int				TGLsizei;
 
 void tglEnable(int code);
 void tglDisable(int code);
+bool tglIsEnabled(int code);
 
 void tglShadeModel(int mode);
 void tglCullFace(int mode);
@@ -686,26 +687,26 @@ void tglEnd();
 #define PROTO_GL1(name)				\
 void tgl ## name ## 1f(float);		\
 void tgl ## name ## 1d(double);		\
-void tgl ## name ## 1fv(float *);	\
-void tgl ## name ## 1dv(double *);
+void tgl ## name ## 1fv(const float *);	\
+void tgl ## name ## 1dv(const double *);
 
 #define PROTO_GL2(name)					\
 void tgl ## name ## 2f(float, float);	\
 void tgl ## name ## 2d(double, double);	\
-void tgl ## name ## 2fv(float *);		\
-void tgl ## name ## 2dv(double *);
+void tgl ## name ## 2fv(const float *);		\
+void tgl ## name ## 2dv(const double *);
 
 #define PROTO_GL3(name)							\
 void tgl ## name ## 3f(float, float, float);	\
 void tgl ## name ## 3d(double, double, double);	\
-void tgl ## name ## 3fv(float *);				\
-void tgl ## name ## 3dv(double *);
+void tgl ## name ## 3fv(const float *);				\
+void tgl ## name ## 3dv(const double *);
 
 #define PROTO_GL4(name)									\
 void tgl ## name ## 4f(float, float, float, float);		\
 void tgl ## name ## 4d(double, double, double, double);	\
-void tgl ## name ## 4fv(float *);						\
-void tgl ## name ## 4dv(double *);
+void tgl ## name ## 4fv(const float *);						\
+void tgl ## name ## 4dv(const double *);
 
 PROTO_GL2(Vertex)
 PROTO_GL3(Vertex)
@@ -805,6 +806,8 @@ void tglTexCoordPointer(TGLint size, TGLenum type, TGLsizei stride, const TGLvoi
 
 // opengl 1.2 polygon offset
 void tglPolygonOffset(TGLfloat factor, TGLfloat units);
+
+void tglOrtho(float left, float right,float bottom, float top,float near, float far);
 
 void tglDebug(int mode);
 

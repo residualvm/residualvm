@@ -33,6 +33,7 @@ class Segment2d;
 class Rect2d {
 public:
 	Rect2d();
+	Rect2d(float left, float top, float width, float height);
 	Rect2d(const Vector2d &topLeft, const Vector2d &bottomRight);
 	Rect2d(const Vector2d &topLeft, const Vector2d &topRight,
 		   const Vector2d &bottomLeft, const Vector2d &bottomRight);
@@ -46,11 +47,12 @@ public:
 	bool intersectsCircle(const Vector2d &center, float radius) const;
 	bool containsPoint(const Vector2d &point) const;
 
+	inline const Vector2d &getTopLeft() const { return _topLeft; }
+	inline const Vector2d &getTopRight() const { return _topRight; }
+	inline const Vector2d &getBottomLeft() const { return _bottomLeft; }
+	inline const Vector2d &getBottomRight() const { return _bottomRight; }
+
 	Vector2d getCenter() const;
-	Vector2d getTopLeft() const;
-	Vector2d getTopRight() const;
-	Vector2d getBottomLeft() const;
-	Vector2d getBottomRight() const;
 	float getWidth() const;
 	float getHeight() const;
 	Vector2d getIntersection(const Vector2d &start, const Vector2d &direction, Segment2d *edge) const;

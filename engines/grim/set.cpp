@@ -24,6 +24,11 @@
 
 #include "common/foreach.h"
 
+#include "graphics/agl/manager.h"
+#include "graphics/agl/light.h"
+
+#include "math/matrix3.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/set.h"
 #include "engines/grim/textsplit.h"
@@ -32,7 +37,6 @@
 #include "engines/grim/savegame.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/bitmap.h"
-#include "engines/grim/gfx_base.h"
 
 #include "engines/grim/sound.h"
 
@@ -410,21 +414,33 @@ void Light::load(TextSplitter &ts) {
 	_name = buf;
 
 	ts.scanString(" type %256s", 1, buf);
-	_type = buf;
+	Common::String type = buf;
 
-	ts.scanString(" position %f %f %f", 3, &_pos.x(), &_pos.y(), &_pos.z());
-	ts.scanString(" direction %f %f %f", 3, &_dir.x(), &_dir.y(), &_dir.z());
-	ts.scanString(" intensity %f", 1, &_intensity);
-	ts.scanString(" umbraangle %f", 1, &_umbraangle);
-	ts.scanString(" penumbraangle %f", 1, &_penumbraangle);
+	Math::Vector3d pos, dir;
+	ts.scanString(" position %f %f %f", 3, &pos.x(), &pos.y(), &pos.z());
+	ts.scanString(" direction %f %f %f", 3, &dir.x(), &dir.y(), &dir.z());
+	float intensity, umbraangle, penumbraangle;
+	ts.scanString(" intensity %f", 1, &intensity);
+	ts.scanString(" umbraangle %f", 1, &umbraangle);
+	ts.scanString(" penumbraangle %f", 1, &penumbraangle);
 
 	int r, g, b;
 	ts.scanString(" color %d %d %d", 3, &r, &g, &b);
-	_color.getRed() = r;
-	_color.getGreen() = g;
-	_color.getBlue() = b;
 
 	_enabled = true;
+
+	AGL::Light::Type t = AGL::Light::Point;
+	if (type == "directi")
+		t = AGL::Light::Directional;
+	else if (type == "spot")
+		t = AGL::Light::Spot;
+
+	_light = AGLMan.createLight(t);
+	_light->setPosition(pos);
+	_light->setDirection(dir);
+	_light->setColor(Graphics::Color(r, g, b));
+	_light->setCutoff(t == AGL::Light::Spot ? penumbraangle : 180.f);
+	_light->setIntensity(intensity);
 }
 
 void Light::loadBinary(Common::SeekableReadStream *data) {
@@ -438,31 +454,35 @@ void Light::saveState(SaveGame *savedState) const {
 	savedState->writeBool(_enabled);
 
 	//type
-	savedState->writeString(_type);
+	savedState->writeLESint32(_light->getType());
 
-	savedState->writeVector3d(_pos);
-	savedState->writeVector3d(_dir);
+	savedState->writeVector3d(_light->getPosition());
+	savedState->writeVector3d(_light->getDirection());
 
-	savedState->writeColor(_color);
+	savedState->writeColor(Color(_light->getColor()));
 
-	savedState->writeFloat(_intensity);
-	savedState->writeFloat(_umbraangle);
-	savedState->writeFloat(_penumbraangle);
+	savedState->writeFloat(_light->getIntensity());
+	savedState->writeFloat(_light->getCutoff());
+// 	savedState->writeFloat(_umbraangle);
 }
 
 bool Light::restoreState(SaveGame *savedState) {
 	_name = savedState->readString();
 	_enabled = savedState->readBool();
-	_type = savedState->readString();
 
-	_pos           = savedState->readVector3d();
-	_dir           = savedState->readVector3d();
+	AGL::Light::Type t = (AGL::Light::Type)savedState->readLESint32();
+	_light = AGLMan.createLight(t);
 
-	_color         = savedState->readColor();
+	_light->setPosition(savedState->readVector3d());
+	_light->setDirection(savedState->readVector3d());
 
-	_intensity     = savedState->readFloat();
-	_umbraangle    = savedState->readFloat();
-	_penumbraangle = savedState->readFloat();
+	_light->setColor(savedState->readColor());
+
+	_light->setIntensity(savedState->readFloat());
+
+	float penumbraangle = savedState->readFloat();
+	_light->setCutoff(t == AGL::Light::Spot ? penumbraangle : 180.f);
+// 	_umbraangle    = savedState->readFloat();
 
 	return true;
 }
@@ -476,8 +496,14 @@ void Set::Setup::setupCamera() const {
 	// are important at some point, we'll need to modify the
 	// zbuffer transformation in bitmap.cpp to take nclip_ and
 	// fclip_ into account.
-	g_driver->setupCamera(_fov, 0.01f, 3276.8f, _roll);
-	g_driver->positionCamera(_pos, _interest);
+	AGLMan.setupCamera(_fov, 0.01f, 3276.8f, _roll);
+	Math::Matrix3x3 m;
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		m.buildFromForwardRightUp(Math::Vector3d(0, 1, 0), Math::Vector3d(1, 0, 0), Math::Vector3d(0, 0, 1));
+	} else {
+		m.buildFromForwardRightUp(Math::Vector3d(1, 0, 0), Math::Vector3d(0, 1, 0), Math::Vector3d(0, 0, 1));
+	}
+	AGLMan.positionCamera(m, _pos, _interest);
 }
 
 class Sorter {
@@ -487,7 +513,7 @@ public:
 	}
 
 	bool operator()(Light *l1, Light *l2) const {
-		return (l1->_pos - _pos).getSquareMagnitude() < (l2->_pos - _pos).getSquareMagnitude();
+		return (l1->_light->getPosition() - _pos).getSquareMagnitude() < (l2->_light->getPosition() - _pos).getSquareMagnitude();
 	}
 
 	Math::Vector3d _pos;
@@ -495,7 +521,7 @@ public:
 
 void Set::setupLights(const Math::Vector3d &pos) {
 	if (!_enableLights) {
-		g_driver->disableLights();
+		AGLMan.disableLighting();
 		return;
 	}
 
@@ -503,23 +529,19 @@ void Set::setupLights(const Math::Vector3d &pos) {
 	Sorter sorter(pos);
 	Common::sort(_lightsList.begin(), _lightsList.end(), sorter);
 
-	int count = 0;
 	foreach (Light *l, _lightsList) {
 		if (l->_enabled) {
-			g_driver->setupLight(l, count);
-			++count;
+			l->_light->enable();
 		}
 	}
 }
 
 void Set::turnOffLights() {
 	_enableLights = false;
-	int count = 0;
 	for (int i = 0; i < _numLights; i++) {
 		Light *l = &_lights[i];
 		if (l->_enabled) {
-			g_driver->turnOffLight(count);
-			++count;
+			l->_light->disable();
 		}
 	}
 }
@@ -613,7 +635,7 @@ void Set::setLightIntensity(const char *light, float intensity) {
 	for (int i = 0; i < _numLights; ++i) {
 		Light &l = _lights[i];
 		if (l._name == light) {
-			l._intensity = intensity;
+			l._light->setIntensity(intensity);
 			return;
 		}
 	}
@@ -621,7 +643,7 @@ void Set::setLightIntensity(const char *light, float intensity) {
 
 void Set::setLightIntensity(int light, float intensity) {
 	Light &l = _lights[light];
-	l._intensity = intensity;
+	l._light->setIntensity(intensity);
 }
 
 void Set::setLightEnabled(const char *light, bool enabled) {
@@ -643,7 +665,7 @@ void Set::setLightPosition(const char *light, const Math::Vector3d &pos) {
 	for (int i = 0; i < _numLights; ++i) {
 		Light &l = _lights[i];
 		if (l._name == light) {
-			l._pos = pos;
+			l._light->setPosition(pos);
 			return;
 		}
 	}
@@ -651,7 +673,7 @@ void Set::setLightPosition(const char *light, const Math::Vector3d &pos) {
 
 void Set::setLightPosition(int light, const Math::Vector3d &pos) {
 	Light &l = _lights[light];
-	l._pos = pos;
+	l._light->setPosition(pos);
 }
 
 void Set::setSoundPosition(const char *soundName, const Math::Vector3d &pos) {

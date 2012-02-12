@@ -25,6 +25,10 @@
 
 #include "engines/grim/costume/component.h"
 
+namespace Common {
+struct Rect;
+}
+
 namespace Grim {
 
 class Model;
@@ -42,15 +46,15 @@ public:
 	void resetColormap();
 	void setMatrix(const Math::Matrix4 &matrix) { _matrix = matrix; };
 	void restoreState(SaveGame *state);
-	void translateObject(bool reset);
-	static void translateObject(ModelNode *node, bool reset);
+	void translateObject(bool reset) const;
+	static void translateObject(const ModelNode *node, bool reset);
 	AnimManager *getAnimManager() const;
 
 	ModelNode *getHierarchy() { return _hier; }
 	int getNumNodes();
 	Model *getModel() { return _obj; }
 	void draw();
-	void getBoundingBox(int *x1, int *y1, int *x2, int *y2);
+	bool calculate2DBoundingBox(Common::Rect *rect) const;
 
 protected:
 	Common::String _filename;

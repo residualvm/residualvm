@@ -295,6 +295,7 @@ void gl_print_matrix(const float *m);
 // light.c
 void gl_add_select(GLContext *c, unsigned int zmin, unsigned int zmax);
 void gl_enable_disable_light(GLContext *c, int light, int v);
+bool gl_light_enabled(GLContext *c, int light);
 void gl_shade_vertex(GLContext *c, GLVertex *v);
 
 void glInitTextures(GLContext *c);

@@ -20,7 +20,9 @@
  *
  */
 
-#include "engines/grim/gfx_base.h"
+#include "graphics/agl/primitive.h"
+#include "graphics/agl/manager.h"
+
 #include "engines/grim/primitives.h"
 #include "engines/grim/savegame.h"
 #include "engines/grim/colormap.h"
@@ -34,6 +36,7 @@ PrimitiveObject::PrimitiveObject() :
 	PoolObject<PrimitiveObject, MKTAG('P', 'R', 'I', 'M')>() {
 	_filled = false;
 	_type = 0;
+	_primitive = NULL;
 }
 
 PrimitiveObject::~PrimitiveObject() {
@@ -78,6 +81,15 @@ bool PrimitiveObject::restoreState(SaveGame *savedState) {
 	_p4.x = savedState->readLEUint16();
 	_p4.y = savedState->readLEUint16();
 
+	delete _primitive;
+	if (_type == RECTANGLE) {
+		createRectangle(_p1, _p2, _color, _filled);
+	} else if (_type == LINE) {
+		createLine(_p1, _p2, _color);
+	} else {
+		createPolygon(_p1, _p2, _p3, _p4, _color);
+	}
+
 	return true;
 }
 
@@ -87,6 +99,24 @@ void PrimitiveObject::createRectangle(Common::Point p1, Common::Point p2, const 
 	_p2 = p2;
 	_color = color;
 	_filled = filled;
+
+	_primitive = AGLMan.createPrimitive();
+	_primitive->setGlobalColor(color);
+
+	if (filled) {
+		_primitive->begin(AGL::Quads);
+	} else {
+		_primitive->begin(AGL::LineLoop);
+	}
+
+	_primitive->vertex(p1.x, p1.y);
+	_primitive->vertex(p2.x + 1, p1.y);
+	_primitive->vertex(p2.x + 1, p2.y + 1);
+	_primitive->vertex(p1.x, p2.y + 1);
+
+	_primitive->end();
+
+	_x = _y = 0;
 }
 
 void PrimitiveObject::createLine(Common::Point p1, Common::Point p2, const Color &color) {
@@ -94,6 +124,18 @@ void PrimitiveObject::createLine(Common::Point p1, Common::Point p2, const Color
 	_p1 = p1;
 	_p2 = p2;
 	_color = color;
+
+	_primitive = AGLMan.createPrimitive();
+	_primitive->setGlobalColor(color);
+
+	_primitive->begin(AGL::LineLoop);
+
+	_primitive->vertex(p1.x, p1.y);
+	_primitive->vertex(p2.x, p2.y);
+
+	_primitive->end();
+
+	_x = _y = 0;
 }
 
 void PrimitiveObject::createPolygon(Common::Point p1, Common::Point p2, Common::Point p3, Common::Point p4, const Color &color) {
@@ -103,40 +145,42 @@ void PrimitiveObject::createPolygon(Common::Point p1, Common::Point p2, Common::
 	_p3 = p3;
 	_p4 = p4;
 	_color = color;
+
+	_primitive = AGLMan.createPrimitive();
+	_primitive->setGlobalColor(color);
+
+	_primitive->begin(AGL::LineLoop);
+
+	_primitive->vertex(p1.x, p1.y);
+	_primitive->vertex(p2.x, p2.y);
+
+	_primitive->newSubPolygon();
+
+	_primitive->vertex(p3.x, p3.y);
+	_primitive->vertex(p4.x, p4.y);
+
+	_primitive->end();
+
+	_x = _y = 0;
 }
 
 void PrimitiveObject::draw() {
 	assert(_type);
 
-	if (_type == RECTANGLE)
-		g_driver->drawRectangle(this);
-	else if (_type == LINE)
-		g_driver->drawLine(this);
-	else if (_type == POLYGON)
-		g_driver->drawPolygon(this);
+	_primitive->draw(_x, _y);
 }
 
 void PrimitiveObject::setPos(int x, int y) {
 	if (x != -1) {
-		int dx = x - _p1.x;
-		_p1.x += dx;
-		if (_type == RECTANGLE || _type == LINE || _type == POLYGON)
-			_p2.x += dx;
-		if (_type == POLYGON) {
-			_p3.x += dx;
-			_p4.x += dx;
-		}
+		_x = x - _p1.x;
 	}
 	if (y != -1) {
-		int dy = y - _p1.y;
-		_p1.y += dy;
-		if (_type == RECTANGLE || _type == LINE || _type == POLYGON)
-			_p2.y += dy;
-		if (_type == POLYGON) {
-			_p3.y += dy;
-			_p4.y += dy;
-		}
+		_y = y - _p1.y;
 	}
+}
+
+void PrimitiveObject::setColor(const Color &color) {
+	_primitive->setGlobalColor(color);
 }
 
 } // end of namespace Grim

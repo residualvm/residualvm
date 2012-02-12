@@ -19,6 +19,27 @@ MODULE_OBJS := \
 	yuv_to_rgb.o \
 	yuva_to_rgba.o \
 	pixelbuffer.o \
+	color.o \
+	agl/manager.o \
+	agl/target.o \
+	agl/font.o \
+	agl/label.o \
+	agl/bitmap2d.o \
+	agl/texture.o \
+	agl/primitive.o \
+	agl/shadowplane.o \
+	agl/sprite.o \
+	agl/mesh.o \
+	agl/modelview.o \
+	agl/renderer.o \
+	agl/rendererfactory.o \
+	agl/tinyglrenderer/tinyglrenderer.o \
+	agl/tinyglrenderer/tglmesh.o \
+	agl/tinyglrenderer/tglbitmap2d.o \
+	agl/openglrenderer/openglrenderer.o \
+	agl/openglrenderer/glbitmap2d.o \
+	agl/openglrenderer/glmesh.o \
+	agl/openglrenderer/gltarget.o \
 	tinygl/api.o \
 	tinygl/arrays.o \
 	tinygl/clear.o \

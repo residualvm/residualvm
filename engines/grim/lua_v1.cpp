@@ -28,6 +28,8 @@
 #include "graphics/pixelbuffer.h"
 #include "graphics/colormasks.h"
 
+#include "graphics/agl/manager.h"
+
 #include "math/matrix3.h"
 
 #include "engines/grim/debug.h"
@@ -44,7 +46,6 @@
 #include "engines/grim/bitmap.h"
 #include "engines/grim/font.h"
 #include "engines/grim/set.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/model.h"
 #include "engines/grim/primitives.h"
 
@@ -275,7 +276,7 @@ void Lua_V1::GetAngleBetweenVectors() {
 }
 
 void Lua_V1::Is3DHardwareEnabled() {
-	pushbool(g_driver->isHardwareAccelerated());
+	pushbool(AGLMan.isHardwareAccelerated());
 }
 
 void Lua_V1::SetHardwareState() {
@@ -306,7 +307,7 @@ void Lua_V1::EnumerateVideoDevices() {
 	lua_Object result = lua_createtable();
 	lua_pushobject(result);
 	lua_pushnumber(0.0); // id of device
-	lua_pushstring(g_driver->getVideoDeviceName()); // name of device
+	lua_pushstring(AGLMan.getRendererName().c_str()); // name of device
 	lua_settable();
 	lua_pushobject(result);
 }
@@ -319,7 +320,7 @@ void Lua_V1::Enumerate3DDevices() {
 /*	int num = (int)lua_getnumber(numObj);*/
 	lua_pushobject(result);
 	lua_pushnumber(-1.0);
-	if (g_driver->isHardwareAccelerated()) {
+	if (AGLMan.isHardwareAccelerated()) {
 		lua_pushstring("OpenGL"); // type of 3d renderer
 	} else {
 		lua_pushstring("/engn003/Software"); // type of 3d renderer

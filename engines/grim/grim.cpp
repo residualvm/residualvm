@@ -46,6 +46,11 @@
 
 #include "graphics/pixelbuffer.h"
 
+#include "graphics/agl/manager.h"
+#include "graphics/agl/target.h"
+#include "graphics/agl/texture.h"
+#include "graphics/agl/label.h"
+
 #include "gui/error.h"
 #include "gui/gui-manager.h"
 
@@ -62,7 +67,6 @@
 #include "engines/grim/registry.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/localize.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/bitmap.h"
 #include "engines/grim/font.h"
 #include "engines/grim/primitives.h"
@@ -78,7 +82,6 @@
 namespace Grim {
 
 GrimEngine *g_grim = NULL;
-GfxBase *g_driver = NULL;
 int g_imuseState = -1;
 
 GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, Common::Platform platform, Common::Language language) :
@@ -135,6 +138,7 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 	_savedState = NULL;
 	_fps[0] = 0;
 	_iris = new Iris();
+	_movieFrame = NULL;
 
 	Color c(0, 0, 0);
 
@@ -191,9 +195,10 @@ GrimEngine::~GrimEngine() {
 	g_localizer = NULL;
 	delete g_resourceloader;
 	g_resourceloader = NULL;
-	delete g_driver;
-	g_driver = NULL;
 	delete _iris;
+	delete _fpsLabel;
+// 	delete _fpsFont;
+	delete _movieFrame;
 
 	DebugMan.clearAllDebugChannels();
 }
@@ -243,14 +248,15 @@ Common::Error GrimEngine::run() {
 		_softRenderer=true;
 	}
 
+
 	if (_softRenderer)
-		g_driver = CreateGfxTinyGL();
+		AGLMan.init("TinyGL");
 #ifdef USE_OPENGL
 	else
-		g_driver = CreateGfxOpenGL();
+		AGLMan.init("OpenGL");
 #endif
 
-	g_driver->setupScreen(640, 480, fullscreen);
+	AGLMan.setupScreen(640, 480, fullscreen, 24);
 
 	if (getGameType() == GType_MONKEY4 && SearchMan.hasFile("AMWI.m4b")) {
 		// TODO: Play EMI Mac Aspyr logo
@@ -265,12 +271,12 @@ Common::Error GrimEngine::run() {
 	else if (getGamePlatform() == Common::kPlatformPS2 && getGameType() == GType_MONKEY4)
 		splash_bm = Bitmap::create("load.tga");
 
-	g_driver->clearScreen();
+	AGLMan.getTarget()->clear();
 
 	if (splash_bm != NULL)
 		splash_bm->draw();
-	
-	g_driver->flipBuffer();
+
+	AGLMan.flipBuffer();
 
 	LuaBase *lua = NULL;
 	if (getGameType() == GType_GRIM) {
@@ -304,6 +310,10 @@ Common::Error GrimEngine::run() {
 		_savegameLoadRequest = true;
 		_savegameFileName = saveName;
 	}
+
+	_fpsFont = g_resourceloader->loadFont("ComicSans18.laf");
+	_fpsLabel = AGLMan.createLabel(_fpsFont->getFont());
+	_fpsLabel->setTextColor(Color(255, 255, 255));
 
 	g_grim->setMode(NormalMode);
 	if (splash_bm)
@@ -446,20 +456,23 @@ void GrimEngine::updateDisplayScene() {
 		if (g_movie->isPlaying()) {
 			_movieTime = g_movie->getMovieTime();
 			if (g_movie->isUpdateNeeded()) {
-				g_driver->prepareMovieFrame(g_movie->getDstSurface());
+				delete _movieFrame;
+				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
 				g_movie->clearUpdateNeeded();
 			}
 			int frame = g_movie->getFrame();
 			if (frame >= 0) {
 				if (frame != _prevSmushFrame) {
 					_prevSmushFrame = g_movie->getFrame();
-					g_driver->drawMovieFrame(g_movie->getX(), g_movie->getY());
-					if (_showFps)
-						g_driver->drawEmergString(550, 25, _fps, Color(255, 255, 255));
+					_movieFrame->draw(g_movie->getX(), g_movie->getY());
+					if (_showFps) {
+						_fpsLabel->setText(_fps);
+						_fpsLabel->draw(550, 25);
+					}
 				} else
 					_doFlip = false;
 			} else
-				g_driver->releaseMovieFrame();
+				delete _movieFrame;
 		}
 		// Draw Primitives
 		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
@@ -472,7 +485,7 @@ void GrimEngine::updateDisplayScene() {
 
 		cameraPostChangeHandle(_currSet->getSetup());
 
-		g_driver->clearScreen();
+		AGLMan.getTarget()->clear();
 
 		_prevSmushFrame = 0;
 		_movieTime = 0;
@@ -500,13 +513,14 @@ void GrimEngine::updateDisplayScene() {
 		if (g_movie->isPlaying()) {
 			_movieTime = g_movie->getMovieTime();
 			if (g_movie->isUpdateNeeded()) {
-				g_driver->prepareMovieFrame(g_movie->getDstSurface());
+				delete _movieFrame;
+				_movieFrame = AGLMan.createBitmap2D(g_movie->getDstSurface());
 				g_movie->clearUpdateNeeded();
 			}
 			if (g_movie->getFrame() >= 0)
-				g_driver->drawMovieFrame(g_movie->getX(), g_movie->getY());
+				_movieFrame->draw(g_movie->getX(), g_movie->getY());
 			else
-				g_driver->releaseMovieFrame();
+				delete _movieFrame;
 		}
 
 		// Draw Primitives
@@ -516,15 +530,13 @@ void GrimEngine::updateDisplayScene() {
 
 		_currSet->setupCamera();
 
-		g_driver->set3DMode();
-
 		// Draw actors
 		foreach (Actor *a, Actor::getPool()) {
 			if (a->isInSet(_currSet->getName()) && a->isVisible())
 				a->draw();
 			a->undraw(a->isInSet(_currSet->getName()) && a->isVisible());
 		}
-		flagRefreshShadowMask(false);
+// 		flagRefreshShadowMask(false);
 
 		// Draw overlying scene components
 		// The overlay objects should be drawn on top of everything else,
@@ -545,11 +557,13 @@ void GrimEngine::doFlip() {
 		return;
 	}
 
-	if (_showFps && _mode != DrawMode)
-		g_driver->drawEmergString(550, 25, _fps, Color(255, 255, 255));
+	if (_showFps && _mode != DrawMode) {
+		_fpsLabel->setText(_fps);
+		_fpsLabel->draw(550, 25);
+	}
 
 	if (_flipEnable)
-		g_driver->flipBuffer();
+		AGLMan.flipBuffer();
 
 	if (_showFps && _mode != DrawMode) {
 		unsigned int currentTime = g_system->getMillis();
@@ -596,15 +610,15 @@ void GrimEngine::mainLoop() {
 
 		if (_changeHardwareState || _changeFullscreenState) {
 			_changeHardwareState = false;
-			bool fullscreen = g_driver->isFullscreen();
+			bool fullscreen = AGLMan.isFullscreen();
 			if (_changeFullscreenState) {
 				fullscreen = !fullscreen;
 			}
 			g_system->setFeatureState(OSystem::kFeatureFullscreenMode, fullscreen);
 			g_registry->set("fullscreen", (fullscreen ? "true" : "false"));
 
-			uint screenWidth = g_driver->getScreenWidth();
-			uint screenHeight = g_driver->getScreenHeight();
+			uint screenWidth = AGLMan.getTarget()->getWidth();
+			uint screenHeight = AGLMan.getTarget()->getHeight();
 
 			EngineMode mode = getMode();
 
@@ -612,21 +626,20 @@ void GrimEngine::mainLoop() {
 			savegameSave();
 			clearPools();
 
-			delete g_driver;
 			if (tolower(g_registry->get("soft_renderer", "false")[0]) == 't') {
-				g_driver = CreateGfxTinyGL();
+				AGLMan.init("TinyGL");
 			} else {
-				g_driver = CreateGfxOpenGL();
+				AGLMan.init("OpenGL");
 			}
 
-			g_driver->setupScreen(screenWidth, screenHeight, fullscreen);
+			AGLMan.setupScreen(screenWidth, screenHeight, fullscreen, 32);
 			savegameRestore();
 
 			if (mode == DrawMode) {
 				setMode(GrimEngine::NormalMode);
 				updateDisplayScene();
-				g_driver->storeDisplay();
-				g_driver->dimScreen();
+				AGLMan.getTarget()->storeContent();
+				AGLMan.getTarget()->dim(0.1f);
 			}
 			setMode(mode);
 			_changeFullscreenState = false;
@@ -724,6 +737,7 @@ void GrimEngine::savegameRestore() {
 	delete _currSet;
 	_currSet = NULL;
 
+	Bitmap::staticRestoreState(_savedState);
 	Bitmap::getPool().restoreObjects(_savedState);
 	Debug::debug(Debug::Engine, "Bitmaps restored succesfully.");
 
@@ -747,9 +761,6 @@ void GrimEngine::savegameRestore() {
 
 	restoreGRIM();
 	Debug::debug(Debug::Engine, "Engine restored succesfully.");
-
-	g_driver->restoreState(_savedState);
-	Debug::debug(Debug::Engine, "Renderer restored succesfully.");
 
 	g_imuse->restoreState(_savedState);
 	Debug::debug(Debug::Engine, "iMuse restored succesfully.");
@@ -805,21 +816,19 @@ void GrimEngine::restoreGRIM() {
 
 void GrimEngine::storeSaveGameImage(SaveGame *state) {
 	int width = 250, height = 188;
-	Bitmap *screenshot;
 
 	debug("GrimEngine::StoreSaveGameImage() started.");
 
 	EngineMode mode = g_grim->getMode();
 	g_grim->setMode(_previousMode);
 	g_grim->updateDisplayScene();
-	g_driver->storeDisplay();
-	screenshot = g_driver->getScreenshot(width, height);
+	AGLMan.getTarget()->storeContent();
+	Graphics::Surface *screenshot = AGLMan.getTarget()->getScreenshot(Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0), width, height);
 	g_grim->setMode(mode);
 	state->beginSection('SIMG');
 	if (screenshot) {
-		int size = screenshot->getWidth() * screenshot->getHeight();
-		screenshot->setActiveImage(0);
-		uint16 *data = (uint16 *)screenshot->getData().getRawBuffer();
+		int size = screenshot->w * screenshot->h;
+		uint16 *data = (uint16 *)screenshot->pixels;
 		for (int l = 0; l < size; l++) {
 			state->writeLEUint16(data[l]);
 		}
@@ -854,6 +863,7 @@ void GrimEngine::savegameSave() {
 
 	savegameCallback();
 
+	Bitmap::staticSaveState(_savedState);
 	Bitmap::getPool().saveObjects(_savedState);
 	Debug::debug(Debug::Engine, "Bitmaps saved succesfully.");
 
@@ -877,9 +887,6 @@ void GrimEngine::savegameSave() {
 
 	saveGRIM();
 	Debug::debug(Debug::Engine, "Engine saved succesfully.");
-
-	g_driver->saveState(_savedState);
-	Debug::debug(Debug::Engine, "Renderer saved succesfully.");
 
 	g_imuse->saveState(_savedState);
 	Debug::debug(Debug::Engine, "iMuse saved succesfully.");

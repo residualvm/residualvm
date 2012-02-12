@@ -28,6 +28,13 @@
 
 namespace Common {
 class SeekableReadStream;
+struct Rect;
+}
+
+namespace AGL {
+class MeshFace;
+class Mesh;
+class Sprite;
 }
 
 namespace Grim {
@@ -46,6 +53,7 @@ struct Sprite {
 	float _height;
 	bool _visible;
 	Material *_material;
+	AGL::Sprite *_sprite;
 	Sprite *_next;
 };
 
@@ -99,7 +107,7 @@ public:
 
 class MeshFace {
 public:
-	int loadBinary(Common::SeekableReadStream *data, Material *materials[]);
+	int loadBinary(Common::SeekableReadStream *data, Material *materials[], float*,float*,float*);
 	void draw(float *vertices, float *vertNormals, float *textureVerts) const;
 	void changeMaterial(Material *material);
 	~MeshFace();
@@ -110,6 +118,8 @@ public:
 	int _numVertices;
 	int *_vertices, *_texVertices;
 	Math::Vector3d _normal;
+
+	AGL::MeshFace *_face;
 };
 
 class Mesh {
@@ -118,7 +128,7 @@ public:
 	void loadText(TextSplitter *ts, Material *materials[]);
 	void changeMaterials(Material *materials[]);
 	void draw() const;
-	void getBoundingBox(int *x1, int *y1, int *x2, int *y2) const;
+	bool calculate2DBoundingBox(Common::Rect *rect) const;
 	void update();
 	Mesh() : _numFaces(0) { }
 	~Mesh();
@@ -139,6 +149,8 @@ public:
 	int _numFaces;
 	MeshFace *_faces;
 	Math::Matrix4 _matrix;
+
+	AGL::Mesh *_mesh;
 };
 
 class ModelNode {
@@ -147,7 +159,7 @@ public:
 	~ModelNode();
 	void loadBinary(Common::SeekableReadStream *data, ModelNode *hierNodes, const Model::Geoset *g);
 	void draw() const;
-	void getBoundingBox(int *x1, int *y1, int *x2, int *y2) const;
+	bool calculate2DBoundingBox(Common::Rect *rect) const;
 	void addChild(ModelNode *child);
 	void removeChild(ModelNode *child);
 	void setMatrix(const Math::Matrix4 &matrix);

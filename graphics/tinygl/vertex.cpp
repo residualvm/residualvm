@@ -141,7 +141,7 @@ static inline void gl_vertex_transform(GLContext *c, GLVertex *v) {
 	V4 *n;
 
 	if (c->lighting_enabled) {
-		// eye coordinates needed for lighting 
+		// eye coordinates needed for lighting
 
 		m = &c->matrix_stack_ptr[0]->m[0][0];
 		v->ec.X = (v->coord.X * m[0] + v->coord.Y * m[1] +

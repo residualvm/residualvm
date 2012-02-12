@@ -21,13 +21,19 @@
  */
 
 #include "common/endian.h"
+#include "common/rect.h"
+
+#include "graphics/agl/mesh.h"
+#include "graphics/agl/meshface.h"
+#include "graphics/agl/manager.h"
+#include "graphics/agl/modelview.h"
+#include "graphics/agl/sprite.h"
 
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/model.h"
 #include "engines/grim/material.h"
 #include "engines/grim/textsplit.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/colormap.h"
 
@@ -37,8 +43,7 @@ void Sprite::draw() const {
 	if (!_visible)
 		return;
 
-	_material->select();
-	g_driver->drawSprite(this);
+	_sprite->draw(_material->getCurrentTexture(), _pos);
 }
 
 /**
@@ -341,7 +346,7 @@ MeshFace::~MeshFace() {
 	delete[] _texVertices;
 }
 
-int MeshFace::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
+int MeshFace::loadBinary(Common::SeekableReadStream *data, Material *materials[],float *vertices, float *normals, float *textures) {
 	char v3[4 * 3], f[4];
 	data->seek(4, SEEK_CUR);
 	_type = data->readUint32LE();
@@ -375,6 +380,14 @@ int MeshFace::loadBinary(Common::SeekableReadStream *data, Material *materials[]
 		materialPtr = data->readUint32LE();
 		_material = materials[materialPtr];
 	}
+
+	_face->setNormal(_normal.x(), _normal.y(), _normal.z());
+	for (int i = 0; i < _numVertices; ++i) {
+		_face->vertex(_vertices[i]);
+		_face->texture(_texVertices[i]);
+		_face->normal(_vertices[i]);
+	}
+
 	return materialPtr;
 }
 
@@ -383,8 +396,7 @@ void MeshFace::changeMaterial(Material *material) {
 }
 
 void MeshFace::draw(float *vertices, float *vertNormals, float *textureVerts) const {
-	_material->select();
-	g_driver->drawModelFace(this, vertices, vertNormals, textureVerts);
+	_face->draw(_material->getCurrentTexture());
 }
 
 /**
@@ -397,6 +409,7 @@ Mesh::~Mesh() {
 	delete[] _textureVerts;
 	delete[] _faces;
 	delete[] _materialid;
+	delete _mesh;
 }
 
 void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
@@ -428,12 +441,33 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 		_verticesI[i] = get_float(f);
 	}
 	data->seek(_numVertices * 4, SEEK_CUR);
-	for (int i = 0; i < _numFaces; i++)
-		_materialid[i] = _faces[i].loadBinary(data, materials);
+
+	_mesh = AGLMan.createMesh();
+	_mesh->setUseAbsoluteTexCoords(true);
+	_mesh->setDrawMode(AGL::Polygon);
+
+	for (int i = 0; i < _numFaces; i++) {
+		_faces[i]._face = _mesh->createFace();
+		_materialid[i] = _faces[i].loadBinary(data, materials,_vertices,_vertNormals,_textureVerts);
+	}
 	for (int i = 0; i < 3 * _numVertices; i++) {
 		data->read(f, 4);
 		_vertNormals[i] = get_float(f);
 	}
+
+	for (int i = 0; i < _numVertices; ++i) {
+		float *v = _vertices + 3 * i;
+		_mesh->pushVertex(v[0], v[1], v[2]);
+	}
+	for (int i = 0; i < _numTextureVerts; ++i) {
+		float *t = _textureVerts + 2 * i;
+		_mesh->pushTexVertex(t[0], t[1]);
+	}
+	for (int i = 0; i < _numVertices; ++i) {
+		float *n = _vertNormals + 3 * i;
+		_mesh->pushNormal(n[0], n[1], n[2]);
+	}
+
 	_shadow = data->readUint32LE();
 	data->seek(4, SEEK_CUR);
 	data->read(f, 4);
@@ -457,6 +491,10 @@ void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 	_vertices = new float[3 * _numVertices];
 	_verticesI = new float[_numVertices];
 	_vertNormals = new float[3 * _numVertices];
+
+	_mesh = AGLMan.createMesh();
+	_mesh->setUseAbsoluteTexCoords(true);
+	_mesh->setDrawMode(AGL::Polygon);
 
 	for (int i = 0; i < _numVertices; i++) {
 		int num;
@@ -489,6 +527,19 @@ void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 		_vertNormals[3 * num + 2] = z;
 	}
 
+	for (int i = 0; i < _numVertices; ++i) {
+		float *v = _vertices + 3 * i;
+		_mesh->pushVertex(v[0], v[1], v[2]);
+	}
+	for (int i = 0; i < _numTextureVerts; ++i) {
+		float *t = _textureVerts + 2 * i;
+		_mesh->pushTexVertex(t[0], t[1]);
+	}
+	for (int i = 0; i < _numVertices; ++i) {
+		float *n = _vertNormals + 3 * i;
+		_mesh->pushNormal(n[0], n[1], n[2]);
+	}
+
 	ts->scanString("faces %d", 1, &_numFaces);
 	_faces = new MeshFace[_numFaces];
 	_materialid = new int[_numFaces];
@@ -515,6 +566,7 @@ void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 		_faces[num]._numVertices = verts;
 		_faces[num]._vertices = new int[verts];
 		_faces[num]._texVertices = new int[verts];
+
 		for (int j = 0; j < verts; j++) {
 			int readlen2;
 
@@ -533,6 +585,14 @@ void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
 		float x, y, z;
 		ts->scanString(" %d: %f %f %f", 4, &num, &x, &y, &z);
 		_faces[num]._normal = Math::Vector3d(x, y, z);
+
+		_faces[num]._face = _mesh->createFace();
+		_faces[num]._face->setNormal(_faces[num]._normal);
+		for (int j = 0; j < _faces[num]._numVertices; ++j) {
+			_faces[num]._face->vertex(_faces[num]._vertices[j]);
+			_faces[num]._face->texture(_faces[num]._texVertices[j]);
+			_faces[num]._face->normal(_faces[num]._vertices[j]);
+		}
 	}
 }
 
@@ -546,24 +606,26 @@ void Mesh::changeMaterials(Material *materials[]) {
 
 void Mesh::draw() const {
 	if (_lightingMode == 0)
-		g_driver->disableLights();
+		AGLMan.disableLighting();
 
 	for (int i = 0; i < _numFaces; i++)
 		_faces[i].draw(_vertices, _vertNormals, _textureVerts);
 
 	if (_lightingMode == 0)
-		g_driver->enableLights();
+		AGLMan.enableLighting();
 }
 
-void Mesh::getBoundingBox(int *x1, int *y1, int *x2, int *y2) const {
-	int winX1, winY1, winX2, winY2;
-	g_driver->getBoundingBoxPos(this, &winX1, &winY1, &winX2, &winY2);
-	if (winX1 != -1 && winY1 != -1 && winX2 != -1 && winY2 != -1) {
-		*x1 = MIN(*x1, winX1);
-		*y1 = MIN(*y1, winY1);
-		*x2 = MAX(*x2, winX2);
-		*y2 = MAX(*y2, winY2);
+bool Mesh::calculate2DBoundingBox(Common::Rect *rect) const {
+	Common::Rect r;
+	if (_mesh->calculate2DBoundingBox(&r)) {
+		rect->left = MIN(rect->left, r.left);
+		rect->top = MIN(rect->top, r.top);
+		rect->right = MAX(rect->right, r.right);
+		rect->bottom = MAX(rect->bottom, r.bottom);
+
+		return true;
 	}
+	return false;
 }
 
 /**
@@ -634,22 +696,19 @@ void ModelNode::loadBinary(Common::SeekableReadStream *data, ModelNode *hierNode
 void ModelNode::draw() const {
 	translateViewpoint();
 	if (_hierVisible) {
-		g_driver->translateViewpointStart();
-		g_driver->translateViewpoint(_pivot);
+		AGL::ModelView::pushMatrix();
+		AGL::ModelView::translate(_pivot);
 
-		if (!g_driver->isShadowModeActive()) {
-			Sprite *sprite = _sprite;
-			while (sprite) {
-				sprite->draw();
-				sprite = sprite->_next;
-			}
+		Sprite *sprite = _sprite;
+		while (sprite) {
+			sprite->draw();
+			sprite = sprite->_next;
 		}
 
 		if (_mesh && _meshVisible) {
 			_mesh->draw();
 		}
-
-		g_driver->translateViewpointFinish();
+		AGL::ModelView::popMatrix();
 
 		if (_child) {
 			_child->draw();
@@ -662,27 +721,31 @@ void ModelNode::draw() const {
 	}
 }
 
-void ModelNode::getBoundingBox(int *x1, int *y1, int *x2, int *y2) const {
+bool ModelNode::calculate2DBoundingBox(Common::Rect *rect) const {
 	translateViewpoint();
+	bool ok = false;
 	if (_hierVisible) {
-		g_driver->translateViewpointStart();
-		g_driver->translateViewpoint(_pivot);
+		AGL::ModelView::pushMatrix();
+		AGL::ModelView::translate(_pivot);
 
 		if (_mesh && _meshVisible) {
-			_mesh->getBoundingBox(x1, y1, x2, y2);
+			ok = _mesh->calculate2DBoundingBox(rect);
 		}
 
-		g_driver->translateViewpointFinish();
+		AGL::ModelView::popMatrix();
 
 		if (_child) {
-			_child->getBoundingBox(x1, y1, x2, y2);
+			// IMPORTANT! Do NOT do 'ok = ok || c->...', since if ok is true it won't call calculate2DBoundingBox.
+			ok = _child->calculate2DBoundingBox(rect) || ok;
 		}
 	}
 	translateViewpointBack();
 
 	if (_sibling) {
-		_sibling->getBoundingBox(x1, y1, x2, y2);
+		// IMPORTANT! Do NOT do 'ok = ok || c->...', since if ok is true it won't call calculate2DBoundingBox.
+		ok = _sibling->calculate2DBoundingBox(rect) || ok;
 	}
+	return ok;
 }
 
 void ModelNode::addChild(ModelNode *child) {
@@ -767,16 +830,16 @@ void ModelNode::translateViewpoint() const {
 	Math::Angle animPitch = _pitch + _animPitch;
 	Math::Angle animYaw = _yaw + _animYaw;
 	Math::Angle animRoll = _roll + _animRoll;
-	g_driver->translateViewpointStart();
 
-	g_driver->translateViewpoint(animPos);
-	g_driver->rotateViewpoint(animYaw, Math::Vector3d(0, 0, 1));
-	g_driver->rotateViewpoint(animPitch, Math::Vector3d(1, 0, 0));
-	g_driver->rotateViewpoint(animRoll, Math::Vector3d(0, 1, 0));
+	AGL::ModelView::pushMatrix();
+	AGL::ModelView::translate(animPos);
+	AGL::ModelView::rotate(animYaw, 0, 0, 1);
+	AGL::ModelView::rotate(animPitch, 1, 0, 0);
+	AGL::ModelView::rotate(animRoll, 0, 1, 0);
 }
 
 void ModelNode::translateViewpointBack() const {
-	g_driver->translateViewpointFinish();
+	AGL::ModelView::popMatrix();
 }
 
 } // end of namespace Grim

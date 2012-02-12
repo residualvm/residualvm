@@ -18,7 +18,7 @@ void ZB_fillTriangleFlat(ZBuffer *zb, ZBufferPoint *p0, ZBufferPoint *p1, ZBuffe
 #define PUT_PIXEL(_a) {						\
 	zz = z >> ZB_POINT_Z_FRAC_BITS;			\
 	if ((ZCMP(zz, pz[_a])) && (ZCMP(z, pz_2[_a]))) {	\
-	pp[_a] = color;						\
+	buf.setPixelAt(_a, color);				\
 	pz_2[_a] = z;							\
 	}										\
 	z += dzdx;								\
@@ -48,7 +48,11 @@ void ZB_fillTriangleSmooth(ZBuffer *zb, ZBufferPoint *p0, ZBufferPoint *p1, ZBuf
 	zz = z >> ZB_POINT_Z_FRAC_BITS;			\
 	if ((ZCMP(zz, pz[_a])) && (ZCMP(z, pz_2[_a]))) {	\
 		tmp = rgb & 0xF81F07E0;				\
-		pp[_a] = tmp | (tmp >> 16);			\
+		unsigned int c = tmp | (tmp >> 16); \
+		unsigned int r = (c & 0xF800) >> 8; \
+		unsigned int g = (c & 0x07E0) >> 3; \
+		unsigned int b = (c & 0x001F) << 3; \
+		buf.setPixelAt(_a, r, g, b); 		\
 		pz_2[_a] = z;						\
 	}										\
 	z += dzdx;								\
@@ -58,11 +62,11 @@ void ZB_fillTriangleSmooth(ZBuffer *zb, ZBufferPoint *p0, ZBufferPoint *p1, ZBuf
 #define DRAW_LINE()	{								\
 	register unsigned short *pz;					\
 	register unsigned int *pz_2;					\
-	register PIXEL *pp;								\
-	register unsigned int z, zz, rgb, drgbdx;	\
+	Graphics::PixelBuffer buf = zb->pbuf;			\
+	buf = pp1 + x1 * PSZB;							\
+	register unsigned int z, zz, rgb, drgbdx;		\
 	register int n;									\
 	n = (x2 >> 16) - x1;							\
-	pp = pp1 + x1;									\
 	pz = pz1 + x1;									\
 	pz_2 = pz2 + x1;								\
 	z = z1;											\
@@ -77,14 +81,14 @@ void ZB_fillTriangleSmooth(ZBuffer *zb, ZBufferPoint *p0, ZBufferPoint *p1, ZBuf
 		PUT_PIXEL(3);								\
 		pz += 4;									\
 		pz_2 += 4;									\
-		pp += 4;									\
+		buf.shiftBy(4);								\
 		n -= 4;										\
 	}												\
 	while (n >= 0) {								\
 		PUT_PIXEL(0);								\
 		pz += 1;									\
 		pz_2 += 1;									\
-		pp += 1;									\
+		buf.shiftBy(1);								\
 		n -= 1;										\
 	}												\
 }
@@ -109,7 +113,10 @@ void ZB_fillTriangleMapping(ZBuffer *zb, ZBufferPoint *p0, ZBufferPoint *p1, ZBu
 #define PUT_PIXEL(_a) {						\
 	zz = z >> ZB_POINT_Z_FRAC_BITS;			\
 	if ((ZCMP(zz, pz[_a])) && (ZCMP(z, pz_2[_a]))) {	\
-		pp[_a] = texture.getRawBuffer()[((t & 0x3FC00000) | s) >> 14];	\
+		unsigned ttt = (t & 0x003FC000) >> (9 - PSZSH); \
+		unsigned sss = (s & 0x003FC000) >> (17 - PSZSH); \
+		int pixel = ((ttt | sss) >> 1) ;				\
+		buf.setPixelAt(_a, texture, pixel); \
 		pz_2[_a] = z;						\
 	}										\
 	z += dzdx;								\

@@ -29,6 +29,10 @@
 #include "math/vector3d.h"
 #include "math/angle.h"
 
+namespace AGL {
+class ShadowPlane;
+}
+
 namespace Grim {
 
 class TextObject;
@@ -55,6 +59,7 @@ struct Shadow {
 	int shadowMaskSize;
 	bool active;
 	bool dontNegate;
+	AGL::ShadowPlane *plane;
 };
 
 /**
@@ -452,6 +457,8 @@ public:
 
 	bool _toClean;
 
+	static void setShadowColor(const Color &color);
+
 private:
 	void costumeMarkerCallback(int marker);
 	void collisionHandlerCallback(Actor *other) const;
@@ -459,6 +466,7 @@ private:
 	void addShadowPlane(const char *n, Set *scene, int shadowId);
 	bool shouldDrawShadow(int shadowId);
 	void stopTalking();
+	void setModelView();
 	bool stopMumbleChore();
 	/**
 	 * Given a start point and a destination this function returns a position
@@ -571,6 +579,8 @@ private:
 	float _collisionScale;
 
 	bool _puckOrient;
+
+	static Color s_shadowColor;
 
 	friend class GrimEngine;
 };

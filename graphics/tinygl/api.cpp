@@ -19,11 +19,15 @@ void tglVertex2f(float x, float y)  {
 	tglVertex4f(x, y, 0, 1);
 }
 
+void tglVertex2fv(const float *v)  {
+	tglVertex4f(v[0], v[1], 0, 1);
+}
+
 void tglVertex3f(float x, float y, float z)  {
 	tglVertex4f(x, y, z, 1);
 }
 
-void tglVertex3fv(float *v)  {
+void tglVertex3fv(const float *v)  {
 	tglVertex4f(v[0], v[1], v[2], 1);
 }
 
@@ -40,7 +44,7 @@ void tglNormal3f(float x, float y, float z) {
 	TinyGL::gl_add_op(p);
 }
 
-void tglNormal3fv(float *v)  {
+void tglNormal3fv(const float *v)  {
 	tglNormal3f(v[0], v[1], v[2]);
 }
 
@@ -61,7 +65,7 @@ void tglColor4f(float r, float g, float b, float a) {
 	gl_add_op(p);
 }
 
-void tglColor4fv(float *v) {
+void tglColor4fv(const float *v) {
 	TinyGL::GLParam p[8];
 
 	p[0].op = TinyGL::OP_Color;
@@ -80,7 +84,7 @@ void tglColor3f(float x, float y, float z) {
 	tglColor4f(x, y, z, 1);
 }
 
-void glColor3fv(float *v)  {
+void glColor3fv(const float *v)  {
   tglColor4f(v[0], v[1], v[2], 1);
 }
 
@@ -106,7 +110,7 @@ void tglTexCoord2f(float s, float t) {
 	tglTexCoord4f(s, t, 0, 1);
 }
 
-void tglTexCoord2fv(float *v) {
+void tglTexCoord2fv(const float *v) {
 	tglTexCoord4f(v[0], v[1], 0, 1);
 }
 
@@ -190,6 +194,18 @@ void tglDisable(int cap) {
 	p[2].i = 0;
 
 	TinyGL::gl_add_op(p);
+}
+
+bool tglIsEnabled(int cap) {
+	TinyGL::GLParam p[3];
+
+	p[0].op = TinyGL::OP_IsEnabled;
+	p[1].i = cap;
+	p[2].i = 0;
+
+	TinyGL::gl_add_op(p);
+
+	return p[2].i;
 }
 
 // glBegin, glEnd
@@ -493,7 +509,7 @@ void tglBindTexture(int target, int texture) {
 
 void tglTexEnvi(int target, int pname, int param) {
 	TinyGL::GLParam p[8];
-  
+
 	p[0].op = TinyGL::OP_TexEnv;
 	p[1].i = target;
 	p[2].i = pname;
@@ -508,7 +524,7 @@ void tglTexEnvi(int target, int pname, int param) {
 
 void tglTexParameteri(int target, int pname, int param) {
 	TinyGL::GLParam p[8];
-  
+
 	p[0].op = TinyGL::OP_TexParameter;
 	p[1].i = target;
 	p[2].i = pname;
@@ -619,4 +635,25 @@ void tglSetShadowColor(unsigned char r, unsigned char g, unsigned char b) {
 	c->zb->shadow_color_r = r << 8;
 	c->zb->shadow_color_g = g << 8;
 	c->zb->shadow_color_b = b << 8;
+}
+
+void tglOrtho(float left, float right,float bottom, float top,float near, float far) {
+	//See www.opengl.org/sdk/docs/man/xhtml/glOrtho.xml for documentation
+
+	float a = 2.0f / (right - left);
+	float b = 2.0f / (top - bottom);
+	float c = -2.0f / (far - near);
+
+	float tx = - (right + left) / (right - left);
+	float ty = - (top + bottom) / (top - bottom);
+	float tz = - (far + near) / (far - near);
+
+	float ortho[16] = {
+		a, 0, 0, 0,
+		0, b, 0, 0,
+		0, 0, c, 0,
+		tx, ty, tz, 1
+	};
+
+	tglMultMatrixf(ortho);
 }

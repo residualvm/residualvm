@@ -244,7 +244,6 @@
 #ifndef DRAW_LINE
 			// generic draw line
 			{
-				register PIXEL *pp;
 				register int n;
 #ifdef INTERP_Z
 				register unsigned short *pz;
@@ -262,7 +261,9 @@
 #endif
 
 				n = (x2 >> 16) - x1;
-				pp = (PIXEL *)((char *)pp1 + x1 * PSZB);
+
+				Graphics::PixelBuffer buf = zb->pbuf;
+				buf = pp1 + x1 * PSZB;
 #ifdef INTERP_Z
 				pz = pz1 + x1;
 				pz_2 = pz2 + x1;
@@ -290,7 +291,7 @@
 					pz += 4;
 					pz_2 += 4;
 #endif
-					pp = (PIXEL *)((char *)pp + 4 * PSZB);
+					buf.shiftBy(4);
 					n -= 4;
 				}
 				while (n >= 0) {
@@ -299,7 +300,7 @@
 					pz += 1;
 					pz_2 += 1;
 #endif
-					pp = (PIXEL *)((char *)pp + PSZB);
+					buf.shiftBy(1);
 					n -= 1;
 				}
 			}

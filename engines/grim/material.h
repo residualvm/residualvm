@@ -25,6 +25,10 @@
 
 #include "engines/grim/object.h"
 
+namespace AGL {
+class Texture;
+}
+
 namespace Grim {
 
 class CMap;
@@ -33,10 +37,10 @@ class Texture {
 public:
 	int _width;
 	int _height;
-	int _colorFormat;
 	int _bpp;
 	bool _hasAlpha;
 	void *_texture;
+	AGL::Texture *_tex;
 	char *_data;
 };
 
@@ -73,6 +77,8 @@ public:
 
 	int getNumTextures() const;
 	int getActiveTexture() const;
+
+	AGL::Texture *getCurrentTexture() const;
 
 	const Common::String &getFilename() const;
 	MaterialData *getData() const;

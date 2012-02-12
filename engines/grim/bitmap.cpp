@@ -26,14 +26,20 @@
 
 #include "graphics/colormasks.h"
 #include "graphics/pixelbuffer.h"
+#include "graphics/surface.h"
+
+#include "graphics/agl/manager.h"
+#include "graphics/agl/bitmap2d.h"
 
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/bitmap.h"
 #include "engines/grim/resource.h"
-#include "engines/grim/gfx_base.h"
 
 namespace Grim {
+
+bool Bitmap::s_renderBitmaps = true;
+bool Bitmap::s_renderZBitmaps = true;
 
 static bool decompress_codec3(const char *compressed, char *result, int maxBytes);
 
@@ -116,6 +122,7 @@ BitmapData::BitmapData(const Common::String &fname) {
 	_data = 0;
 	_loaded = false;
 	_keepData = true;
+	_bmps = NULL;
 }
 
 void BitmapData::load() {
@@ -167,10 +174,10 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 	data->seek(128, SEEK_SET);
 	_width = data->readUint32LE();
 	_height = data->readUint32LE();
-	_colorFormat = BM_RGB565;
 	_hasTransparency = false;
 
 	_data = new Graphics::PixelBuffer[_numImages];
+	_bmps = new AGL::Bitmap2D*[_numImages];
 	data->seek(0x80, SEEK_SET);
 	for (int i = 0; i < _numImages; i++) {
 		data->seek(8, SEEK_CUR);
@@ -197,6 +204,35 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 			}
 		}
 #endif
+		if (_format == 1) {
+			Graphics::PixelFormat f(4, 8, 8, 8, 8, 0, 8, 16, 24);
+			Graphics::PixelBuffer dst(f, _width * _height, DisposeAfterUse::NO);
+
+			for (int j = 0; j < _width * _height; ++j) {
+				if (_data[i].getValueAt(j) == 0xf81f) { //transparency
+					dst.setPixelAt(j, 0, 0, 0, 0);
+				} else {
+					uint8 r, g, b;
+					_data[i].getRGBAt(j, r, g, b);
+					dst.setPixelAt(j, 255, r, g, b);
+				}
+			}
+			_data[i].free();
+			_data[i] = dst;
+
+			_bmps[i] = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, _data[i], _width, _height);
+		} else {
+			uint16 *zbufPtr = reinterpret_cast<uint16 *>(_data[i].getRawBuffer());
+			for (int j = 0; j < (_width * _height); j++) {
+				uint16 val = READ_LE_UINT16(_data[i].getRawBuffer(j));
+				// fix the value if it is incorrectly set to the bitmap transparency color
+				if (val == 0xf81f) {
+					val = 0;
+				}
+				zbufPtr[j] = 0xffff - ((uint32) val) * 0x10000 / 100 / (0x10000 - val);
+			}
+			_bmps[i] = AGLMan.createBitmap2D(AGL::Bitmap2D::Depth, _data[i], _width, _height);
+		}
 	}
 
 	// Initially, no GPU-side textures created. the createBitmap
@@ -204,7 +240,6 @@ bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 	_numTex = 0;
 	_texIds = NULL;
 
-	g_driver->createBitmap(this);
 	return true;
 }
 
@@ -222,26 +257,29 @@ BitmapData::BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const cha
 	_texIds = NULL;
 	_bpp = buf.getFormat().bytesPerPixel * 8;
 	_hasTransparency = false;
-	_colorFormat = BM_RGB565;
-	_data = new Graphics::PixelBuffer[_numImages];
-	_data[0].create(buf.getFormat(), w * h, DisposeAfterUse::YES);
-	_data[0].copyBuffer(0, w * h, buf);
+	_data = NULL;
 	_loaded = true;
 	_keepData = true;
 
-	g_driver->createBitmap(this);
+	_bmps = new AGL::Bitmap2D*[_numImages];
+	_bmps[0] = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, buf, _width, _height);
 }
 
 BitmapData::BitmapData() :
 	_numImages(0), _width(0), _height(0), _x(0), _y(0), _format(0), _numTex(0),
-	_bpp(0), _colorFormat(0), _texIds(0), _hasTransparency(false), _data(NULL), _refCount(1) {
+	_bpp(0), _texIds(0), _hasTransparency(false), _data(NULL), _refCount(1) {
+	_data = NULL;
+	_bmps = NULL;
 }
 
 BitmapData::~BitmapData() {
 	_keepData = false;
 	freeData();
 	if (_loaded) {
-		g_driver->destroyBitmap(this);
+		for (int i = 0; i < _numImages; ++i) {
+			delete _bmps[i];
+		}
+		delete[] _bmps;
 	}
 	if (_bitmaps) {
 		if (_bitmaps->contains(_fname)) {
@@ -281,7 +319,6 @@ bool BitmapData::loadTGA(Common::SeekableReadStream *data) {
 	int bpp = data->readByte();
 	Graphics::PixelFormat pixelFormat;
 	if (bpp == 32) {
-		_colorFormat = BM_RGBA;
 		pixelFormat = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
 		_bpp = 4;
 	} else {
@@ -315,7 +352,6 @@ bool BitmapData::loadTGA(Common::SeekableReadStream *data) {
 	}
 
 	_numImages = 1;
-	g_driver->createBitmap(this);
 	return true;
 }
 
@@ -361,12 +397,10 @@ bool BitmapData::loadTile(Common::SeekableReadStream *o) {
 	delete[] data;
 	Graphics::PixelFormat pixelFormat;
 	if (_bpp == 16) {
-		_colorFormat = BM_RGB1555;
 		pixelFormat = Graphics::createPixelFormat<1555>();
 		//convertToColorFormat(0, BM_RGBA);
 	} else {
 		pixelFormat = Graphics::PixelFormat(4, 8,8,8,8, 0, 8, 16, 24);
-		_colorFormat = BM_RGBA;
 	}
 
 	_width = 640;
@@ -376,7 +410,8 @@ bool BitmapData::loadTile(Common::SeekableReadStream *o) {
 	_data[0].create(pixelFormat, _width * _height, DisposeAfterUse::YES);
 	_data[0].set(pixelFormat, (byte *)bMap);
 
-	g_driver->createBitmap(this);
+	_bmps = new AGL::Bitmap2D*[1];
+	_bmps[0] = AGLMan.createBitmap2D(AGL::Bitmap2D::Image, _data[0], _width, _height);
 #endif // ENABLE_MONKEY4
 	return true;
 }
@@ -400,6 +435,13 @@ Bitmap::Bitmap(const Graphics::PixelBuffer &buf, int w, int h, const char *fname
 	_data = new BitmapData(buf, w, h, fname);
 	_currImage = 1;
 }
+
+Bitmap::Bitmap(Graphics::Surface *s) :
+		PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>() {
+	_data = new BitmapData(Graphics::PixelBuffer(s->format, (byte *)s->pixels), s->w, s->h, "");
+	_currImage = 1;
+}
+
 
 Bitmap::Bitmap() :
 		PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>() {
@@ -440,18 +482,18 @@ void Bitmap::restoreState(SaveGame *state) {
 
 void Bitmap::draw() {
 	_data->load();
-	if (_currImage == 0)
-		return;
 
-	g_driver->drawBitmap(this, _data->_x, _data->_y);
+	draw(_data->_x, _data->_y);
 }
 
 void Bitmap::draw(int x, int y) {
 	_data->load();
 	if (_currImage == 0)
 		return;
+	if ((getFormat() == 1 && !s_renderBitmaps) || (getFormat() == 5 && !s_renderZBitmaps))
+		return;
 
-	g_driver->drawBitmap(this, x, y);
+	_data->_bmps[_currImage - 1]->draw(x, y);
 }
 
 void Bitmap::setActiveImage(int n) {
@@ -483,6 +525,32 @@ Bitmap::~Bitmap() {
 
 const Graphics::PixelFormat &Bitmap::getPixelFormat(int num) const {
 	return getData(num).getFormat();
+}
+
+void Bitmap::staticSaveState(SaveGame *state) {
+	state->beginSection('STVB');
+
+	state->writeBool(s_renderBitmaps);
+	state->writeBool(s_renderZBitmaps);
+
+	state->endSection();
+}
+
+void Bitmap::staticRestoreState(SaveGame *state) {
+	state->beginSection('STVB');
+
+	s_renderBitmaps = state->readBool();
+	s_renderZBitmaps = state->readBool();
+
+	state->endSection();
+}
+
+void Bitmap::renderBitmaps(bool render) {
+	s_renderBitmaps = render;
+}
+
+void Bitmap::renderZBitmaps(bool render) {
+	s_renderZBitmaps = render;
 }
 
 void BitmapData::convertToColorFormat(int num, const Graphics::PixelFormat &format) {

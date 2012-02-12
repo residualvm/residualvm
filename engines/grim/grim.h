@@ -33,6 +33,11 @@
 #include "engines/grim/textobject.h"
 #include "engines/grim/iris.h"
 
+namespace AGL {
+class Bitmap2D;
+class Label;
+}
+
 namespace Grim {
 
 class Actor;
@@ -211,6 +216,10 @@ private:
 	Actor *_selectedActor;
 	Actor *_talkingActor;
 	Iris *_iris;
+
+	AGL::Bitmap2D *_movieFrame;
+	Font *_fpsFont;
+	AGL::Label *_fpsLabel;
 
 	uint32 _gameFlags;
 	GrimGameType _gameType;

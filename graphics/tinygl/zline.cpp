@@ -1,6 +1,8 @@
 
 #include "graphics/tinygl/zbuffer.h"
 
+#include "common/streamdebug.h"
+
 namespace TinyGL {
 
 #define ZCMP(z,zpix) ((z) >= (zpix))
@@ -14,9 +16,11 @@ void ZB_plot(ZBuffer * zb, ZBufferPoint * p) {
 	pz = zb->zbuf + (p->y * zb->xsize + p->x);
 	pz_2 = zb->zbuf2 + (p->y * zb->xsize + p->x);
 	pp = (PIXEL *)((char *) zb->pbuf.getRawBuffer() + zb->linesize * p->y + p->x * PSZB);
+	Graphics::PixelBuffer buf(zb->pbuf);
+	buf = pp;
 	zz = p->z >> ZB_POINT_Z_FRAC_BITS;
 	if ((ZCMP(zz, *pz)) && (ZCMP((unsigned int)p->z, *pz_2))) {
-		*pp = RGB_TO_PIXEL(p->r, p->g, p->b);
+		buf.setPixelAt(0, p->r, p->g, p->b);
 		*pz_2 = p->z;
     }
 }
@@ -46,8 +50,8 @@ static void ZB_line_interp(ZBuffer *zb, ZBufferPoint *p1, ZBufferPoint *p2) {
 void ZB_line_z(ZBuffer *zb, ZBufferPoint *p1, ZBufferPoint *p2) {
 	int color1, color2;
 
-	color1 = RGB_TO_PIXEL(p1->r, p1->g, p1->b);
-	color2 = RGB_TO_PIXEL(p2->r, p2->g, p2->b);
+	color1 = RGB_TO_PIXEL(p1->r >> 8, p1->g >> 8, p1->b >> 8);
+	color2 = RGB_TO_PIXEL(p2->r >> 8, p2->g >> 8, p2->b >> 8);
 
     // choose if the line should have its color interpolated or not
 	if (color1 == color2) {
@@ -60,8 +64,8 @@ void ZB_line_z(ZBuffer *zb, ZBufferPoint *p1, ZBufferPoint *p2) {
 void ZB_line(ZBuffer *zb, ZBufferPoint *p1, ZBufferPoint *p2) {
 	int color1, color2;
 
-	color1 = RGB_TO_PIXEL(p1->r, p1->g, p1->b);
-	color2 = RGB_TO_PIXEL(p2->r, p2->g, p2->b);
+	color1 = RGB_TO_PIXEL(p1->r >> 8, p1->g >> 8, p1->b >> 8);
+	color2 = RGB_TO_PIXEL(p2->r >> 8, p2->g >> 8, p2->b >> 8);
 
 	// choose if the line should have its color interpolated or not
 	if (color1 == color2) {

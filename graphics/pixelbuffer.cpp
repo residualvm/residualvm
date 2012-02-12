@@ -82,7 +82,7 @@ void PixelBuffer::free() {
 }
 
 void PixelBuffer::clear(int length) {
-	memset(_buffer, 0, length);
+	memset(_buffer, 0, length * _format.bytesPerPixel);
 }
 
 void PixelBuffer::setPixelAt(int pixel, uint32 value) {

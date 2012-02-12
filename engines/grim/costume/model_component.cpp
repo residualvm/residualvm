@@ -25,7 +25,6 @@
 #include "engines/grim/resource.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/set.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/colormap.h"
 #include "engines/grim/animation.h"
 
@@ -34,7 +33,7 @@
 #include "engines/grim/costume/mesh_component.h"
 
 namespace Grim {
-	
+
 #define DEFAULT_COLORMAP "item.cmp"
 
 ModelComponent::ModelComponent(Component *p, int parentID, const char *filename, Component *prevComponent, tag32 t) :
@@ -156,7 +155,7 @@ int ModelComponent::getNumNodes() {
 	return _obj->getNumNodes();
 }
 
-void ModelComponent::translateObject(ModelNode *node, bool reset) {
+void ModelComponent::translateObject(const ModelNode *node, bool reset) {
 	if (node->_parent)
 		translateObject(node->_parent, reset);
 
@@ -167,7 +166,7 @@ void ModelComponent::translateObject(ModelNode *node, bool reset) {
 	}
 }
 
-void ModelComponent::translateObject(bool res) {
+void ModelComponent::translateObject(bool res) const {
 	ModelNode *node = _hier->_parent;
 	if (node) {
 		translateObject(node, res);
@@ -190,20 +189,22 @@ void ModelComponent::draw() {
 	translateObject(true);
 }
 
-void ModelComponent::getBoundingBox(int *x1, int *y1, int *x2, int *y2) {
+bool ModelComponent::calculate2DBoundingBox(Common::Rect *rect) const {
 	// If the object was drawn by being a component
 	// of it's parent then don't draw it
 
 	if (_parent && _parent->isVisible())
-		return;
+		return false;
 	// Need to translate object to be in accordance
 		// with the setup of the parent
 	translateObject(false);
 
-	_hier->getBoundingBox(x1, y1, x2, y2);
+	bool ok = _hier->calculate2DBoundingBox(rect);
 
 	// Need to un-translate when done
 	translateObject(true);
+
+	return ok;
 }
 
 } // end of namespace Grim

@@ -33,7 +33,7 @@ typedef byte PIXEL;
 
 extern uint8 PSZB;
 
-typedef struct {
+struct ZBuffer {
 	int xsize, ysize;
 	int linesize; // line size, in bytes
 	Graphics::PixelFormat cmode;
@@ -52,7 +52,7 @@ typedef struct {
 	unsigned char *dctable;
 	int *ctable;
 	Graphics::PixelBuffer current_texture;
-} ZBuffer;
+};
 
 typedef struct {
 	int x,y,z;     // integer coordinates in the zbuffer

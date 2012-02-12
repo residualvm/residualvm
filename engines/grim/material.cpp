@@ -22,10 +22,14 @@
 
 #include "common/endian.h"
 
+#include "graphics/pixelbuffer.h"
+
+#include "graphics/agl/texture.h"
+#include "graphics/agl/manager.h"
+
 #include "engines/grim/grim.h"
 #include "engines/grim/debug.h"
 #include "engines/grim/material.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/colormap.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/textsplit.h"
@@ -70,7 +74,6 @@ void MaterialData::initGrim(Common::SeekableReadStream *data, CMap *cmap) {
 		t->_height = data->readUint32LE();
 		t->_hasAlpha = data->readUint32LE();
 		t->_texture = NULL;
-		t->_colorFormat = BM_RGBA;
 		t->_data = NULL;
 		if (t->_width == 0 || t->_height == 0) {
 			Debug::warning(Debug::Materials, "skip load texture: bad texture size (%dx%d) for texture %d of material %s",
@@ -80,42 +83,67 @@ void MaterialData::initGrim(Common::SeekableReadStream *data, CMap *cmap) {
 		t->_data = new char[t->_width * t->_height];
 		data->seek(12, SEEK_CUR);
 		data->read(t->_data, t->_width * t->_height);
+
+		char *tdata = t->_data;
+		char *texdata = new char[t->_width * t->_height * 4];
+		char *texdatapos = texdata;
+		for (int y = 0; y < t->_height; y++) {
+			for (int x = 0; x < t->_width; x++) {
+				uint8 col = *(uint8 *)(tdata);
+				if (col == 0) {
+					memset(texdatapos, 0, 4); // transparent
+					if (!t->_hasAlpha) {
+						texdatapos[3] = '\xff'; // fully opaque
+					}
+				} else {
+					memcpy(texdatapos, cmap->_colors + 3 * (col), 3);
+					texdatapos[3] = '\xff'; // fully opaque
+				}
+				texdatapos += 4;
+				tdata++;
+			}
+		}
+
+		Graphics::PixelBuffer buf = Graphics::PixelBuffer::createBuffer<8888>((byte*)texdata);
+		t->_tex = AGLMan.createTexture(buf, t->_width, t->_height);
 	}
 }
 
 void loadTGA(Common::SeekableReadStream *data, Texture *t) {
 	int descField = data->readByte();
 	assert(descField == 0);	// Verify that description-field is empty
-	
+
 	data->seek(1, SEEK_CUR);
-	
+
 	int format = data->readByte();
 	if (format != 2) { // We only support uncompressed TGA, but should also support atleast RLE-RGB
 		error("Unsupported TGA-format detected: %d", format);
 	}
-	
+
 	data->seek(9, SEEK_CUR);
 	t->_width = data->readUint16LE();
 	t->_height = data->readUint16LE();;
 	t->_hasAlpha = false;
 	t->_texture = NULL;
-	
+
+	Graphics::PixelFormat pf;
+
 	int bpp = data->readByte();
 	if (bpp == 32) {
-		t->_colorFormat = BM_RGBA;
 		t->_bpp = 4;
+		pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
 	} else {
-		t->_colorFormat = BM_BGR888;
 		t->_bpp = 3;
+		pf = Graphics::PixelFormat(3, 8, 8, 8, 0, 16, 8, 0, 0);
 	}
-	
+
 	uint8 desc = data->readByte();
 	uint8 flipped = !(desc & 32);
-	
+
 	assert(bpp == 24 || bpp == 32); // Assure we have 24/32 bpp
 	t->_data = new char[t->_width * t->_height * (bpp / 8)];
 	char *writePtr = t->_data + (t->_width * (t->_height - 1) * bpp / 8);
-	
+
 	// Since certain TGA's are flipped (relative to the tex-coords) and others not
 	// We'll have to handle that here, otherwise we could just do 1.0f - texCoords
 	// When drawing/loading
@@ -125,10 +153,13 @@ void loadTGA(Common::SeekableReadStream *data, Texture *t) {
 			writePtr -= (t->_width * bpp / 8);
 		}
 	} else {
-		data->read(t->_data, t->_width * t->_height * (bpp / 8));		
+		data->read(t->_data, t->_width * t->_height * (bpp / 8));
 	}
+
+	Graphics::PixelBuffer buf(pf, (byte *)t->_data);
+	t->_tex = AGLMan.createTexture(buf, t->_width, t->_height);
 }
-	
+
 void MaterialData::initEMI(Common::SeekableReadStream *data) {
 	Common::Array<Common::String> texFileNames;
 	char readFileName[64];
@@ -139,7 +170,7 @@ void MaterialData::initEMI(Common::SeekableReadStream *data) {
 		ts->expectString("version\t1.0");
 		if (ts->checkString("name:"))
 			ts->scanString("name:\t%s", 1, readFileName);
-		
+
 		while(!ts->checkString("END_OF_SECTION")) {
 			ts->scanString("tex:\t%s", 1, readFileName);
 			Common::String mFileName(readFileName);
@@ -169,7 +200,7 @@ void MaterialData::initEMI(Common::SeekableReadStream *data) {
 		loadTGA(data, _textures);
 		//	texFileNames.push_back(filename);
 		return;
-		
+
 	} else {
 		warning("Unknown material-format: %s", _fname.c_str());
 	}
@@ -185,7 +216,7 @@ MaterialData::~MaterialData() {
 	for (int i = 0; i < _numImages; ++i) {
 		Texture *t = _textures + i;
 		if (t->_width && t->_height && t->_texture)
-			g_driver->destroyMaterial(t);
+			delete t->_tex;
 		delete[] t->_data;
 	}
 	delete[] _textures;
@@ -235,12 +266,7 @@ void Material::reload(CMap *cmap) {
 void Material::select() const {
 	Texture *t = _data->_textures + _currImage;
 	if (t->_width && t->_height) {
-		if (!t->_texture) {
-			g_driver->createMaterial(t, t->_data, _data->_cmap);
-			delete[] t->_data;
-			t->_data = NULL;
-		}
-		g_driver->selectMaterial(t);
+		t->_tex->bind();
 	}
 }
 
@@ -261,6 +287,18 @@ int Material::getNumTextures() const {
 
 int Material::getActiveTexture() const {
 	return _currImage;
+}
+
+AGL::Texture *Material::getCurrentTexture() const {
+	if (_currImage < 0 || _currImage >= _data->_numImages) {
+		return NULL;
+	}
+
+	Texture *t = _data->_textures + _currImage;
+	if (t->_width && t->_height) {
+		return t->_tex;
+	}
+	return NULL;
 }
 
 const Common::String &Material::getFilename() const {

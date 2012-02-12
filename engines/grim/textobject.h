@@ -26,6 +26,10 @@
 #include "engines/grim/pool.h"
 #include "engines/grim/color.h"
 
+namespace AGL {
+class Label;
+}
+
 namespace Grim {
 
 class SaveGame;
@@ -33,16 +37,18 @@ class Font;
 
 class TextObjectCommon {
 public:
+	virtual ~TextObjectCommon() {}
+
 	void setX(int x) { _x = x; _positioned = false; }
 	int getX() { return _x; }
 
 	void setY(int y) { _y = y; _positioned = false; }
 	int getY() { return _y; }
 
-	void setFont(Font *font) { _font = font; }
+	virtual void setFont(Font *font) { _font = font; }
 	Font *getFont() { return _font; }
 
-	void setFGColor(const Color &fgColor) { _fgColor = fgColor; }
+	virtual void setFGColor(const Color &fgColor) { _fgColor = fgColor; }
 	Color getFGColor() { return _fgColor; }
 
 	void setJustify(int justify) { _justify = justify; }
@@ -73,6 +79,8 @@ class TextObjectDefaults : public TextObjectCommon {
 
 };
 
+class TextObjectData;
+
 class TextObject : public PoolObject<TextObject, MKTAG('T', 'E', 'X', 'T')>,
                    public TextObjectCommon {
 public:
@@ -88,21 +96,14 @@ public:
 	int getBitmapHeight();
 	int getTextCharPosition(int pos);
 
-	int getLineX(int line);
-	int getLineY(int line);
-
-	void *getUserData() { return _userData; }
-	void setUserData(void *data) { _userData = data; }
-
-	const Common::String *getLines() { return _lines; }
-	int getNumLines() { return _numberLines; }
-
 	const Common::String &getName() const { return _textID; }
 	void draw();
 	void update();
 
 	void destroy();
 	void reposition();
+
+	void setFGColor(const Color &fgColor);
 
 	void saveState(SaveGame *state) const;
 	bool restoreState(SaveGame *state);
@@ -114,17 +115,16 @@ public:
 		RJUSTIFY
 	};
 
-protected:
-	bool _created;
+private:
+	void create();
+
 	void setupText();
-	int _numberLines;
 	bool _blastDraw;
 	bool _isSpeech;
 	Common::String _textID;
 	int _elapsedTime;
-	int _maxLineWidth;
-	Common::String *_lines;
-	void *_userData;
+
+	AGL::Label *_label;
 };
 
 } // end of namespace Grim

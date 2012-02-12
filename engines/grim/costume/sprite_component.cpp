@@ -20,6 +20,8 @@
  *
  */
 
+#include "graphics/agl/manager.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/savegame.h"
 #include "engines/grim/model.h"
@@ -73,6 +75,7 @@ void SpriteComponent::init() {
 		_sprite->_material = g_resourceloader->loadMaterial(name, getCMap());
 		_sprite->_width = (float)width / 100.0f;
 		_sprite->_height = (float)height / 100.0f;
+		_sprite->_sprite = AGLMan.createSprite(_sprite->_width, _sprite->_height);
 		_sprite->_pos.set((float)x / 100.0f, (float)y / 100.0f, (float)z / 100.0f);
 		_sprite->_visible = false;
 		_sprite->_next = NULL;

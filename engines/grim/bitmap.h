@@ -29,6 +29,11 @@
 
 namespace Graphics {
 class PixelBuffer;
+struct Surface;
+}
+
+namespace AGL {
+class Bitmap2D;
 }
 
 namespace Grim {
@@ -86,13 +91,14 @@ public:
 	int _format;
 	int _numTex;
 	int _bpp;
-	int _colorFormat;
 	void *_texIds;
 	bool _hasTransparency;
 	bool _loaded;
 	bool _keepData;
 
 	int _refCount;
+
+	AGL::Bitmap2D **_bmps;
 
 private:
 	Graphics::PixelBuffer *_data;
@@ -109,6 +115,7 @@ public:
 	 */
 	Bitmap(const Common::String &filename);
 	Bitmap(const Graphics::PixelBuffer &buf, int width, int height, const char *filename);
+	Bitmap(Graphics::Surface *surface);
 	Bitmap();
 
 	static Bitmap *create(const Common::String &filename);
@@ -141,6 +148,11 @@ public:
 	void saveState(SaveGame *state) const;
 	void restoreState(SaveGame *state);
 
+	static void staticSaveState(SaveGame *state);
+	static void staticRestoreState(SaveGame *state);
+	static void renderBitmaps(bool render);
+	static void renderZBitmaps(bool render);
+
 	virtual ~Bitmap();
 
 private:
@@ -152,6 +164,9 @@ private:
 	 * _currImage==0 means a null image is chosen.
 	 */
 	int _currImage;
+
+	static bool s_renderBitmaps;
+	static bool s_renderZBitmaps;
 };
 
 } // end of namespace Grim

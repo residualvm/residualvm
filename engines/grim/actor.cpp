@@ -27,8 +27,13 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_mkdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_unlink
 
+#include "common/rect.h"
+
 #include "math/line3d.h"
 #include "math/rect2d.h"
+
+#include "graphics/agl/manager.h"
+#include "graphics/agl/modelview.h"
 
 #include "engines/grim/debug.h"
 #include "engines/grim/actor.h"
@@ -42,12 +47,13 @@
 #include "engines/grim/resource.h"
 #include "engines/grim/savegame.h"
 #include "engines/grim/set.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/model.h"
 
 #include "common/foreach.h"
 
 namespace Grim {
+
+Color Actor::s_shadowColor = Color(0, 0, 0);
 
 Actor::Actor(const Common::String &actorName) :
 		PoolObject<Actor, MKTAG('A', 'C', 'T', 'R')>(), _name(actorName), _setName(""),
@@ -81,6 +87,7 @@ Actor::Actor(const Common::String &actorName) :
 		_shadowArray[i].dontNegate = false;
 		_shadowArray[i].shadowMask = NULL;
 		_shadowArray[i].shadowMaskSize = 0;
+		_shadowArray[i].plane = NULL;
 	}
 }
 
@@ -101,6 +108,7 @@ Actor::Actor() :
 		_shadowArray[i].dontNegate = false;
 		_shadowArray[i].shadowMask = NULL;
 		_shadowArray[i].shadowMaskSize = 0;
+		_shadowArray[i].plane = NULL;
 	}
 }
 
@@ -224,6 +232,8 @@ void Actor::saveState(SaveGame *savedState) const {
 	for (Common::List<Math::Vector3d>::const_iterator i = _path.begin(); i != _path.end(); ++i) {
 		savedState->writeVector3d(*i);
 	}
+
+	savedState->writeLEUint32(s_shadowColor.toEncodedValue());
 }
 
 bool Actor::restoreState(SaveGame *savedState) {
@@ -321,7 +331,7 @@ bool Actor::restoreState(SaveGame *savedState) {
 
 		size = savedState->readLEUint32();
 		Set *scene = NULL;
-		for (uint32 j = 0; j < size; ++j) {
+		for (uint j = 0; j < size; ++j) {
 			Common::String setName = savedState->readString();
 			Common::String secName = savedState->readString();
 			if (!scene || scene->getName() != setName) {
@@ -355,6 +365,8 @@ bool Actor::restoreState(SaveGame *savedState) {
 	for (uint32 i = 0; i < size; ++i) {
 		_path.push_back(savedState->readVector3d());
 	}
+
+	s_shadowColor = savedState->readLEUint32();
 
 	return true;
 }
@@ -1165,16 +1177,6 @@ void Actor::draw() {
 		c->setupTextures();
 	}
 
-	if (!g_driver->isHardwareAccelerated() && g_grim->getFlagRefreshShadowMask()) {
-		for (int l = 0; l < MAX_SHADOWS; l++) {
-			if (!_shadowArray[l].active)
-				continue;
-			g_driver->setShadow(&_shadowArray[l]);
-			g_driver->drawShadowPlanes();
-			g_driver->setShadow(NULL);
-		}
-	}
-
 	if (!_costumeStack.empty()) {
 		g_grim->getCurrSet()->setupLights(_pos);
 
@@ -1182,40 +1184,40 @@ void Actor::draw() {
 		for (int l = 0; l < MAX_SHADOWS; l++) {
 			if (!shouldDrawShadow(l))
 				continue;
-			g_driver->setShadow(&_shadowArray[l]);
-			g_driver->setShadowMode();
-			if (g_driver->isHardwareAccelerated())
-				g_driver->drawShadowPlanes();
-			g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
+
+			_shadowArray[l].plane->enable(_shadowArray[l].pos, s_shadowColor);
+
+			setModelView();
 			costume->draw();
-			g_driver->finishActorDraw();
-			g_driver->clearShadowMode();
-			g_driver->setShadow(NULL);
+			AGL::ModelView::popMatrix();
+
+			_shadowArray[l].plane->disable();
 		}
+
 		// normal draw actor
-		g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
+		setModelView();
 		costume->draw();
-		g_driver->finishActorDraw();
+		AGL::ModelView::popMatrix();
 	}
 
 	if (_mustPlaceText) {
-		int x1, y1, x2, y2;
-		x1 = y1 = 1000;
-		x2 = y2 = -1000;
+		Common::Rect rect;
+		rect.left = rect.top = 1000;
+		rect.right = rect.bottom = -1000;
 		if (!_costumeStack.empty()) {
-			g_driver->startActorDraw(_pos, _scale, _yaw, _pitch, _roll);
-			_costumeStack.back()->getBoundingBox(&x1, &y1, &x2, &y2);
-			g_driver->finishActorDraw();
+			setModelView();
+			_costumeStack.back()->calculate2DBoundingBox(&rect);
+			AGL::ModelView::popMatrix();
 		}
 
 		TextObject *textObject = TextObject::getPool().getObject(_sayLineText);
 		if (textObject) {
-			if (x1 == 1000 || x2 == -1000 || y2 == -1000) {
+			if (rect.isValidRect()) {
+				textObject->setX((rect.left + rect.right) / 2);
+				textObject->setY(rect.top);
+			} else {
 				textObject->setX(640 / 2);
 				textObject->setY(463);
-			} else {
-				textObject->setX((x1 + x2) / 2);
-				textObject->setY(y1);
 			}
 			textObject->reset();
 		}
@@ -1246,6 +1248,12 @@ void Actor::addShadowPlane(const char *n, Set *scene, int shadowId) {
 		// the scenes' sectors are deleted while they are still keeped by the actors.
 		Plane p = { scene->getName(), new Sector(*sector) };
 		_shadowArray[shadowId].planeList.push_back(p);
+
+		if (!_shadowArray[shadowId].plane) {
+			_shadowArray[shadowId].plane = AGLMan.createShadowPlane();
+		}
+
+		_shadowArray[shadowId].plane->addSector(AGL::ShadowPlane::Vertices(sector->getVertices(), sector->getNumVertices()));
 		g_grim->flagRefreshShadowMask(true);
 	}
 }
@@ -1310,6 +1318,8 @@ void Actor::clearShadowPlanes() {
 		shadow->shadowMask = NULL;
 		shadow->active = false;
 		shadow->dontNegate = false;
+		delete shadow->plane;
+		shadow->plane = NULL;
 	}
 }
 
@@ -1565,6 +1575,27 @@ void Actor::collisionHandlerCallback(Actor *other) const {
 	objects.add(other);
 
 	LuaBase::instance()->callback("collisionHandler", objects);
+}
+
+void Actor::setShadowColor(const Color &color) {
+	s_shadowColor = color;
+}
+
+void Actor::setModelView() {
+	AGL::ModelView::pushMatrix();
+	AGL::ModelView::translate(_pos);
+	AGL::ModelView::scale(_scale);
+
+	// EMI uses Y axis as down-up, so we need to rotate differently.
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		AGL::ModelView::rotate(_yaw, 0, -1, 0);
+		AGL::ModelView::rotate(_pitch, 1, 0, 0);
+		AGL::ModelView::rotate(_roll, 0, 0, 1);
+	} else {
+		AGL::ModelView::rotate(_yaw, 0, 0, 1);
+		AGL::ModelView::rotate(_pitch, 1, 0, 0);
+		AGL::ModelView::rotate(_roll, 0, 1, 0);
+	}
 }
 
 

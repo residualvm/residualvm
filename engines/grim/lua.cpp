@@ -40,7 +40,6 @@
 #include "engines/grim/bitmap.h"
 #include "engines/grim/font.h"
 #include "engines/grim/set.h"
-#include "engines/grim/gfx_base.h"
 #include "engines/grim/model.h"
 #include "engines/grim/primitives.h"
 

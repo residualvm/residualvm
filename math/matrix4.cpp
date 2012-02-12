@@ -36,15 +36,21 @@ Matrix<4, 4>::Matrix(const MatrixBase<4, 4> &m) :
 }
 
 void Matrix<4, 4>::transform(Vector3d *v, bool trans) const {
+	transform(v->getData(), trans);
+}
+
+void Matrix<4, 4>::transform(float *v, bool trans) const {
 	Vector4d m;
-	m(0, 0) = v->x();
-	m(1, 0) = v->y();
-	m(2, 0) = v->z();
+	m(0, 0) = v[0];
+	m(1, 0) = v[1];
+	m(2, 0) = v[2];
 	m(3, 0) = (trans ? 1.f : 0.f);
 
 	m = *this * m;
 
-	v->set(m(0, 0), m(1, 0), m(2, 0));
+	v[0] = m(0, 0);
+	v[1] = m(1, 0);
+	v[2] = m(2, 0);
 }
 
 Vector3d Matrix<4, 4>::getPosition() const {
@@ -66,7 +72,7 @@ void Matrix<4, 4>::translate(const Vector3d &vec) {
 	operator()(2, 3) += v.z();
 }
 
-// The following functions are adapted from Portalib3d, which no longer is 
+// The following functions are adapted from Portalib3d, which no longer is
 // available on the net, but was used in the iconoclast-project:
 // http://code.google.com/p/iconoclast/
 // Original copyright notice (license.txt was not supplied in iconoclast,
@@ -85,13 +91,13 @@ void Matrix<4, 4>::inverseTranslate(Vector3d *v) {
 
 void Matrix<4, 4>::inverseRotate(Vector3d *v) {
 	Vector3d temp;
-	
+
 	temp.x() = v->x() * getValue(0, 0) + v->y() * getValue(1, 0) + v->z() * getValue(2, 0);
 	temp.y() = v->x() * getValue(0, 1) + v->y() * getValue(1, 1) + v->z() * getValue(2, 1);
 	temp.z() = v->x() * getValue(0, 2) + v->y() * getValue(1, 2) + v->z() * getValue(2, 2);
-	
+
 	*v = temp;
 }
-	
+
 } // end of namespace Math
 

@@ -23,6 +23,8 @@
 #ifndef GRIM_FONT_H
 #define GRIM_FONT_H
 
+#include "graphics/agl/font.h"
+
 #include "engines/grim/pool.h"
 
 namespace Common {
@@ -33,7 +35,7 @@ namespace Grim {
 
 class SaveGame;
 
-class Font : public PoolObject<Font, MKTAG('F', 'O', 'N', 'T')> {
+class Font : public PoolObject<Font, MKTAG('F', 'O', 'N', 'T')>, public AGL::FontMetric {
 public:
 	Font(const Common::String &filename, Common::SeekableReadStream *data);
 	Font();
@@ -41,26 +43,27 @@ public:
 	void load(const Common::String &filename, Common::SeekableReadStream *data);
 
 	const Common::String &getFilename() const { return _filename; }
-	int32 getHeight() const { return _height; }
+	int getHeight() const { return _height; }
 	int32 getBaseOffsetY() const { return _baseOffsetY; }
 	int32 getCharDataWidth(unsigned char c) const { return _charHeaders[getCharIndex(c)].dataWidth; }
 	int32 getCharDataHeight(unsigned char c) const { return _charHeaders[getCharIndex(c)].dataHeight; }
-	int32 getCharWidth(unsigned char c) const { return _charHeaders[getCharIndex(c)].width; }
+	int getCharWidth(unsigned char c) const;
 	int32 getCharStartingCol(unsigned char c) const { return _charHeaders[getCharIndex(c)].startingCol; }
 	int32 getCharStartingLine(unsigned char c) const { return _charHeaders[getCharIndex(c)].startingLine; }
 	int32 getCharOffset(unsigned char c) const { return _charHeaders[getCharIndex(c)].offset; }
 	const byte *getCharData(unsigned char c) const { return _fontData + (_charHeaders[getCharIndex(c)].offset); }
 
+	AGL::Font *getFont() const { return _font; }
 	const byte *getFontData() const { return _fontData; }
 	uint32 getDataSize() const { return _dataSize; }
 
 	int getStringLength(const Common::String &text) const;
 
-	void *getUserData() { return _userData; }
-	void setUserData(void *data) { _userData = data; }
-
 	void saveState(SaveGame *state) const;
 	void restoreState(SaveGame *state);
+
+	Math::Rect2d getCharTextureRect(unsigned char c) const;
+	Math::Rect2d getCharQuadRect(unsigned char c) const;
 
 	static const uint8 emerFont[][13];
 private:
@@ -83,7 +86,8 @@ private:
 	CharHeader *_charHeaders;
 	byte *_fontData;
 	Common::String _filename;
-	void *_userData;
+	int _quadSize;
+	AGL::Font *_font;
 };
 
 } // end of namespace Grim

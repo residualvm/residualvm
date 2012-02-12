@@ -26,6 +26,11 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_mkdir
 #define FORBIDDEN_SYMBOL_EXCEPTION_unlink
 
+#include "graphics/surface.h"
+
+#include "graphics/agl/manager.h"
+#include "graphics/agl/target.h"
+
 #include "engines/grim/grim.h"
 #include "engines/grim/lua_v1.h"
 #include "engines/grim/resource.h"
@@ -33,7 +38,6 @@
 #include "engines/grim/bitmap.h"
 #include "engines/grim/primitives.h"
 #include "engines/grim/iris.h"
-#include "engines/grim/gfx_base.h"
 
 #include "engines/grim/movie/movie.h"
 
@@ -89,7 +93,7 @@ void Lua_V1::BlastImage() {
 }
 
 void Lua_V1::CleanBuffer() {
-	g_driver->copyStoredToDisplay();
+	AGLMan.getTarget()->restoreContent();
 }
 
 void Lua_V1::StartFullscreenMovie() {
@@ -451,8 +455,8 @@ void Lua_V1::KillPrimitive() {
 }
 
 void Lua_V1::DimScreen() {
-	g_driver->storeDisplay();
-	g_driver->dimScreen();
+	AGLMan.getTarget()->storeContent();
+	AGLMan.getTarget()->dim(0.1f);
 }
 
 void Lua_V1::DimRegion() {
@@ -461,7 +465,7 @@ void Lua_V1::DimRegion() {
 	int w = (int)lua_getnumber(lua_getparam(3));
 	int h = (int)lua_getnumber(lua_getparam(4));
 	float level = lua_getnumber(lua_getparam(5));
-	g_driver->dimRegion(x, y, w, h, level);
+	AGLMan.getTarget()->dimRegion(x, y, w, h, level);
 }
 
 void Lua_V1::ScreenShot() {
@@ -470,10 +474,13 @@ void Lua_V1::ScreenShot() {
 	GrimEngine::EngineMode mode = g_grim->getMode();
 	g_grim->setMode(GrimEngine::NormalMode);
 	g_grim->updateDisplayScene();
-	Bitmap *screenshot = g_driver->getScreenshot(width, height);
+
+	Graphics::PixelFormat format(2, 5, 6, 5, 0, 11, 5, 0, 0);
+	Graphics::Surface *screenshot = AGLMan.getTarget()->getScreenshot(format, width, height);
 	g_grim->setMode(mode);
 	if (screenshot) {
-		lua_pushusertag(screenshot->getId(), MKTAG('V','B','U','F'));
+		Bitmap *bitmap = new Bitmap(screenshot);
+		lua_pushusertag(bitmap->getId(), MKTAG('V','B','U','F'));
 	} else {
 		lua_pushnil();
 	}
@@ -492,7 +499,7 @@ void Lua_V1::SetGamma() {
 
 void Lua_V1::Display() {
 	if (g_grim->getFlipEnable()) {
-		g_driver->flipBuffer();
+		AGLMan.flipBuffer();
 	}
 }
 
@@ -540,8 +547,8 @@ void Lua_V1::IrisDown() {
 }
 
 void Lua_V1::PreRender() {
-	g_driver->renderBitmaps(getbool(1));
-	g_driver->renderZBitmaps(getbool(2));
+	Bitmap::renderBitmaps(getbool(1));
+	Bitmap::renderZBitmaps(getbool(2));
 }
 
 } // end of namespace Grim

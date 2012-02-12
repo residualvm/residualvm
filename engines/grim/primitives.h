@@ -29,6 +29,10 @@
 #include "engines/grim/bitmap.h"
 #include "engines/grim/color.h"
 
+namespace AGL {
+class Primitive;
+}
+
 namespace Grim {
 
 class SaveGame;
@@ -52,7 +56,7 @@ public:
 	Common::Point getP3() { return _p3; }
 	Common::Point getP4() { return _p4; }
 	void setPos(int x, int y);
-	void setColor(const Color &color) { _color = color; }
+	void setColor(const Color &color);
 	Color getColor() { return _color; }
 	bool isFilled() { return _filled; }
 	void draw();
@@ -60,10 +64,13 @@ public:
     bool restoreState(SaveGame *state);
 
 private:
+	int _x;
+	int _y;
 	Common::Point _p1, _p2, _p3, _p4;
 	Color _color;
 	bool _filled;
 	int _type;
+	AGL::Primitive *_primitive;
 
 	friend class GrimEngine;
 };
