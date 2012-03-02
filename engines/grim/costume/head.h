@@ -38,7 +38,7 @@ public:
 	void loadJoints(ModelNode *nodes);
 	void setMaxAngles(float maxPitch, float maxYaw, float maxRoll);
 
-	void lookAt(bool entering, const Math::Vector3d &point, float rate, const Math::Matrix4 &matrix);
+	void lookAt(bool entering, const Math::Vector3d &point, float rate, const Math::Matrix4 &matrix, const Common::String &fname);
 
 	void saveState(SaveGame *state) const;
 	void restoreState(SaveGame *state);
@@ -51,12 +51,17 @@ private:
 	float _maxPitch;
 	float _maxYaw;
 
+	// Specifies the three head joint bones of this character.
+	// These joint bones are animated by the moveHead function to make
+	// the characters face different directions.
+	// Note that for some characters, these variables may all be equal.
 	ModelNode *_joint1Node;
 	ModelNode *_joint2Node;
 	ModelNode *_joint3Node;
 
 	Math::Angle _headPitch;
 	Math::Angle _headYaw;
+	Math::Angle _headRoll;
 };
 
 } // end of namespace Grim
