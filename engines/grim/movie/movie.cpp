@@ -48,15 +48,9 @@ MoviePlayer::MoviePlayer() {
 	_videoDecoder = NULL;
 	_internalSurface = NULL;
 	_externalSurface = new Graphics::Surface();
-
-	g_system->getTimerManager()->installTimerProc(&timerCallback, 10000, NULL, "movieLoop");
 }
 
 MoviePlayer::~MoviePlayer() {
-	// Remove the callback immediately, so we're sure timerCallback() doesn't get called
-	// after the deinit() or the deletes.
-	g_system->getTimerManager()->removeTimerProc(&timerCallback);
-
 	deinit();
 	delete _videoDecoder;
 	delete _externalSurface;
@@ -124,10 +118,16 @@ void MoviePlayer::init() {
 	_movieTime = 0;
 	_updateNeeded = false;
 	_videoFinished = false;
+
+	g_system->getTimerManager()->installTimerProc(&timerCallback, 10000, NULL, "movieLoop");
 }
 
 void MoviePlayer::deinit() {
 	Debug::debug(Debug::Movie, "Deinitting video '%s'.\n", _fname.c_str());
+
+	// Remove the callback immediately, so we're sure timerCallback() doesn't get called
+	// after the deinit finishes
+	g_system->getTimerManager()->removeTimerProc(&timerCallback);
 
 	if (_videoDecoder)
 		_videoDecoder->close();
