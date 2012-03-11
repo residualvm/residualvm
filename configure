@@ -78,8 +78,8 @@ add_engine() {
 }
 
 add_engine grim "Grim" yes "monkey4"
-add_engine monkey4 "Escape from Monkey Island" yes
-add_engine myst3 "Myst 3" yes
+add_engine monkey4 "Escape from Monkey Island" no
+add_engine myst3 "Myst 3" no
 
 #
 # Default settings

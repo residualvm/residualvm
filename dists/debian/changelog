@@ -1,5 +1,5 @@
-residualvm (0.0.8-1) unstable; urgency=low
+residualvm (0.1.0-1) unstable; urgency=low
 
-  * Daily snapshot build.
+  * Pre-release snapshot build.
 
   -- Pawel Kolodziejski <aquadran@residualvm.org>
