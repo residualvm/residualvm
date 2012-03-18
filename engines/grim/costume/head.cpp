@@ -23,7 +23,6 @@
 #include "engines/grim/model.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/costume/head.h"
-#include "math/vector4d.h"
 
 namespace Grim {
 
