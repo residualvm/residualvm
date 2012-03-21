@@ -54,140 +54,301 @@ void Head::setMaxAngles(float maxPitch, float maxYaw, float maxRoll) {
 	_maxYaw = maxYaw;
 }
 
-void Head::lookAt(bool entering, const Math::Vector3d &point, float rate, const Math::Matrix4 &matrix) {
+/**
+ * Subtracts off extra multiples of the given angle in degrees, and returns 
+ * the same angle represented in the [-180, 180] range.
+ */
+static Math::Angle to180Range(Math::Angle angle)
+{
+	float deg = angle.getDegrees(-180.f);
+	angle.setDegrees(deg);
+	return angle;
+}
+	
+/**
+ * Returns val clamped to range [-mag, mag]. 
+ */
+static Math::Angle clampMagnitude(Math::Angle val, float mag)
+{
+	val = to180Range(val);
+	if (val.getDegrees() >= mag)
+		return mag;
+	if (val.getDegrees() <= -mag)
+		return -mag;
+	return val;
+}
+	
+void setCol(Math::Matrix4 &m, int col, const Math::Vector3d &vec)
+{
+	m.setValue(0, col, vec.x());
+	m.setValue(1, col, vec.y());
+	m.setValue(2, col, vec.z());
+	m.setValue(3, col, col == 3 ? 1.f : 0.f);
+}
+
+void setRow(Math::Matrix4 &m, int row, const Math::Vector3d &vec)
+{
+	m.setValue(row, 0, vec.x());
+	m.setValue(row, 1, vec.y());
+	m.setValue(row, 2, vec.z());
+	m.setValue(row, 3, row == 3 ? 1.f : 0.f);
+}
+
+/** 
+ * Generates a lookat matrix with position at origin. For reference, see 
+ * http://clb.demon.fi/MathGeoLib/docs/float3x3_LookAt.php 
+ */
+Math::Matrix4 lookAtMatrix(const Math::Vector3d &localForward, const Math::Vector3d &targetDirection, 
+						   const Math::Vector3d &localUp, const Math::Vector3d &worldUp)
+{
+	Math::Vector3d localRight = Math::Vector3d::crossProduct(localUp, localForward);
+	localRight.normalize();
+	Math::Vector3d worldRight = Math::Vector3d::crossProduct(worldUp, targetDirection);
+	worldRight.normalize();
+	Math::Vector3d perpWorldUp = Math::Vector3d::crossProduct(targetDirection, worldRight);
+	perpWorldUp.normalize();
+	
+	Math::Matrix4 m1;
+	setCol(m1, 0, worldRight);
+	setCol(m1, 1, perpWorldUp);
+	setCol(m1, 2, targetDirection);
+	setCol(m1, 3, Math::Vector3d(0,0,0));
+	
+	Math::Matrix4 m2;
+	setRow(m2, 0, localRight);
+	setRow(m2, 1, localUp);
+	setRow(m2, 2, localForward);
+	setRow(m2, 3, Math::Vector3d(0,0,0));
+	
+	return m1 * m2;
+}
+
+/** 
+ * Decomposes the matrix M to form M = R_z * R_x * R_y (R_D being the cardinal rotation 
+ * matrix about the axis +D), and outputs the angles of rotation in parameters Z, X and Y.
+ * In the convention of the coordinate system used in Grim Fandango characters:
+ *	+Z is the yaw rotation (up axis)
+ *	+X is the pitch rotation (right axis)
+ *	+Y is the roll rotation (forward axis)
+ * This function was adapted from http://www.geometrictools.com/Documentation/EulerAngles.pdf
+ * The matrix M must be orthonormal. 
+ */
+void extractEulerZXY(const Math::Matrix4 &m, Math::Angle &Z, Math::Angle &X, Math::Angle &Y) {
+	float x,y,z;
+	if (m.getValue(2, 1) < 1.f) {
+		if (m.getValue(2, 1) > -1.f) {
+			x = asin(m.getValue(2, 1));
+			z = atan2(-m.getValue(0, 1), m.getValue(1, 1));
+			y = atan2(-m.getValue(2, 0), m.getValue(2, 2));
+		}
+		else {
+			// Not a unique solution. Pick an arbitrary one.
+			x = -3.141592654f/2.f;
+			z = -atan2(-m.getValue(0, 2), m.getValue(0, 0));
+			y = 0;
+		}
+	}
+	else {
+		// Not a unique solution. Pick an arbitrary one.
+		x = 3.141592654f/2.f;
+		z = atan2(m.getValue(0, 2), m.getValue(0, 0));
+		y = 0;
+	}
+	X = Math::Angle::fromRadians(x);
+	Y = Math::Angle::fromRadians(y);
+	Z = Math::Angle::fromRadians(z);
+}
+
+/** 
+ * Inverts a matrix in place.
+ *	This function avoid having to do generic Gaussian elimination on the matrix
+ *	by assuming that the top-left 3x3 part of the matrix is orthonormal
+ *	(columns and rows 0, 1 and 2 orthogonal and unit length).
+ *	See e.g. Eric Lengyel's Mathematics for 3D Game Programming and Computer Graphics, p. 82. 
+ */
+void invertAffineOrthonormal(Math::Matrix4 &m) {
+	Math::Matrix4 m2;
+	m2.setValue(0, 0, m.getValue(0, 0));
+	m2.setValue(0, 1, m.getValue(1, 0));
+	m2.setValue(0, 2, m.getValue(2, 0));
+	m2.setValue(1, 0, m.getValue(0, 1));
+	m2.setValue(1, 1, m.getValue(1, 1));
+	m2.setValue(1, 2, m.getValue(2, 1));
+	m2.setValue(2, 0, m.getValue(0, 2));
+	m2.setValue(2, 1, m.getValue(1, 2));
+	m2.setValue(2, 2, m.getValue(2, 2));
+	m2.setValue(3, 0, 0.f);
+	m2.setValue(3, 1, 0.f);
+	m2.setValue(3, 2, 0.f);
+	m2.setValue(3, 3, 1.f);
+	m2.setPosition(Math::Vector3d(0,0,0));
+	
+	Math::Matrix<4,1> v;
+	v.setValue(0, -m.getValue(0, 3)); 
+	v.setValue(1, -m.getValue(1, 3)); 
+	v.setValue(2, -m.getValue(2, 3)); 
+	v.setValue(3, 0.f); 
+	
+	m2.transformVector(&v);
+	m2.setPosition(Math::Vector3d(v.getData()[0],v.getData()[1],v.getData()[2]));
+	m = m2;
+}
+	
+void Head::lookAt(bool entering, const Math::Vector3d &point, float rate, const Math::Matrix4 &matrix, const Common::String &fname) {
 	if (_joint1Node) {
 		float step = g_grim->getPerSecond(rate);
 		float yawStep = step;
 		float pitchStep = step / 3.f;
-		if (!entering) {
-			//animate yaw
-			if (_headYaw > yawStep) {
-				_headYaw -= yawStep;
-			} else if (_headYaw < -yawStep) {
-				_headYaw += yawStep;
-			} else {
-				_headYaw = 0;
-			}
-			//animate pitch
-			if (_headPitch > pitchStep) {
-				_headPitch -= pitchStep;
-			} else if (_headPitch < -pitchStep) {
-				_headPitch += pitchStep;
-			} else {
-				_headPitch = 0;
-			}
-			_joint1Node->_animYaw = _headYaw;
-			Math::Angle pi = _headPitch / 3.f;
-			_joint1Node->_animPitch += pi;
-			_joint2Node->_animPitch += pi;
-			_joint3Node->_animPitch += pi;
-			_joint1Node->_animRoll = (_joint1Node->_animYaw.getDegrees() / 20.f) *
-			_headPitch.getDegrees() / -5.f;
-
-			if (_joint1Node->_animRoll > _maxRoll)
-				_joint1Node->_animRoll = _maxRoll;
-			if (_joint1Node->_animRoll < -_maxRoll)
-				_joint1Node->_animRoll = -_maxRoll;
-			return;
-		}
-
+		float rollStep = step / 3.f;
+		
+		// Make sure we have up-to-date world transform matrices computed for every bone node of this character.
 		ModelNode *p = _joint3Node;
 		while (p->_parent) {
 			p = p->_parent;
 		}
 		p->setMatrix(matrix);
 		p->update();
+			
+		Math::Vector3d localFront; // Character front direction vector in local space.
+		Math::Vector3d localUp; // Character up direction vector in local space.
+		Math::Vector3d frontDir; // Character front facing direction vector in world space (global scene coordinate space)
 
-		Math::Vector3d v = point - _joint3Node->_matrix.getPosition();
-		if (v.isZero()) {
+		if (fname.compareTo("gunar_meshes.cos") == 0 || fname.compareTo("slisko_meshes.cos") == 0) {
+			// For these characters, the head coordinate frame is: -Z front, -X up, +Y right.
+			frontDir = Math::Vector3d(-_joint3Node->_matrix(0,2), -_joint3Node->_matrix(1,2), -_joint3Node->_matrix(2,2)); // Look straight ahead. (-Z)
+			localFront = Math::Vector3d(0,0,-1);
+			localUp = Math::Vector3d(-1,0,0);
+		} else if (fname.compareTo("meche_island.cos") == 0)	{
+			// For Meche inside her office, the head coordinate frame is: -Y forward, +Z up, -X right.
+			// NOTE: I suspect that the above is not strictly correct, but that the coordinate frame here
+			// is the same as for most of the characters (the case below), but it seems that the LUA scripts
+			// actually are asking for Meche to look straight backwards! Which causes the maxYaw/maxPitch/maxRoll logic
+			// to constrain the head in an awkward angle. Instead, try to orient the back of Meche's head towards the
+			// desired direction.
+			frontDir = Math::Vector3d(-_joint3Node->_matrix(0,1), -_joint3Node->_matrix(1,1), -_joint3Node->_matrix(2,1)); // Look straight ahead. (-Y)
+			localFront = Math::Vector3d(0,-1,0);
+			localUp = Math::Vector3d(0,0,1);
+		} else {
+			// the character head coordinate frame is: +Y forward, +Z up, +X right.
+			frontDir = Math::Vector3d(_joint3Node->_matrix(0,1), _joint3Node->_matrix(1,1), _joint3Node->_matrix(2,1)); // Look straight ahead. (+Y)
+			localFront = Math::Vector3d(0,1,0);
+			localUp = Math::Vector3d(0,0,1);
+		}
+		
+		// yFront == true for about every character in the game.
+		// yFront == false for those two revolutionistas in Blue Casket. Perhaps the artist wanted to be 
+		//                 a revolutionist as well ;) OR, there is a bug in the way how transform hierarchies
+		//                 are concatenated. (it is possible, at the present I do not understand all the details of
+		//                 the animation mechanism)
+		// v is the world space direction vector this character should be looking towards.
+		Math::Vector3d v = point - _joint3Node->_pivotMatrix.getPosition();
+		if (!entering)
+			v = frontDir;
+		if (v.isZero())
 			return;
-		}
 
-		float magnitude = sqrt(v.x() * v.x() + v.y() * v.y());
-		float a = v.x() / magnitude;
-		float b = v.y() / magnitude;
-		float yaw;
-		yaw = acos(a) * (180.0f / LOCAL_PI);
-		if (b < 0.0f)
-			yaw = 360.0f - yaw;
+		v.normalize();
+		
+		// The vector v is in world space, so generate the world space lookat matrix for the desired head facing
+		// orientation.
+		Math::Matrix4 lookAtTM;
+		const Math::Vector3d worldUp(0,0,1); // The Residual scene convention: +Z is world space up.
+		if (Math::Vector3d::dotProduct(v, Math::Vector3d(0,0,1)) >= 0.98f) // Avoid singularity if trying to look straight up.
+			lookAtTM = lookAtMatrix(localFront, v, localUp, -frontDir); // Instead of orienting head towards scene up, orient head towards character "back",
+		                                                                // i.e. when you look straight up, your head up vector tilts/arches to point straight backwards.
+		else if (Math::Vector3d::dotProduct(v, Math::Vector3d(0,0,1)) <= -0.98f) // Avoid singularity if trying to look straight down.
+			lookAtTM = lookAtMatrix(localFront, v, localUp, frontDir); // Instead of orienting head towards scene down, orient head towards character "front",
+																	   // i.e. when you look straight down, your head up vector tilts/arches to point straight forwards.
+		else
+			lookAtTM = lookAtMatrix(localFront, v, localUp, worldUp);
+		// The above specifies the world space orientation of this bone, but we need to output
+		// the orientation in parent space (as yaw/pitch/roll). 
+		
+		// Get the coordinate frame in which we need to produce the character head yaw/pitch/roll values.
+		Math::Matrix4 parentWorldTM = _joint3Node->_parent->_matrix;
+		
+		// While we could compute the desired lookat direction directly in the above coordinate frame,
+		// it is preferrable to compute the lookat direction with respect to the head orientation in
+		// the keyframe animation. This is because the LUA scripts specify the maximum head yaw, pitch and
+		// roll values with respect to those keyframe animations. If the lookat was simply computed 
+		// directly in the space of the parent, we couldn't apply the head maxYaw/Pitch/Roll constraints 
+		// properly. So, compute the coordinate frame of this bone in the keyframe animation.
+		Math::Matrix4 animFrame;
+		animFrame.buildFromPitchYawRoll(_joint3Node->_pitch, _joint3Node->_yaw, _joint3Node->_roll);
+		animFrame.setPosition(Math::Vector3d(0, 0 ,0));
+		parentWorldTM = parentWorldTM * animFrame;
+		invertAffineOrthonormal(parentWorldTM);
+		
+		// Convert lookAtTM orientation from world space to parent-with-keyframe-animation space.
+		lookAtTM = parentWorldTM * lookAtTM;
+		
+		// Decompose to yaw-pitch-roll (+Z, +X, +Y).
+		// In this space, Yaw is +Z. Pitch is +X. Roll is +Y.
+		Math::Angle y, pt, r;
+		extractEulerZXY(lookAtTM, y, pt, r);
+		
+		// Constrain the maximum head movement, as desired by the game LUA scripts.
+		y = clampMagnitude(y, _maxYaw);
+		pt = clampMagnitude(pt, _maxPitch);
+		// NOTE: By default, the _head.maxRoll for Manny's head is constrained to 165 degrees, which 
+		// comes in from the orignal Lua data scripts. (also, maxYaw == 80, maxPitch == 28).
+		// The very small maxPitch angle, and a very large maxRoll angle causes problems when Manny
+		// is trying to look straight up to an object, in which case the euler roll angles vary
+		// wildly compared to the pitch angles, which get clamped to a much smaller interval. Therefore,
+		// restrict the maximum roll angle to a smaller value than 165 degrees to avoid this behavior.
+		// If you want to change this, good places to test are:
+		// A) Year 1, outside the Department of Death, run/walk up & down the stairs, there's a sign
+		//    right above the stairs, and Manny looks dead up.
+		// B) Year 3, when Manny and Meche are imprisoned in the vault. Walk inside the room where Meche
+		//    is in, to look straight up to the sprinklers.
+		r = clampMagnitude(r, 30);
+		//		r = clampMagnitude(r, _head.maxRoll); // For original, use this.
+		
+		// Also limit yaw, pitch and roll to make at most a movement as large as the given max step size during this frame.
+		// This will produce a slow head-turning animation instead of immediately snapping to the
+		// target lookat orientation.
+		if (y - _headYaw > yawStep)
+			y = _headYaw + yawStep;
+		if (_headYaw - y > yawStep)
+			y = _headYaw - yawStep;
+		
+		if (pt - _headPitch > pitchStep)
+			pt = _headPitch + pitchStep;
+		if (_headPitch - pt > pitchStep)
+			pt = _headPitch - pitchStep;
+		
+		if (r - _headRoll > rollStep)
+			r = _headRoll + rollStep;
+		if (_headRoll - r > rollStep)
+			r = _headRoll - rollStep;
+		
+		// Remember how far we animated the head this frame, and we'll continue from here the next frame.
+		_headPitch = pt;
+		_headYaw = y;
+		_headRoll = r;
+		
+		// Assemble ypr back to a matrix.
+		// This matrix is the head orientation with respect to parent-with-keyframe-animation space.
+		lookAtTM.buildFromPitchYawRoll(pt, y, r);
+		
+		// What follows is a hack: Since translateObject(ModelNode *node, bool reset) in this file,
+		// and GfxOpenGL/GfxTinyGL::drawHierachyNode concatenate transforms incorrectly, by summing up
+		// euler angles, do a hack here where we do the proper transform here already, and *subtract off*
+		// the YPR scalars from the animYPR scalars to cancel out the values that those pieces of code 
+		// will later accumulate. After those pieces of code have been fixed, the following lines can
+		// be deleted, and this function can simply output the contents of pt, y and r variables above. 
+		lookAtTM = animFrame * lookAtTM;
+		
+		extractEulerZXY(lookAtTM, y, pt, r);
+		_joint3Node->_animYaw = y;
+		_joint3Node->_animPitch = pt;
+		_joint3Node->_animRoll = r;
+		
+		// hack hack:
+		_joint1Node->_animYaw -= _joint1Node->_yaw;
+		_joint1Node->_animPitch -= _joint1Node->_pitch;
+		_joint1Node->_animRoll -= _joint1Node->_roll;
 
-		Math::Angle bodyYaw = matrix.getYaw();
-		p = _joint1Node->_parent;
-		while (p) {
-			bodyYaw += p->_yaw + p->_animYaw;
-			p = p->_parent;
-		}
-
-		_joint1Node->_animYaw = (- 90 + yaw - bodyYaw);
-		if (_joint1Node->_animYaw < -180.) {
-			_joint1Node->_animYaw += 360;
-		}
-		if (_joint1Node->_animYaw > 180.) {
-			_joint1Node->_animYaw -= 360;
-		}
-
-		if (_joint1Node->_animYaw > _maxYaw)
-			_joint1Node->_animYaw = _maxYaw;
-		if (_joint1Node->_animYaw < -_maxYaw)
-			_joint1Node->_animYaw = -_maxYaw;
-
-		float sqLenght = v.x() * v.x() + v.y() * v.y();
-		float h;
-		if (sqLenght > 0) {
-			h = sqrt(sqLenght);
-		} else {
-			h = -sqrt(sqLenght);
-		}
-		magnitude = sqrt(v.z() * v.z() + h * h);
-		a = h / magnitude;
-		b = v.z() / magnitude;
-		Math::Angle pitch;
-		pitch = acos(a) * (180.0f / LOCAL_PI);
-
-		if (b < 0.0f)
-			pitch = 360.0f - pitch;
-
-		if (pitch > 180)
-			pitch -= 360;
-
-		if (pitch > _maxPitch)
-			pitch = _maxPitch;
-		if (pitch < -_maxPitch)
-			pitch = -_maxPitch;
-
-		if ((_joint1Node->_animYaw > 0 && pitch < 0) || (_joint1Node->_animYaw < 0 && pitch > 0)) {
-			pitch += _joint1Node->_animYaw / 10.f;
-		} else {
-			pitch -= _joint1Node->_animYaw / 10.f;
-		}
-
-		//animate pitch
-		if (pitch - _headPitch > pitchStep)
-			pitch = _headPitch + pitchStep;
-		if (_headPitch - pitch > pitchStep)
-			pitch = _headPitch - pitchStep;
-
-		Math::Angle pi = pitch / 3.f;
-		_joint1Node->_animPitch += pi;
-		_joint2Node->_animPitch += pi;
-		_joint3Node->_animPitch += pi;
-
-		//animate yaw
-		if (_joint1Node->_animYaw - _headYaw > yawStep)
-			_joint1Node->_animYaw = _headYaw + yawStep;
-		if (_headYaw - _joint1Node->_animYaw > yawStep)
-			_joint1Node->_animYaw = _headYaw - yawStep;
-
-		_joint1Node->_animRoll = (_joint1Node->_animYaw.getDegrees() / 20.f) *
-		pitch.getDegrees() / -5.f;
-
-		if (_joint1Node->_animRoll > _maxRoll)
-			_joint1Node->_animRoll = _maxRoll;
-		if (_joint1Node->_animRoll < -_maxRoll)
-			_joint1Node->_animRoll = -_maxRoll;
-
-		_headPitch = pitch;
-		_headYaw = _joint1Node->_animYaw;
 	}
 }
 
