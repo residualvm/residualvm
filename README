@@ -58,10 +58,10 @@ GRIM.TAB
 ------------------------------------
 1. Copy the neccessary files to a folder on your Hard Drive.
 2. Copy the patch file to a game folder.
-2. Open ResidualVM
-3. Choose "Add Game"
-4. Select the folder you created in step 1
-5. Click Start
+3. Open ResidualVM
+4. Choose "Add Game"
+5. Select the folder you created in step 1
+6. Click Start
 
 The patch can be downloaded from:
 http://demos.residualvm.org/patches/gfupd101.exe
