@@ -57,15 +57,11 @@ GRIM.TAB
 3.2 - Running Grim Fandango
 ------------------------------------
 1. Copy the neccessary files to a folder on your Hard Drive.
-2. Apply the patch, if you don't have it*
+2. Copy the patch file to a game folder.
 2. Open ResidualVM
 3. Choose "Add Game"
 4. Select the folder you created in step 1
 5. Click Start
-
-* Patched versions have subtitles in cutscenes, and can complete
-the game, unpatched versions don't have subtitles in cutscenes, 
-and can't complete the game. 
 
 The patch can be downloaded from:
 http://demos.residualvm.org/patches/gfupd101.exe
@@ -94,10 +90,10 @@ F1         : Menu
 -----------------
 5 - Configuration
 -----------------
-Currently not all the settings for ResidualVM are available through the GUI,
+Currently, not all the settings for ResidualVM are available through the GUI,
 if you have problems with getting anything to work, first try to pass the settings
-from the command line, then, if that doesn't work, try to change your configuration file
-manually
+from the command line, then, if that doesn't work, try to change your configuration
+file manually
 
 5.1 - Location of configuration file
 ------------------------------------
@@ -130,18 +126,18 @@ The following settings are currently available in the config-file,
 however some of them might not work with your current build. And 
 some of them might make ResidualVM crash, or behave in weird ways.
 
-|-------------------|-------------|-----------------------------------------------------|
-|Setting            | Values      | Effect                                              |
-|-------------------|-------------|-----------------------------------------------------|
-|show_fps           |[true/false] | If true, then ResidualVM will show the current      |
-|                   |             | FPS-rate, while you play                            |
-|-------------------|-------------|-----------------------------------------------------|
-|last_set           |[set-name]   | The set you were last on, ResidualVM will try to    |
-|                   |             | continue from there                                 |
-|-------------------|-------------|-----------------------------------------------------|
-|last_save          |[save-number]| The save you last saved, ResidualVM will have that  |
-|                   |             | selected the next time you try to load a game.      |
-|-------------------|-------------|-----------------------------------------------------|
+|-------------------------|-----------------------------------------------------|
+|Setting    | Values      | Effect                                              |
+|-----------|-------------|-----------------------------------------------------|
+|show_fps   |[true/false] | If true, then ResidualVM will show the current      |
+|           |             | FPS-rate, while you play                            |
+|-----------|-------------|-----------------------------------------------------|
+|last_set   |[set-name]   | The set you were last on, ResidualVM will try to    |
+|           |             | continue from there                                 |
+|-----------|-------------|-----------------------------------------------------|
+|last_save  |[save-number]| The save you last saved, ResidualVM will have that  |
+|           |             | selected the next time you try to load a game.      |
+|-----------|-------------|-----------------------------------------------------|
 
 
 ---------------------------------
@@ -164,10 +160,16 @@ renderer. Software renderer is generally faster on modern platforms.
 6.2 - I played a bit, but can't start a new game!
 -------------------------------------------------
 This is because the last save and visited scene is stored in your configuration
-file, either delete grim-fandango from the ResidualVM-menu, and read it, or 
+file, either delete grim-fandango from the ResidualVM-menu, and re-add it, or 
 go to your configuration file, and clean out the last-save and last-set entries.
 
-6.3 - In fullscreen mode picture is stretched!
+6.3 - My Save Games don't work any more
+---------------------------------------
+Did you recently update to a newer build of ResidualVM?
+Grim engine is still a work in progress, which means that it might
+change between builds.
+
+6.4 - In fullscreen mode picture is stretched!
 ----------------------------------------------
 This is know issue, in future versions it will be resolved.
 
