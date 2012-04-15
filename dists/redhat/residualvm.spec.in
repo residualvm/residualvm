@@ -17,7 +17,6 @@ Url             : http://www.residualvm.org
 
 Source		: %{name}-%{version}.tar.bz2
 Source1		: libmad-0.15.1b.tar.gz
-Source2		: libmpeg2-0.5.1.tar.gz
 BuildRoot	: %{_tmppath}/%{name}-%{version}-root
 
 BuildRequires: desktop-file-utils
@@ -41,8 +40,7 @@ mkdir tmp
 (cd libmad-0.15.1b; sed -i "s/optimize=\"\$optimize -fforce-mem\"/#optimize=\"\$optimize -fforce-mem\"/" configure; \
 sed -i "s/optimize=\"\$optimize -fforce-mem\"/#optimize=\"\$optimize -fforce-mem\"/" configure.ac; \
 ./configure --enable-static --disable-shared --prefix=%{_builddir}/residualvm-%{version}/tmp; make -j 4; make install)
-(cd libmpeg2-0.5.1; ./configure --enable-static --disable-shared --prefix=%{_builddir}/residualvm-%{version}/tmp; make -j 4; make install)
-./configure --with-mad-prefix=%{_builddir}/residualvm-%{version}/tmp --with-mpeg2-prefix=%{_builddir}/residualvm-%{version}/tmp --prefix=%{_prefix} --enable-release
+./configure --with-mad-prefix=%{_builddir}/residualvm-%{version}/tmp --prefix=%{_prefix} --enable-release
 make
 
 %install
