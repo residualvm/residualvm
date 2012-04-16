@@ -16,7 +16,6 @@ License		: GPL
 Url             : http://www.residualvm.org
 
 Source		: %{name}-%{version}.tar.bz2
-Source1		: libmad-0.15.1b.tar.gz
 BuildRoot	: %{_tmppath}/%{name}-%{version}-root
 
 BuildRequires: desktop-file-utils
@@ -33,14 +32,11 @@ BuildRequires: SDL-devel >= 1.2.2
 #   install scripts
 #------------------------------------------------------------------------------
 %prep
-%setup -q -a 1 -a 2 -n residualvm-%{version}
+%setup -q -n residualvm-%{version}
 mkdir tmp
 
 %build
-(cd libmad-0.15.1b; sed -i "s/optimize=\"\$optimize -fforce-mem\"/#optimize=\"\$optimize -fforce-mem\"/" configure; \
-sed -i "s/optimize=\"\$optimize -fforce-mem\"/#optimize=\"\$optimize -fforce-mem\"/" configure.ac; \
-./configure --enable-static --disable-shared --prefix=%{_builddir}/residualvm-%{version}/tmp; make -j 4; make install)
-./configure --with-mad-prefix=%{_builddir}/residualvm-%{version}/tmp --prefix=%{_prefix} --enable-release
+./configure --prefix=%{_prefix} --enable-release
 make
 
 %install
