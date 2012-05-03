@@ -85,7 +85,7 @@ void EMICostume::load(Common::SeekableReadStream *data) {
 				component->setCostume(this);
 				component->init();
 
-				if (strcmp(_chores[i]->getName(), "wear_default") == 0) {
+				if (strcmp(_chores[i]->_name, "wear_default") == 0) {
 					if (component->isComponentType('m','e','s','h')) {
 						_emiMesh = static_cast<EMIMeshComponent *>(component);
 						if (_emiSkel) {
