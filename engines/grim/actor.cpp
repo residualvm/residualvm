@@ -1672,7 +1672,7 @@ Math::Vector3d Actor::getWorldPos() const {
 	if (! isAttached())
 		return getPos();
 
-	EMICostume * cost = dynamic_cast<EMICostume *>(_attachedActor->getCurrentCostume());
+	EMICostume * cost = static_cast<EMICostume *>(_attachedActor->getCurrentCostume());
 	assert(cost != NULL);
 
 	Math::Matrix4 attachedToWorld;
@@ -1699,7 +1699,7 @@ void Actor::attachToActor(Actor *other, const char *joint) {
 	if (_attachedActor != NULL)
 		detach();
 
-	EMICostume * cost = dynamic_cast<EMICostume *>(other->getCurrentCostume());
+	EMICostume * cost = static_cast<EMICostume *>(other->getCurrentCostume());
 	assert(cost != NULL);
 
 	Common::String jointStr = joint ? joint : "";

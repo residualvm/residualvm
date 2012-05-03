@@ -69,17 +69,14 @@ void EMICostume::load(Common::SeekableReadStream *data) {
 			data->readUint32LE();
 			int parentID = data->readUint32LE();
 			if (parentID == -1 && _prevCostume) {
-				MainModelComponent *mmc;
-
 				// However, only the first item can actually share the
 				// node hierarchy with the previous costume, so flag
 				// that component so it knows what to do
 				if (i == 0)
 					parentID = -2;
 				prevComponent = _prevCostume->getComponent(0);
-				mmc = dynamic_cast<MainModelComponent *>(prevComponent);
 				// Make sure that the component is valid
-				if (!mmc)
+				if (!prevComponent->isComponentType('M','M','D','L'))
 					prevComponent = NULL;
 			}
 			// Actually load the appropriate component
@@ -88,16 +85,14 @@ void EMICostume::load(Common::SeekableReadStream *data) {
 				component->setCostume(this);
 				component->init();
 
-				if (strcmp(_chores[i]->_name, "wear_default") == 0) {
-					EMIMeshComponent *m = dynamic_cast<EMIMeshComponent *>(component);
-					EMISkelComponent *s = dynamic_cast<EMISkelComponent *>(component);
-					if (m) {
-						_emiMesh = m;
+				if (strcmp(_chores[i]->getName(), "wear_default") == 0) {
+					if (component->isComponentType('m','e','s','h')) {
+						_emiMesh = static_cast<EMIMeshComponent *>(component);
 						if (_emiSkel) {
 							_emiMesh->_obj->setSkeleton(_emiSkel->_obj);
 						}
-					} else if (s) {
-						_emiSkel = s;
+					} else if (component->isComponentType('s','k','e','l')) {
+						_emiSkel = static_cast<EMISkelComponent *>(component);
 						if (_emiMesh) {
 							_emiMesh->_obj->setSkeleton(_emiSkel->_obj);
 						}
