@@ -500,7 +500,7 @@ void SmushDecoder::setMsPerFrame(int ms) {
 	_frameRate = Common::Rational(1000000, ms);
 }
 
-void SmushDecoder::seekToTime(Audio::Timestamp time) { // FIXME: This will be off by a second or two right now.
+void SmushDecoder::seekToTime(const Audio::Timestamp &time) { // FIXME: This will be off by a second or two right now.
 	int32 wantedFrame = (uint32) ((time.msecs() / 1000.0f) * getFrameRate().toDouble());
 	warning("Seek to time: %d, frame: %d", time.msecs(), wantedFrame);
 	warning("Current frame: %d", _curFrame);
