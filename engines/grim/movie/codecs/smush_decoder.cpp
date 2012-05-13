@@ -546,7 +546,7 @@ uint32 SmushDecoder::getDuration() const {
 
 uint32 SmushDecoder::getTimeToNextFrame() const {
 	if (endOfVideo()) { //handle looping
-		uint32 elapsedTime = getElapsedTime();
+		uint32 elapsedTime = getTime();
 
 		Common::Rational beginTime = (_curFrame + 1) * 1000;
 		beginTime /= getFrameRate();
