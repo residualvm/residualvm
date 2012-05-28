@@ -310,8 +310,6 @@ void GfxTinyGL::clearScreen() {
 }
 
 void GfxTinyGL::flipBuffer() {
-	TinyGL::ZB_blitOffscreenBuffer(_zb);
-
 	g_system->updateScreen();
 }
 
@@ -325,6 +323,10 @@ void GfxTinyGL::selectCleanBuffer() {
 
 void GfxTinyGL::clearCleanBuffer() {
 	TinyGL::ZB_clearOffscreenBuffer(_zb);
+}
+
+void GfxTinyGL::drawCleanBuffer() {
+	TinyGL::ZB_blitOffscreenBuffer(_zb);
 }
 
 bool GfxTinyGL::isHardwareAccelerated() {

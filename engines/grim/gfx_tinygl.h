@@ -116,6 +116,7 @@ public:
 	void selectScreenBuffer();
 	void selectCleanBuffer();
 	void clearCleanBuffer();
+	void drawCleanBuffer();
 
 protected:
 

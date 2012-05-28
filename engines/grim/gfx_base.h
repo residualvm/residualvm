@@ -236,6 +236,7 @@ public:
 	virtual void selectScreenBuffer() {}
 	virtual void selectCleanBuffer() {}
 	virtual void clearCleanBuffer() {}
+	virtual void drawCleanBuffer() {}
 
 protected:
 	static const int _gameHeight = 480;
