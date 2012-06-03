@@ -651,7 +651,7 @@ void SurfaceSdlGraphicsManager::warpMouse(int x, int y) {
 	SDL_WarpMouse(x, y);
 }
 
-void SurfaceSdlGraphicsManager::setMouseCursor(const byte *buf, uint w, uint h, int hotspot_x, int hotspot_y, uint32 keycolor, int cursorTargetScale, const Graphics::PixelFormat *format) {
+void SurfaceSdlGraphicsManager::setMouseCursor(const byte *buf, uint w, uint h, int hotspot_x, int hotspot_y, uint32 keycolor, bool dontScale, const Graphics::PixelFormat *format) {
 	// ResidualVM: not use it
 }
 
