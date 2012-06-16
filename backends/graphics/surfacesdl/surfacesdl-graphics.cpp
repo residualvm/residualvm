@@ -431,7 +431,7 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 	}
 }
 
-void SurfaceSdlGraphicsManager::copyRectToScreen(const byte *src, int pitch, int x, int y, int w, int h) {
+void SurfaceSdlGraphicsManager::copyRectToScreen(const void *src, int pitch, int x, int y, int w, int h) {
 	// ResidualVM: not use it
 }
 

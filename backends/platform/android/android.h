@@ -256,7 +256,7 @@ protected:
 	virtual void grabPalette(byte *colors, uint start, uint num);
 
 public:
-	virtual void copyRectToScreen(const byte *buf, int pitch, int x, int y,
+	virtual void copyRectToScreen(const void *buf, int pitch, int x, int y,
 									int w, int h);
 	virtual void updateScreen();
 	virtual Graphics::Surface *lockScreen();

@@ -715,7 +715,7 @@ public:
 	 * @see updateScreen
 	 * @see getScreenFormat
 	 */
-	virtual void copyRectToScreen(const byte *buf, int pitch, int x, int y, int w, int h) = 0;
+	virtual void copyRectToScreen(const void *buf, int pitch, int x, int y, int w, int h) = 0;
 
 	/**
 	 * !!! Not used in ResidualVM !!!
