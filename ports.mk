@@ -165,7 +165,7 @@ osxsnap: bundle
 	cp $(srcdir)/COPYING.FREEFONT ./ResidualVM-snapshot/License\ \(FREEFONT\)
 	cp $(srcdir)/COPYRIGHT ./ResidualVM-snapshot/Copyright\ Holders
 	cp $(srcdir)/NEWS ./ResidualVM-snapshot/News
-	cp $(srcdir)/README ./ResidualVM-snapshot/Residual\ ReadMe
+	cp $(srcdir)/README ./ResidualVM-snapshot/ResidualVM\ ReadMe
 	mkdir ResidualVM-snapshot/doc
 	cp $(srcdir)/doc/QuickStart ./ResidualVM-snapshot/doc/QuickStart
 	SetFile -t ttro -c ttxt ./ResidualVM-snapshot/*
