@@ -121,6 +121,10 @@ public:
 
 // private:
 	Graphics::PixelBuffer *_data;
+#ifdef USE_OPENGL_SHADERS
+	uint32 _bufferVBO;
+	uint32 _bufferVAO;
+#endif
 };
 
 class Bitmap : public PoolObject<Bitmap> {

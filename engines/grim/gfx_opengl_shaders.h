@@ -190,8 +190,14 @@ public:
 
 	virtual void createSpecialtyTextures();
 
+protected:
+	void setupShaders();
+	GLuint compileShader(const char *vertex, const char *fragment);
+	GLuint compileShader(const char *shader) { return compileShader(shader, shader); }
+
 private:
 	float _alpha;
+	GLuint _backgroundProgram;
 };
 }
 #endif
