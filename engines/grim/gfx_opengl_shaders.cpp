@@ -52,12 +52,20 @@
 
 namespace Grim {
 
+static float textured_quad[] = {
+//	X   , Y   , S   , T
+	0.0f, 0.0f, 0.0f, 0.0f,
+	1.0f, 0.0f, 1.0f, 0.0f,
+	1.0f, 1.0f, 1.0f, 1.0f,
+	0.0f, 1.0f, 0.0f, 1.0f,
+};
+
 GfxBase *CreateGfxOpenGL() {
 	return new GfxOpenGLS();
 }
 
 GfxOpenGLS::GfxOpenGLS() {
-
+	_smushNumTex = 0;
 }
 
 GfxOpenGLS::~GfxOpenGLS() {
@@ -106,8 +114,32 @@ GLuint GfxOpenGLS::compileShader(const char *vertex, const char *fragment) {
 	return shaderProgram;
 }
 
+void GfxOpenGLS::setupTexturedQuad() {
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	_smushVAO = vao;
+	GLuint vbo;
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(textured_quad), textured_quad,
+			GL_STATIC_DRAW);
+	_smushVBO = vbo;
+	GLint posAttrib = glGetAttribLocation(_smushProgram, "position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+			0);
+	GLint coordAttrib = glGetAttribLocation(_smushProgram, "texcoord");
+	glEnableVertexAttribArray(coordAttrib);
+	glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+			(void *) (2 * sizeof(float)));
+	glBindVertexArray(0);
+}
+
 void GfxOpenGLS::setupShaders() {
 	_backgroundProgram = compileShader("background");
+	_smushProgram = compileShader("smush");
+	setupTexturedQuad();
 }
 
 byte *GfxOpenGLS::setupScreen(int screenW, int screenH, bool fullscreen) {
@@ -299,7 +331,7 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 	if (bitmap->_format == 1) {
 		bitmap->_hasTransparency = false;
 		bitmap->_numTex = ((bitmap->_width + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
-			((bitmap->_height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
+		                  ((bitmap->_height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
 		bitmap->_texIds = new GLuint[bitmap->_numTex * bitmap->_numImages];
 		textures = (GLuint *)bitmap->_texIds;
 		glGenTextures(bitmap->_numTex * bitmap->_numImages, textures);
@@ -521,16 +553,76 @@ void GfxOpenGLS::drawPolygon(const PrimitiveObject *primitive) {
 
 
 void GfxOpenGLS::prepareMovieFrame(Graphics::Surface* frame) {
+	int height = frame->h;
+	int width = frame->w;
+	byte *bitmap = (byte *)frame->pixels;
 
+
+	// create texture
+	_smushNumTex = ((width + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
+		((height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
+	_smushTexIds = new GLuint[_smushNumTex];
+	glGenTextures(_smushNumTex, _smushTexIds);
+	for (int i = 0; i < _smushNumTex; i++) {
+		glBindTexture(GL_TEXTURE_2D, _smushTexIds[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, BITMAP_TEXTURE_SIZE, BITMAP_TEXTURE_SIZE, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
+	}
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+
+	int curTexIdx = 0;
+	for (int y = 0; y < height; y += BITMAP_TEXTURE_SIZE) {
+		for (int x = 0; x < width; x += BITMAP_TEXTURE_SIZE) {
+			int t_width = (x + BITMAP_TEXTURE_SIZE >= width) ? (width - x) : BITMAP_TEXTURE_SIZE;
+			int t_height = (y + BITMAP_TEXTURE_SIZE >= height) ? (height - y) : BITMAP_TEXTURE_SIZE;
+			glBindTexture(GL_TEXTURE_2D, _smushTexIds[curTexIdx]);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t_width, t_height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, bitmap + (y * 2 * width) + (2 * x));
+			curTexIdx++;
+		}
+	}
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+	_smushWidth = (int)(width * _scaleW);
+	_smushHeight = (int)(height * _scaleH);
 }
 
 void GfxOpenGLS::drawMovieFrame(int offsetX, int offsetY) {
+	glUseProgram(_smushProgram);
+	glBindVertexArray(_smushVAO);
+	glDisable(GL_DEPTH_TEST);
 
+	GLint offsetPos = glGetUniformLocation(_smushProgram, "offsetXY");
+	GLint sizePos = glGetUniformLocation(_smushProgram, "sizeWH");
+
+	int curTexIdx = 0;
+	for (int y = 0; y < _smushHeight; y += (int)(BITMAP_TEXTURE_SIZE * _scaleH)) {
+		for (int x = 0; x < _smushWidth; x += (int)(BITMAP_TEXTURE_SIZE * _scaleW)) {
+			glBindTexture(GL_TEXTURE_2D, _smushTexIds[curTexIdx]);
+
+			glUniform2f(offsetPos, float(x + offsetX) / _screenWidth, float(y + offsetY) / _screenHeight);
+			glUniform2f(sizePos, BITMAP_TEXTURE_SIZE * _scaleW / _screenWidth, BITMAP_TEXTURE_SIZE * _scaleH / _screenHeight);
+			glDrawArrays(GL_QUADS, 0, 4);
+
+			curTexIdx++;
+		}
+	}
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 
 void GfxOpenGLS::releaseMovieFrame() {
-
+	if (_smushNumTex > 0) {
+		glDeleteTextures(_smushNumTex, _smushTexIds);
+		delete[] _smushTexIds;
+		_smushNumTex = 0;
+	}
 }
 
 
