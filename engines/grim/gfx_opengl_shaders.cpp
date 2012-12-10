@@ -139,6 +139,7 @@ void GfxOpenGLS::setupTexturedQuad() {
 void GfxOpenGLS::setupShaders() {
 	_backgroundProgram = compileShader("background");
 	_smushProgram = compileShader("smush");
+	_textProgram = compileShader("text");
 	setupTexturedQuad();
 }
 
@@ -480,26 +481,216 @@ void GfxOpenGLS::destroyBitmap(BitmapData *bitmap) {
 	glDeleteBuffers(1, &bitmap->_bufferVBO);
 }
 
+struct FontUserData {
+	int size;
+	GLuint texture;
+};
 
 void GfxOpenGLS::createFont(Font *font) {
+	const byte *bitmapData = font->getFontData();
+	uint dataSize = font->getDataSize();
 
+	uint8 bpp = 4;
+	uint8 charsWide = 16;
+	uint8 charsHigh = 16;
+
+	byte *texDataPtr = new byte[dataSize * bpp];
+	byte *data = texDataPtr;
+
+	for (uint i = 0; i < dataSize; i++, texDataPtr += bpp, bitmapData++) {
+		byte pixel = *bitmapData;
+		if (pixel == 0x00) {
+			texDataPtr[0] = texDataPtr[1] = texDataPtr[2] = texDataPtr[3] = 0;
+		} else if (pixel == 0x80) {
+			texDataPtr[0] = texDataPtr[1] = texDataPtr[2] = 0;
+			texDataPtr[3] = 255;
+		} else if (pixel == 0xFF) {
+			texDataPtr[0] = texDataPtr[1] = texDataPtr[2] = texDataPtr[3] = 255;
+		}
+	}
+	int size = 0;
+	for (int i = 0; i < 256; ++i) {
+		int width = font->getCharDataWidth(i), height = font->getCharDataHeight(i);
+		int m = MAX(width, height);
+		if (m > size)
+			size = m;
+	}
+	assert(size < 64);
+	if (size < 8)
+		size = 8;
+	if (size < 16)
+		size = 16;
+	else if (size < 32)
+		size = 32;
+	else if (size < 64)
+		size = 64;
+
+	uint arraySize = size * size * bpp * charsWide * charsHigh;
+	byte *temp = new byte[arraySize];
+	if (!temp)
+		error("Could not allocate %d bytes", arraySize);
+
+	memset(temp, 0, arraySize);
+
+	FontUserData *userData = new FontUserData;
+	font->setUserData(userData);
+	userData->texture = 0;
+	userData->size = size;
+
+	GLuint *texture = &(userData->texture);
+	glGenTextures(1, texture);
+
+	for (int i = 0, row = 0; i < 256; ++i) {
+		int width = font->getCharDataWidth(i), height = font->getCharDataHeight(i);
+		int32 d = font->getCharOffset(i);
+		for (int x = 0; x < height; ++x) {
+			// a is the offset to get to the correct row.
+			// b is the offset to get to the correct line in the character.
+			// c is the offset of the character from the start of the row.
+			uint a = row * size * size * bpp * charsHigh;
+			uint b = x * size * charsWide * bpp;
+			uint c = 0;
+			if (i != 0)
+				c = ((i - 1) % 16) * size * bpp;
+
+			uint pos = a + b + c;
+			uint pos2 = d * bpp + x * width * bpp;
+			assert(pos + width * bpp <= arraySize);
+			assert(pos2 + width * bpp <= dataSize * bpp);
+			memcpy(temp + pos, data + pos2, width * bpp);
+		}
+		if (i != 0 && i % charsWide == 0)
+			++row;
+
+	}
+	glBindTexture(GL_TEXTURE_2D, texture[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size * charsWide, size * charsHigh, 0, GL_RGBA, GL_UNSIGNED_BYTE, temp);
+
+	delete[] data;
+	delete[] temp;
 }
 
 void GfxOpenGLS::destroyFont(Font *font) {
-
+	const FontUserData *data = (const FontUserData *)font->getUserData();
+	if (data) {
+		glDeleteTextures(1, &(data->texture));
+		delete data;
+	}
 }
 
+struct TextUserData {
+	GLuint vao, vbo;
+	uint32 characters;
+	Color  color;
+	GLuint texture;
+};
 
 void GfxOpenGLS::createTextObject(TextObject *text) {
+	const Color &color = text->getFGColor();
+	const Font *font = text->getFont();
 
+	const FontUserData *userData = (const FontUserData *)font->getUserData();
+	if (!userData)
+		error("Could not get font userdata");
+	float sizeW = userData->size * _scaleW / _screenWidth;
+	float sizeH = userData->size * _scaleH / _screenHeight;
+	const Common::String *lines = text->getLines();
+	int numLines = text->getNumLines();
+
+	int numCharacters = 0;
+	for (int j = 0; j < numLines; ++j) {
+		numCharacters += lines[j].size();
+	}
+
+	float * bufData = new float[numCharacters * 16];
+	float * cur = bufData;
+
+	for (int j = 0; j < numLines; ++j) {
+		const Common::String &line = lines[j];
+		int x = text->getLineX(j);
+		int y = text->getLineY(j);
+		for (uint i = 0; i < line.size(); ++i) {
+			uint8 character = line[i];
+			float w = y + font->getCharStartingLine(character);
+			if (g_grim->getGameType() == GType_GRIM)
+				w += font->getBaseOffsetY();
+			float z = x + font->getCharStartingCol(character);
+			z *= _scaleW; z /= _screenWidth;
+			w *= _scaleH; w /= _screenHeight;
+			float width = 1 / 16.f;
+			float cx = ((character - 1) % 16) / 16.0f;
+			float cy = ((character - 1) / 16) / 16.0f;
+
+			float charData[] = {
+					z, w, cx, cy,
+					z + sizeW, w, cx + width, cy,
+					z + sizeW, w + sizeH, cx + width, cy + width,
+					z, w + sizeH, cx, cy + width
+			};
+			memcpy(cur, charData, 16 * sizeof(float));
+			cur += 16;
+
+			x += font->getCharWidth(character);
+		}
+	}
+
+	GLuint vbo;
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, numCharacters * 16 * sizeof(float), bufData, GL_STATIC_DRAW);
+
+	glUseProgram(_textProgram);
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+	GLint posAttrib = glGetAttribLocation(_textProgram, "position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+	GLint coordAttrib = glGetAttribLocation(_textProgram, "texcoord");
+	glEnableVertexAttribArray(coordAttrib);
+	glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+			(void *) (2 * sizeof(float)));
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	TextUserData * td = new TextUserData;
+	td->characters = numCharacters;
+	td->vao = vao;
+	td->vbo = vbo;
+	td->color = color;
+	td->texture = userData->texture;
+	text->setUserData(td);
+	delete[] bufData;
 }
 
 void GfxOpenGLS::drawTextObject(const TextObject *text) {
+	glEnable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	const TextUserData * td = (const TextUserData *) text->getUserData();
+	assert(td);
+	glUseProgram(_textProgram);
+	glBindVertexArray(td->vao);
 
+	GLint colorAttrib = glGetUniformLocation(_textProgram, "color");
+	glUniform3f(colorAttrib, float(td->color.getRed()) / 255.0f, float(td->color.getGreen()) / 255.0f, float(td->color.getBlue()) / 255.0f);
+	glBindTexture(GL_TEXTURE_2D, td->texture);
+	glDrawArrays(GL_QUADS, 0, td->characters *  4);
+	glBindVertexArray(0);
 }
 
 void GfxOpenGLS::destroyTextObject(TextObject *text) {
-
+	const TextUserData * td = (const TextUserData *) text->getUserData();
+	glDeleteBuffers(1, &td->vbo);
+	glDeleteVertexArrays(1, &td->vao);
+	text->setUserData(NULL);
+	delete td;
 }
 
 

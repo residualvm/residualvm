@@ -200,6 +200,8 @@ private:
 	GLuint _backgroundProgram;
 	GLuint _smushProgram;
 	GLuint _smushVAO, _smushVBO;
+	GLuint _textProgram;
+
 
 	int _smushWidth;
 	int _smushHeight;
