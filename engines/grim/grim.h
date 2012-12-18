@@ -148,6 +148,8 @@ public:
 	void setSelectedActor(Actor *a) { _selectedActor = a; }
 	Actor *getSelectedActor() { return _selectedActor; }
 
+	void immediatelyRemoveActor(Actor *a);
+
 	/**
 	 * Tell the engine that an actor has been moved into/outside a set,
 	 * and so that it should rebuild the list of active ones.

@@ -1074,6 +1074,11 @@ float GrimEngine::getPerSecond(float rate) const {
 	return rate * _frameTime / 1000;
 }
 
+void GrimEngine::immediatelyRemoveActor(Actor *a) {
+	_talkingActors.remove(a);
+	_activeActors.remove(a);
+}
+
 void GrimEngine::invalidateActiveActorsList() {
 	_buildActiveActorsList = true;
 }

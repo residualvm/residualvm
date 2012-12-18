@@ -129,6 +129,7 @@ Actor::~Actor() {
 		delete _costumeStack.back();
 		_costumeStack.pop_back();
 	}
+	g_grim->immediatelyRemoveActor(this);
 }
 
 void Actor::saveState(SaveGame *savedState) const {
