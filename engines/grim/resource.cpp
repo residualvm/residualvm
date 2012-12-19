@@ -20,6 +20,8 @@
  *
  */
 
+#include "gui/error.h"
+
 #include "engines/grim/resource.h"
 #include "engines/grim/colormap.h"
 #include "engines/grim/costume.h"
@@ -152,6 +154,28 @@ ResourceLoader::ResourceLoader() {
 		}
 	}
 
+	// Check if the update has correctly loaded
+	if (!(g_grim->getGameFlags() & ADGF_DEMO || SearchMan.hasArchive("update"))) {
+		const char *errorMessage = 0;
+		if (g_grim->getGameType() == GType_GRIM) {
+			errorMessage = 	"Unsupported version of Grim Fandango.\n"
+							"Please download the original patch from\n"
+							"http://www.residualvm.org/downloads/\n"
+							"and put it the game data files directory";
+			GUI::displayErrorDialog(errorMessage);
+			error("gfupd101.exe not found");
+		}
+
+		//Don't force the update for MI4 for now
+		/*else if (g_grim->getGameType() == GType_MONKEY4)
+			errorMessage = 	"Unsupported version of Escape from Monkey Island.\n"
+							"Please download the original patch from\n"
+							"http://www.residualvm.org/downloads/\n"
+							"and put it the game data files directory.\n"
+							"Pay attention to download the correct version according to the game's language";
+		*/
+	}
+
 	if (files.empty())
 		error("Cannot find game data - check configuration file");
 
@@ -231,19 +255,7 @@ Common::SeekableReadStream *ResourceLoader::loadFile(const Common::String &filen
 	else
 		return NULL;
 
-	Common::String patchfile = filename + ".patchr";
-	if (SearchMan.hasFile(patchfile)) {
-		Debug::debug(Debug::Patchr, "Patch requested for %s", filename.c_str());
-		Patchr p;
-		p.loadPatch(SearchMan.createReadStreamForMember(patchfile));
-		bool success = p.patchFile(rs, filename);
-		if (success)
-			Debug::debug(Debug::Patchr, "%s successfully patched", filename.c_str());
-		else
-			warning("Patching of %s failed", filename.c_str());
-		rs->seek(0, SEEK_SET);
-	}
-
+	rs = wrapPatchedFile(rs, filename);
 	return rs;
 }
 
