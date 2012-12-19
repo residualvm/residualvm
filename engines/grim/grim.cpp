@@ -1107,6 +1107,14 @@ void GrimEngine::setMovieSubtitle(TextObject *to)
 	}
 }
 
+void GrimEngine::setMode(EngineMode mode) {
+	if (_mode == SmushMode)
+		setMovieSubtitle(NULL);
+
+	_mode = mode;
+	invalidateActiveActorsList();
+}
+
 const Common::String &GrimEngine::getSetName() const {
 	return _currSet->getName();
 }
