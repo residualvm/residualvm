@@ -47,6 +47,16 @@ List of fixed bugs in GF scripts:
 	As Manny shows, you can lock an open door, and while it is simbolically compelling,
 	it doesn't close it. :)
 
+	-Fix bug #672 "Meche's line "I'm sorry I let you down Manny" is played as Manny
+	walks into the hallway." - mo.lua.patchr
+	mo.ha_door.walkOut doesn't wait for Meche has finished speaking to move Manny outside
+	his office. This patch adds a wait_for_message() to prevent this.
+
+	-Fix bug #687 "GRIM: Getting down the conveyour-belt is very difficult." - cy.lua.patchr
+	The function cy.climb_chain_box.walkOut checks if the chain is down and makes manny float
+	if it is. But the chain may be down but not on the belt if the direction of movement
+	of it is from the sea to the crane. This patch adds that missing check.
+
 +Untriggered contents:
 	-Fix the missing dialogue with Domino at third year
 	In dlg_dom2.lua, the argument of CheckFirstTime is wrong; this
@@ -54,9 +64,9 @@ List of fixed bugs in GF scripts:
 	See http://forums.residualvm.org/viewtopic.php?t=108
 
 +Others modifications:
-	-Blacklist of v1.00
-	Version 1.00 of Grim Fandango is not completable on modern machines, so we blacklist
-	it by setting game_needs_update to TRUE in _system.lua
+	-The function si.set_up_actors (si.lua), calls "start_script(si.naranja_drinking)",
+	which doesn't exist. The problem with that is that lua_error ends the function that
+	was going on, breaking si.set really badly. The bad call is replaced with the correct one.
 
 Contents of residualvm-grim-patches.lab and its rebuild:
 
