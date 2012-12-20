@@ -53,7 +53,7 @@ public:
 	void play();
 	void playLooping();
 	void setLooping(bool val) { _looping = val; }
-	void stop();
+	void stop(bool reset = true);
 	void update(uint time);
 	void setLastFrame();
 	void fadeIn(uint msecs);
