@@ -7,3 +7,16 @@ Known bugs in ResidualVM 0.1.0:
 * Subtitles will overlap when multiple characters are speaking
 * Some animations will show their initial state at the end
 * Glottis will be drawn incorrectly at the Beaver Dam
+* The game will lock if the user opens the inventory while knocking at Glottis' door
+* Manny might flicker at specific times in the game
+* Copal disappears while screaming at Manny
+* Manny can't walk past the bone wagon when getting the key in the Petrified Forest
+* Characters' mouth's might continue to move after ending their speech
+* Some animations might be slightly off (for instance entering Toto's place)
+* It might be possible to get stuck in the Petrified Forest.
+* Some music scores are played in the wrong locations. (or may even stop at odd times)
+* Collision detection might be off at times (allowing Manny to stand inside items he shouldn't)
+* Manny's walk animation might stop at odd times.
+
+For an up-to-date list of bugs in the current version of ResidualVM, see:
+https://github.com/residualvm/residualvm/issues?page=1&state=open
