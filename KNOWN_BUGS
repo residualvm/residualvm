@@ -17,6 +17,7 @@ Known bugs in ResidualVM 0.1.0:
 * Some music scores are played in the wrong locations. (or may even stop at odd times)
 * Collision detection might be off at times (allowing Manny to stand inside items he shouldn't)
 * Manny's walk animation might stop at odd times.
+* Camera-relative-movement might have issues.
 
 For an up-to-date list of bugs in the current version of ResidualVM, see:
 https://github.com/residualvm/residualvm/issues?page=1&state=open
