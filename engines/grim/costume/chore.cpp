@@ -83,10 +83,11 @@ void Chore::stop(bool reset) {
 	_playing = false;
 	_hasPlayed = false;
 
-	if (reset) {
-		for (int i = 0; i < _numTracks; i++) {
-			Component *comp = _owner->_components[_tracks[i].compID];
-			if (comp)
+	for (int i = 0; i < _numTracks; i++) {
+		Component *comp = _owner->_components[_tracks[i].compID];
+		if (comp)
+			comp->stop();
+			if (reset)
 				comp->reset();
 		}
 	}
