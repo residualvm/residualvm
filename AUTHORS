@@ -55,6 +55,7 @@ ResidualVM
        Lionel Ulmer          - OpenGL optimisations
        Joni Vahamaki         - A lot of engine improvements and fixes
        JenniBee              - Compilation fixes
+       tobigun               - Few fixes to engine
 
     Myst 3:
        Matthew Hoops         - Various engine improvements and code fixes

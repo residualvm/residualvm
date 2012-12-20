@@ -85,6 +85,8 @@ static const char *credits[] = {
 "C2""A lot of engine improvements and fixes",
 "C0""JenniBee",
 "C2""Compilation fixes",
+"C0""tobigun",
+"C2""Few fixes to engine",
 "",
 "C1""Myst 3",
 "C0""Matthew Hoops",

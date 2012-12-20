@@ -499,6 +499,7 @@ begin_credits("Credits");
 		add_person("Lionel Ulmer", "bbrox", "OpenGL optimisations");
 		add_person("Joni V&auml;h&auml;m&auml;ki", "Akz", "A lot of engine improvements and fixes");
 		add_person("", "JenniBee", "Compilation fixes");
+		add_person("", "tobigun", "Few fixes to engine");
 	    end_section();
 
 	    begin_section("Myst 3");
