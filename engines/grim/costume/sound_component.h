@@ -33,7 +33,10 @@ public:
 	~SoundComponent();
 
 	void setKey(int val);
-	void reset();
+	void stop();
+
+private:
+	Common::String _soundName;
 };
 
 } // end of namespace Grim

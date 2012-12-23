@@ -85,7 +85,7 @@ void Chore::stop(bool reset) {
 
 	for (int i = 0; i < _numTracks; i++) {
 		Component *comp = _owner->_components[_tracks[i].compID];
-		if (comp)
+		if (comp) {
 			comp->stop();
 			if (reset)
 				comp->reset();
