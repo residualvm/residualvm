@@ -1,5 +1,5 @@
 product residualvm
-    id "ResidualVM 0.1.0"
+    id "ResidualVM 0.1.1"
     image sw
         id "software"
         version 18
