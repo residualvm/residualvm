@@ -216,6 +216,10 @@ private:
 	float _fclip;
 	Math::Matrix4 _projMatrix;
 	Math::Matrix4 _mvpMatrix;
+
+	void setupTexturedCenteredQuad();
+	GLuint _spriteVAO;
+	GLuint _spriteVBO;
 };
 }
 #endif

@@ -60,6 +60,14 @@ static float textured_quad[] = {
 	0.0f, 1.0f, 0.0f, 1.0f,
 };
 
+static float textured_quad_centered[] = {
+//	 X   ,  Y   , Z   , S   , T
+	-0.5f, -0.5f, 0.0f, 0.0f, 1.0f,
+	-0.5f, +0.5f, 0.0f, 0.0f, 0.0f,
+	+0.5f, +0.5f, 0.0f, 1.0f, 0.0f,
+	+0.5f, -0.5f, 0.0f, 1.0f, 1.0f,
+};
+
 GfxBase *CreateGfxOpenGL() {
 	return new GfxOpenGLS();
 }
@@ -134,12 +142,40 @@ void GfxOpenGLS::setupTexturedQuad() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+void GfxOpenGLS::setupTexturedCenteredQuad() {
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	_spriteVAO = vao;
+	GLuint vbo;
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(textured_quad_centered), textured_quad_centered, GL_STATIC_DRAW);
+	_spriteVBO = vbo;
+
+	GLint posAttrib = glGetAttribLocation(_actorProgram, "position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+			0);
+	GLint coordAttrib = glGetAttribLocation(_actorProgram, "texcoord");
+	glEnableVertexAttribArray(coordAttrib);
+	glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+			(void *) (3 * sizeof(float)));
+	GLint colorAttrib = glGetAttribLocation(_actorProgram, "color");
+	glDisableVertexAttribArray(colorAttrib);
+	glVertexAttrib4f(colorAttrib, 1.0f, 1.0f, 1.0f, 1.0f);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 void GfxOpenGLS::setupShaders() {
 	_backgroundProgram = compileShader("background");
 	_smushProgram = compileShader("smush");
 	_textProgram = compileShader("text");
-	_actorProgram = compileShader("actor");
+	_actorProgram = compileShader("emi_actor");
 	setupTexturedQuad();
+	setupTexturedCenteredQuad();
 }
 
 byte *GfxOpenGLS::setupScreen(int screenW, int screenH, bool fullscreen) {
@@ -238,6 +274,9 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
 	GLint cameraPos = glGetUniformLocation(_actorProgram, "cameraPos");
 	GLint actorPos = glGetUniformLocation(_actorProgram, "actorPos");
+	GLint billboardPos = glGetUniformLocation(_actorProgram, "isBillboard");
+
+	glEnable(GL_DEPTH_TEST);
 
 	Math::Matrix4 viewMatrix = _currentQuat.toMatrix();
 	viewMatrix.transpose();
@@ -255,6 +294,7 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
 	glUniform3fv(cameraPos, 1, _currentPos.getData());
 	glUniform3fv(actorPos, 1, pos.getData());
+	glUniform1i(billboardPos, GL_FALSE);
 }
 
 
@@ -334,8 +374,10 @@ void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
 
+	GLint colAttrib = glGetAttribLocation(_actorProgram, "color");
+	glEnableVertexAttribArray(colAttrib);
+
 	glDrawElements(GL_TRIANGLES, 3 * face->_faceLength, GL_UNSIGNED_INT, 0);
-	glDisable(GL_DEPTH_TEST);
 }
 
 void GfxOpenGLS::drawModelFace(const MeshFace *face, float *vertices, float *vertNormals, float *textureVerts) {
@@ -343,7 +385,27 @@ void GfxOpenGLS::drawModelFace(const MeshFace *face, float *vertices, float *ver
 }
 
 void GfxOpenGLS::drawSprite(const Sprite *sprite) {
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0);
+	GLint texturedPos = glGetUniformLocation(_actorProgram, "textured");
+	GLint billboardPos = glGetUniformLocation(_actorProgram, "isBillboard");
+	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
 
+	glBindVertexArray(_spriteVAO);
+	Math::Matrix4 extraMatrix;
+	extraMatrix.setPosition(sprite->_pos);
+	extraMatrix(0,0) *= sprite->_width;
+	extraMatrix(1,1) *= sprite->_height;
+	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
+
+	glUniform1i(texturedPos, GL_TRUE);
+	glUniform1i(billboardPos, GL_TRUE);
+
+	glDrawArrays(GL_QUADS, 0, 4);
+	glBindVertexArray(0);
+
+	glDisable(GL_ALPHA_TEST);
 }
 
 
