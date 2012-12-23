@@ -59,6 +59,10 @@ public:
 	uint32 _flags;
 	EMIModel *_parent;
 	
+#ifdef USE_OPENGL_SHADERS
+	uint32 _indicesEBO;
+#endif
+
 	EMIMeshFace() : _faceLength(0), _numFaces(0), _hasTexture(0), _texID(0), _flags(0), _indexes(NULL), _parent(NULL) { }
 	~EMIMeshFace();
 	void loadFace(Common::SeekableReadStream *data);
@@ -104,6 +108,16 @@ public:
 	int _setType;
 	
 	Common::String _fname;
+
+#ifdef USE_OPENGL_SHADERS
+	uint32 _modelVAO;
+	uint32 _texCoordsVBO;
+	uint32 _colorMapVBO;
+	uint32 _normalsVBO;
+	uint32 _verticesVBO;
+	mutable bool _dirtySkeleton;
+#endif
+
 public:
 	EMIModel(const Common::String &filename, Common::SeekableReadStream *data, EMIModel *parent = NULL);
 	~EMIModel();

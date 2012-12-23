@@ -189,6 +189,7 @@ public:
 	void renderZBitmaps(bool render);
 
 	virtual void createSpecialtyTextures();
+	virtual void createEMIModel(EMIModel *model);
 
 protected:
 	void setupShaders();
@@ -198,6 +199,7 @@ protected:
 private:
 	float _alpha;
 	GLuint _backgroundProgram;
+	GLuint _actorProgram;
 	GLuint _smushProgram;
 	GLuint _smushVAO, _smushVBO;
 	GLuint _textProgram;
@@ -207,8 +209,13 @@ private:
 	int _smushHeight;
 	uint32 _smushNumTex;
 	GLuint *_smushTexIds;
-
 	void setupTexturedQuad();
+
+	float _fov;
+	float _nclip;
+	float _fclip;
+	Math::Matrix4 _projMatrix;
+	Math::Matrix4 _mvpMatrix;
 };
 }
 #endif

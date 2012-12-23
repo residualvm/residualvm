@@ -250,6 +250,7 @@ public:
 
 	virtual void createSpecialtyTextures() = 0;
 	virtual Material *getSpecialtyTexture(int n) { return &_specialty[n]; }
+	virtual void createEMIModel(EMIModel *model) {}
 
 	virtual int genBuffer() { return 0; }
 	virtual void delBuffer(int buffer) {}

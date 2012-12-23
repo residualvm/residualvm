@@ -85,15 +85,15 @@ static GLuint loadShader(const char *base, const char *extension, GLenum shaderT
 	file.close();
 	shaderSource[size] = '\0';
 
-	GLuint shader = glCreateShader( shaderType );
-	glShaderSource( shader, 1, (const GLchar **)&shaderSource, NULL );
-	glCompileShader( shader );
+	GLuint shader = glCreateShader(shaderType);
+	glShaderSource(shader, 1, (const GLchar **)&shaderSource, NULL);
+	glCompileShader(shader);
 
 	GLint status;
-	glGetShaderiv( shader, GL_COMPILE_STATUS, &status );
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
 	if (status != GL_TRUE) {
 		char buffer[512];
-		glGetShaderInfoLog( shader, 512, NULL, buffer );
+		glGetShaderInfoLog(shader, 512, NULL, buffer);
 		error("Could not compile shader %s.%s: %s", base, extension, buffer);
 	}
 	delete[] shaderSource;
@@ -122,24 +122,23 @@ void GfxOpenGLS::setupTexturedQuad() {
 	GLuint vbo;
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(textured_quad), textured_quad,
-			GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(textured_quad), textured_quad, GL_STATIC_DRAW);
 	_smushVBO = vbo;
 	GLint posAttrib = glGetAttribLocation(_smushProgram, "position");
 	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-			0);
+	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
 	GLint coordAttrib = glGetAttribLocation(_smushProgram, "texcoord");
 	glEnableVertexAttribArray(coordAttrib);
-	glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-			(void *) (2 * sizeof(float)));
+	glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (2 * sizeof(float)));
 	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void GfxOpenGLS::setupShaders() {
 	_backgroundProgram = compileShader("background");
 	_smushProgram = compileShader("smush");
 	_textProgram = compileShader("text");
+	_actorProgram = compileShader("actor");
 	setupTexturedQuad();
 }
 
@@ -174,13 +173,46 @@ byte *GfxOpenGLS::setupScreen(int screenW, int screenH, bool fullscreen) {
 	return NULL;
 }
 
-
+// matrix calculation based on the glm library.
 void GfxOpenGLS::setupCamera(float fov, float nclip, float fclip, float roll) {
+	if (_fov == fov && _nclip == nclip && _fclip == fclip)
+		return;
 
+	_fov = fov; _nclip = nclip; _fclip = fclip;
+
+	float right = nclip * tan(fov / 2 * (LOCAL_PI / 180));
+	float left = -right;
+	float top = right * 0.75;
+	float bottom = -right * 0.75;
+
+	Math::Matrix4 proj;
+	proj(0,0) = (2.0f * nclip) / (right - left);
+	proj(1,1) = (2.0f * nclip) / (top - bottom);
+	proj(2,0) = (right + left) / (right - left);
+	proj(2,1) = (top + bottom) / (top - bottom);
+	proj(2,2) = -(fclip + nclip) / (fclip - nclip);
+	proj(2,3) = -1.0f;
+	proj(3,2) = -(2.0f * fclip * nclip) / (fclip - nclip);
+	proj(3,3) = 0.0f;
+	proj.transpose();
+
+	_projMatrix = proj;
 }
 
 void GfxOpenGLS::positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest, float roll) {
-
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		_currentPos = pos;
+		_currentQuat = Math::Quaternion(interest.x(), interest.y(), interest.z(), roll);
+	} else {
+//		Math::Vector3d up_vec(0, 0, 1);
+//
+//		glRotatef(roll, 0, 0, -1);
+//
+//		if (pos.x() == interest.x() && pos.y() == interest.y())
+//			up_vec = Math::Vector3d(0, 1, 0);
+//
+//		gluLookAt(pos.x(), pos.y(), pos.z(), interest.x(), interest.y(), interest.z(), up_vec.x(), up_vec.y(), up_vec.z());
+	}
 }
 
 
@@ -198,8 +230,31 @@ void GfxOpenGLS::getBoundingBoxPos(const Mesh *mesh, int *x1, int *y1, int *x2, 
 }
 
 void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Math::Quaternion &quat,
-														const bool inOverworld, const float alpha) {
+                                const bool inOverworld, const float alpha) {
+	glUseProgram(_actorProgram);
+	GLint modelMatrixPos = glGetUniformLocation(_actorProgram, "modelMatrix");
+	GLint projMatrixPos = glGetUniformLocation(_actorProgram, "projMatrix");
+	GLint viewMatrixPos = glGetUniformLocation(_actorProgram, "viewMatrix");
+	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
+	GLint cameraPos = glGetUniformLocation(_actorProgram, "cameraPos");
+	GLint actorPos = glGetUniformLocation(_actorProgram, "actorPos");
 
+	Math::Matrix4 viewMatrix = _currentQuat.toMatrix();
+	viewMatrix.transpose();
+
+	Math::Matrix4 modelMatrix = quat.toMatrix();
+	modelMatrix.transpose();
+
+	Math::Matrix4 extraMatrix;
+
+	_mvpMatrix = _projMatrix * viewMatrix * modelMatrix;
+
+	glUniformMatrix4fv(modelMatrixPos, GL_TRUE, 1, modelMatrix.getData());
+	glUniformMatrix4fv(viewMatrixPos, GL_TRUE, 1, viewMatrix.getData());
+	glUniformMatrix4fv(projMatrixPos, GL_TRUE, 1, _projMatrix.getData());
+	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
+	glUniform3fv(cameraPos, 1, _currentPos.getData());
+	glUniform3fv(actorPos, 1, pos.getData());
 }
 
 
@@ -259,7 +314,28 @@ void GfxOpenGLS::translateViewpointFinish() {
 
 
 void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face) {
+	if (model->_dirtySkeleton) {
+		model->_dirtySkeleton = false;
+		glBindBuffer(GL_ARRAY_BUFFER, model->_verticesVBO);
+		void * bufData = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+		memcpy(bufData, model->_drawVertices, 3 * sizeof(float) * model->_numVertices);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
 
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	glBindVertexArray(model->_modelVAO);
+	GLint texturedPos = glGetUniformLocation(_actorProgram, "textured");
+	glUniform1i(texturedPos, face->_hasTexture ? GL_TRUE : GL_FALSE);
+
+	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
+	Math::Matrix4 extraMatrix;
+	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
+
+	glDrawElements(GL_TRIANGLES, 3 * face->_faceLength, GL_UNSIGNED_INT, 0);
+	glDisable(GL_DEPTH_TEST);
 }
 
 void GfxOpenGLS::drawModelFace(const MeshFace *face, float *vertices, float *vertNormals, float *textureVerts) {
@@ -289,11 +365,69 @@ void GfxOpenGLS::turnOffLight(int lightId) {
 
 
 void GfxOpenGLS::createMaterial(Texture *material, const char *data, const CMap *cmap) {
+	material->_texture = new GLuint[1];
+	glGenTextures(1, (GLuint *)material->_texture);
+	char *texdata = new char[material->_width * material->_height * 4];
+	char *texdatapos = texdata;
 
+	if (cmap != NULL) { // EMI doesn't have colour-maps
+		for (int y = 0; y < material->_height; y++) {
+			for (int x = 0; x < material->_width; x++) {
+				uint8 col = *(const uint8 *)(data);
+				if (col == 0) {
+					memset(texdatapos, 0, 4); // transparent
+					if (!material->_hasAlpha) {
+						texdatapos[3] = '\xff'; // fully opaque
+					}
+				} else {
+					memcpy(texdatapos, cmap->_colors + 3 * (col), 3);
+					texdatapos[3] = '\xff'; // fully opaque
+				}
+				texdatapos += 4;
+				data++;
+			}
+		}
+	} else {
+		memcpy(texdata, data, material->_width * material->_height * material->_bpp);
+	}
+
+	GLuint format = 0;
+	GLuint internalFormat = 0;
+	if (material->_colorFormat == BM_RGBA) {
+		format = GL_RGBA;
+		internalFormat = GL_RGBA;
+	} else if (material->_colorFormat == BM_BGRA) {
+		format = GL_BGRA;
+		internalFormat = GL_RGBA;
+	} else {	// The only other colorFormat we load right now is BGR
+		format = GL_BGR;
+		internalFormat = GL_RGB;
+	}
+
+	GLuint *textures = (GLuint *)material->_texture;
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, material->_width, material->_height, 0, format, GL_UNSIGNED_BYTE, texdata);
+	delete[] texdata;
 }
 
 void GfxOpenGLS::selectMaterial(const Texture *material) {
+	GLuint *textures = (GLuint *)material->_texture;
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
 
+	if (material->_hasAlpha && g_grim->getGameType() == GType_MONKEY4) {
+		glEnable(GL_BLEND);
+	}
+
+//	// Grim has inverted tex-coords, EMI doesn't
+//	if (g_grim->getGameType() != GType_MONKEY4) {
+//		glMatrixMode(GL_TEXTURE);
+//		glLoadIdentity();
+//		glScalef(1.0f / material->_width, 1.0f / material->_height, 1);
+//	}
 }
 
 void GfxOpenGLS::destroyMaterial(Texture *material) {
@@ -411,28 +545,28 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 		bitmap->freeData();
 
 		GLuint vao;
-		glGenVertexArrays( 1, &vao );
-		glBindVertexArray( vao );
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
 		bitmap->_bufferVAO = vao;
 
 		GLuint vbo;
-		glGenBuffers( 1, &vbo );
-		glBindBuffer( GL_ARRAY_BUFFER, vbo );
-		glBufferData( GL_ARRAY_BUFFER, bitmap->_numCoords * 4 * sizeof(float), bitmap->_texc, GL_STATIC_DRAW );
+		glGenBuffers(1, &vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, bitmap->_numCoords * 4 * sizeof(float), bitmap->_texc, GL_STATIC_DRAW);
 		bitmap->_bufferVBO = vbo;
 
 		glUseProgram(_backgroundProgram);
 
-		GLint posAttrib = glGetAttribLocation( _backgroundProgram, "position" );
-		glEnableVertexAttribArray( posAttrib );
-		glVertexAttribPointer( posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0 );
+		GLint posAttrib = glGetAttribLocation(_backgroundProgram, "position");
+		glEnableVertexAttribArray(posAttrib);
+		glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
 
-		GLint coordAttrib = glGetAttribLocation( _backgroundProgram, "texcoord" );
-		glEnableVertexAttribArray( coordAttrib );
-		glVertexAttribPointer( coordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2*sizeof(float)) );
+		GLint coordAttrib = glGetAttribLocation(_backgroundProgram, "texcoord");
+		glEnableVertexAttribArray(coordAttrib);
+		glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2*sizeof(float)));
 
 		glBindVertexArray(0);
-		glBindBuffer( GL_ARRAY_BUFFER, 0 );
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 }
 
@@ -455,7 +589,7 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int x, int y, bool initialDraw
 	glDisable(GL_DEPTH_TEST);
 
 	glUseProgram(_backgroundProgram);
-	glBindVertexArray( data->_bufferVAO );
+	glBindVertexArray(data->_bufferVAO);
 	while (frontLayer <= curLayer) {
 		uint32 offset = data->_layers[curLayer]._offset;
 		for (uint32 i = offset; i < offset + data->_layers[curLayer]._numImages; ++i) {
@@ -832,6 +966,64 @@ void GfxOpenGLS::renderZBitmaps(bool render) {
 
 void GfxOpenGLS::createSpecialtyTextures() {
 
+}
+
+void GfxOpenGLS::createEMIModel(EMIModel *model) {
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	model->_modelVAO = vao;
+
+	GLuint verticesVBO;
+	glGenBuffers(1, &verticesVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, verticesVBO);
+	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_vertices, GL_STREAM_DRAW);
+	model->_verticesVBO = verticesVBO;
+
+//	GLuint normalsVBO;
+//	glGenBuffers(1, &normalsVBO);
+//	glBindBuffer(GL_ARRAY_BUFFER, normalsVBO);
+//	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_normals, GL_STATIC_DRAW);
+//	model->_normalsVBO = normalsVBO;
+
+	GLuint texCoordsVBO;
+	glGenBuffers(1, &texCoordsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, texCoordsVBO);
+	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 2 * sizeof(float), model->_texVerts, GL_STATIC_DRAW);
+	model->_texCoordsVBO = texCoordsVBO;
+
+	GLuint colorMapVBO;
+	glGenBuffers(1, &colorMapVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, colorMapVBO);
+	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 4 * sizeof(byte), model->_colorMap, GL_STATIC_DRAW);
+	model->_colorMapVBO = colorMapVBO;
+
+	glUseProgram(_actorProgram);
+	GLint posAttrib = glGetAttribLocation(_actorProgram, "position");
+	glEnableVertexAttribArray(posAttrib);
+	glBindBuffer(GL_ARRAY_BUFFER, verticesVBO);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+
+	GLint texAttrib = glGetAttribLocation(_actorProgram, "texcoord");
+	glEnableVertexAttribArray(texAttrib);
+	glBindBuffer(GL_ARRAY_BUFFER, texCoordsVBO);
+	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+
+	GLint colAttrib = glGetAttribLocation(_actorProgram, "color");
+	glEnableVertexAttribArray(colAttrib);
+	glBindBuffer(GL_ARRAY_BUFFER, colorMapVBO);
+	glVertexAttribPointer(colAttrib, 4, GL_UNSIGNED_BYTE, GL_TRUE, 4 * sizeof(byte), 0);
+
+	for (uint32 i = 0; i < model->_numFaces; ++i) {
+		EMIMeshFace * face = &model->_faces[i];
+		GLuint indicesEBO;
+		glGenBuffers(1, &indicesEBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesEBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, face->_faceLength * 3 * sizeof(uint32), face->_indexes, GL_STATIC_DRAW);
+		face->_indicesEBO = indicesEBO;
+	}
+
+	glBindVertexArray(0);
 }
 
 }
