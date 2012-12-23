@@ -90,7 +90,6 @@ MODULE_OBJS := \
 	detection.o \
 	font.o \
 	gfx_base.o \
-	gfx_opengl.o \
 	gfx_tinygl.o \
 	grim.o \
 	grim_controls.o \
@@ -130,10 +129,19 @@ MODULE_OBJS += \
 	movie/codecs/blocky8ARM.o
 endif
 
+ifdef USE_OPENGL_SHADERS
+MODULE_OBJS += \
+	gfx_opengl_shaders.o
+else
+MODULE_OBJS += \
+	gfx_opengl.o
+endif
+
 # This module can be built as a plugin
 ifeq ($(ENABLE_GRIM), DYNAMIC_PLUGIN)
 PLUGIN := 1
 endif
+
 
 # Include common rules
 include $(srcdir)/rules.mk
