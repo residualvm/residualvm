@@ -307,13 +307,25 @@ void Lua_V2::GetCameraRoll() {
 	lua_pushnumber(0);
 }
 
-// I suspect that pushtext and poptext stack the current text objects.
+Common::List<Common::List<TextObject *> *> textstack;
 void Lua_V2::PushText() {
-	warning("Lua_V2::PushText: implement opcode");
+	Common::List<TextObject *> *textobjects = new Common::List<TextObject *>;
+	TextObject::Pool::iterator it = TextObject::getPool().begin();
+	for (; it != TextObject::getPool().end(); ++it) {
+		textobjects->push_back(*it);
+		TextObject::getPool().removeObject((*it)->getId());
+	}
+	textstack.push_front(textobjects);
 }
 
 void Lua_V2::PopText() {
-	warning("Lua_V2::PopText: implement opcode");
+	Common::List<TextObject *> *textobjects = textstack.front();
+	textstack.pop_front();
+	Common::List<TextObject *>::iterator it = textobjects->begin();
+	for (; it != textobjects->end(); ++it) {
+		TextObject::getPool().addObject(*it);
+	}
+	delete textobjects;
 }
 
 void Lua_V2::GetSectorName() {
