@@ -102,7 +102,7 @@ public:
 class MeshFace {
 public:
 	int loadBinary(Common::SeekableReadStream *data, Material *materials[]);
-	void draw(float *vertices, float *vertNormals, float *textureVerts) const;
+	void draw(const Mesh *mesh) const;
 	void changeMaterial(Material *material);
 	~MeshFace();
 
