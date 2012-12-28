@@ -1147,4 +1147,52 @@ void GfxOpenGLS::createEMIModel(EMIModel *model) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+void GfxOpenGLS::createModel(Mesh *mesh) {
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	mesh->_modelVAO = vao;
+
+	GLuint verticesVBO;
+	glGenBuffers(1, &verticesVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, verticesVBO);
+	glBufferData(GL_ARRAY_BUFFER, mesh->_numVertices * 3 * sizeof(float), mesh->_vertices, GL_STREAM_DRAW);
+	mesh->_verticesVBO = verticesVBO;
+
+	//	GLuint normalsVBO;
+	//	glGenBuffers(1, &normalsVBO);
+	//	glBindBuffer(GL_ARRAY_BUFFER, normalsVBO);
+	//	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_normals, GL_STATIC_DRAW);
+	//	mesh->_normalsVBO = normalsVBO;
+
+	GLuint texCoordsVBO;
+	glGenBuffers(1, &texCoordsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, texCoordsVBO);
+	glBufferData(GL_ARRAY_BUFFER, mesh->_numVertices * 2 * sizeof(float), mesh->_textureVerts, GL_STATIC_DRAW);
+	mesh->_texCoordsVBO = texCoordsVBO;
+
+	glUseProgram(_actorProgram);
+	GLint posAttrib = glGetAttribLocation(_actorProgram, "position");
+	glEnableVertexAttribArray(posAttrib);
+	glBindBuffer(GL_ARRAY_BUFFER, verticesVBO);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+
+	GLint texAttrib = glGetAttribLocation(_actorProgram, "texcoord");
+	glEnableVertexAttribArray(texAttrib);
+	glBindBuffer(GL_ARRAY_BUFFER, texCoordsVBO);
+	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+
+	for (int i = 0; i < mesh->_numFaces; ++i) {
+		MeshFace * face = &mesh->_faces[i];
+		GLuint indicesEBO;
+		glGenBuffers(1, &indicesEBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesEBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, face->_numVertices * sizeof(uint32), face->_vertices, GL_STATIC_DRAW);
+		face->_indicesEBO = indicesEBO;
+	}
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
 }

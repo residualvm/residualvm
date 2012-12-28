@@ -112,6 +112,10 @@ public:
 	int _numVertices;
 	int *_vertices, *_texVertices;
 	Math::Vector3d _normal;
+
+#ifdef USE_OPENGL_SHADERS
+	uint32 _indicesEBO;
+#endif
 };
 
 class Mesh {
@@ -141,6 +145,12 @@ public:
 	int _numFaces;
 	MeshFace *_faces;
 	Math::Matrix4 _matrix;
+
+#ifdef USE_OPENGL_SHADERS
+	uint32 _modelVAO;
+	uint32 _verticesVBO;
+	uint32 _texCoordsVBO;
+#endif
 };
 
 class ModelNode {
