@@ -1,0 +1,20 @@
+#version 150
+
+in vec2 position;
+in vec2 texcoord;
+
+uniform vec2 offset;
+uniform vec2 sizeWH;
+
+out vec2 Texcoord;
+
+void main()
+{
+	Texcoord = texcoord;
+	// Coordinates are [0.0;1.0], transform [-1.0; 1.0] and flip Y
+	vec2 pos = offset + position * sizeWH;
+	pos.x = pos.x * 2 - 1;
+	pos.y = -1 * (pos.y * 2 - 1);
+
+	gl_Position = vec4(pos, 0.0, 1.0);
+}

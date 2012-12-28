@@ -216,7 +216,7 @@ void GfxOpenGLS::setupTexturedCenteredQuad() {
 
 void GfxOpenGLS::setupShaders() {
 	bool isEMI = g_grim->getGameType() == GType_MONKEY4;
-	_backgroundProgram = compileShader("background");
+	_backgroundProgram = compileShader(isEMI ? "emi_background" : "grim_background");
 	_smushProgram = compileShader("smush");
 	_textProgram = compileShader("text");
 	_actorProgram = compileShader(isEMI ? "emi_actor" : "grim_actor");
@@ -576,58 +576,58 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 			}
 		}
 	}
-	if (bitmap->_format == 1) {
-		bitmap->_hasTransparency = false;
-		bitmap->_numTex = ((bitmap->_width + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
-		                  ((bitmap->_height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
-		bitmap->_texIds = new GLuint[bitmap->_numTex * bitmap->_numImages];
-		textures = (GLuint *)bitmap->_texIds;
-		glGenTextures(bitmap->_numTex * bitmap->_numImages, textures);
 
-		byte *texData = 0;
-		byte *texOut = 0;
+	bitmap->_hasTransparency = false;
+	bitmap->_numTex = ((bitmap->_width + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
+	                  ((bitmap->_height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
+	bitmap->_texIds = new GLuint[bitmap->_numTex * bitmap->_numImages];
+	textures = (GLuint *)bitmap->_texIds;
+	glGenTextures(bitmap->_numTex * bitmap->_numImages, textures);
 
-		GLint format = GL_RGBA;
-		GLint type = GL_UNSIGNED_BYTE;
-		int bytes = 4;
-		if (bitmap->_format != 1) {
-			format = GL_DEPTH_COMPONENT;
-			type = GL_UNSIGNED_SHORT;
-			bytes = 2;
-		}
+	byte *texData = 0;
+	byte *texOut = 0;
 
-		glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->_width);
+	GLint format = GL_RGBA;
+	GLint type = GL_UNSIGNED_BYTE;
+	int bytes = 4;
+	if (bitmap->_format != 1) {
+		format = GL_DEPTH_COMPONENT;
+		type = GL_UNSIGNED_SHORT;
+		bytes = 2;
+	}
 
-		for (int pic = 0; pic < bitmap->_numImages; pic++) {
-			if (bitmap->_format == 1 && bitmap->_bpp == 16 && bitmap->_colorFormat != BM_RGB1555) {
-				if (texData == 0)
-					texData = new byte[4 * bitmap->_width * bitmap->_height];
-				// Convert data to 32-bit RGBA format
-				byte *texDataPtr = texData;
-				uint16 *bitmapData = reinterpret_cast<uint16 *>(bitmap->getImageData(pic).getRawBuffer());
-				for (int i = 0; i < bitmap->_width * bitmap->_height; i++, texDataPtr += 4, bitmapData++) {
-					uint16 pixel = *bitmapData;
-					int r = pixel >> 11;
-					texDataPtr[0] = (r << 3) | (r >> 2);
-					int g = (pixel >> 5) & 0x3f;
-					texDataPtr[1] = (g << 2) | (g >> 4);
-					int b = pixel & 0x1f;
-					texDataPtr[2] = (b << 3) | (b >> 2);
-					if (pixel == 0xf81f) { // transparent
-						texDataPtr[3] = 0;
-						bitmap->_hasTransparency = true;
-					} else {
-						texDataPtr[3] = 255;
-					}
+	glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->_width);
+
+	for (int pic = 0; pic < bitmap->_numImages; pic++) {
+		if (bitmap->_format == 1 && bitmap->_bpp == 16 && bitmap->_colorFormat != BM_RGB1555) {
+			if (texData == 0)
+				texData = new byte[4 * bitmap->_width * bitmap->_height];
+			// Convert data to 32-bit RGBA format
+			byte *texDataPtr = texData;
+			uint16 *bitmapData = reinterpret_cast<uint16 *>(bitmap->getImageData(pic).getRawBuffer());
+			for (int i = 0; i < bitmap->_width * bitmap->_height; i++, texDataPtr += 4, bitmapData++) {
+				uint16 pixel = *bitmapData;
+				int r = pixel >> 11;
+				texDataPtr[0] = (r << 3) | (r >> 2);
+				int g = (pixel >> 5) & 0x3f;
+				texDataPtr[1] = (g << 2) | (g >> 4);
+				int b = pixel & 0x1f;
+				texDataPtr[2] = (b << 3) | (b >> 2);
+				if (pixel == 0xf81f) { // transparent
+					texDataPtr[3] = 0;
+					bitmap->_hasTransparency = true;
+				} else {
+					texDataPtr[3] = 255;
 				}
-				texOut = texData;
-			} else if (bitmap->_format == 1 && bitmap->_colorFormat == BM_RGB1555) {
-				bitmap->convertToColorFormat(pic, Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
-				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
-			} else {
-				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
 			}
+			texOut = texData;
+		} else if (bitmap->_format == 1 && bitmap->_colorFormat == BM_RGB1555) {
+			bitmap->convertToColorFormat(pic, Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
+			texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
+		} else {
+			texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
+		}
 
 			for (int i = 0; i < bitmap->_numTex; i++) {
 				glBindTexture(GL_TEXTURE_2D, textures[bitmap->_numTex * pic + i]);
@@ -638,25 +638,26 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 				glTexImage2D(GL_TEXTURE_2D, 0, format, BITMAP_TEXTURE_SIZE, BITMAP_TEXTURE_SIZE, 0, format, type, NULL);
 			}
 
-			int cur_tex_idx = bitmap->_numTex * pic;
+		int cur_tex_idx = bitmap->_numTex * pic;
 
-			for (int y = 0; y < bitmap->_height; y += BITMAP_TEXTURE_SIZE) {
-				for (int x = 0; x < bitmap->_width; x += BITMAP_TEXTURE_SIZE) {
-					int width  = (x + BITMAP_TEXTURE_SIZE >= bitmap->_width) ? (bitmap->_width - x) : BITMAP_TEXTURE_SIZE;
-					int height = (y + BITMAP_TEXTURE_SIZE >= bitmap->_height) ? (bitmap->_height - y) : BITMAP_TEXTURE_SIZE;
-					glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
-					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type,
-						texOut + (y * bytes * bitmap->_width) + (bytes * x));
-					cur_tex_idx++;
-				}
+		for (int y = 0; y < bitmap->_height; y += BITMAP_TEXTURE_SIZE) {
+			for (int x = 0; x < bitmap->_width; x += BITMAP_TEXTURE_SIZE) {
+				int width  = (x + BITMAP_TEXTURE_SIZE >= bitmap->_width) ? (bitmap->_width - x) : BITMAP_TEXTURE_SIZE;
+				int height = (y + BITMAP_TEXTURE_SIZE >= bitmap->_height) ? (bitmap->_height - y) : BITMAP_TEXTURE_SIZE;
+				glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type,
+					texOut + (y * bytes * bitmap->_width) + (bytes * x));
+				cur_tex_idx++;
 			}
 		}
+	}
 
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
-		delete[] texData;
-		bitmap->freeData();
+	delete[] texData;
+	bitmap->freeData();
 
+	if (g_grim->getGameType() == GType_MONKEY4) {
 		GLuint vao;
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
@@ -680,40 +681,102 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 
 		glBindVertexArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	} else {
+		bitmap->_bufferVBO = _smushVBO;
+		bitmap->_bufferVAO = _smushVAO;
 	}
 }
 
 
-void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int x, int y, bool initialDraw) {
-	BitmapData *data = bitmap->_data;
-	GLuint *textures = (GLuint *)bitmap->getTexIds();
+void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDraw) {
+	if (g_grim->getGameType() == GType_MONKEY4 && bitmap->_data->_numImages > 1) {
+		BitmapData *data = bitmap->_data;
+		GLuint *textures = (GLuint *)bitmap->getTexIds();
 
-	int curLayer, frontLayer;
-	if (initialDraw) {
-		curLayer = frontLayer = data->_numLayers - 1;
-		glDisable(GL_BLEND);
-	} else {
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_ALPHA_TEST);
+
+		int curLayer, frontLayer;
+		if (initialDraw) {
+			curLayer = frontLayer = data->_numLayers - 1;
+			glDisable(GL_BLEND);
+		} else {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			curLayer = data->_numLayers - 2;
+			frontLayer = 0;
+		}
+
+		glUseProgram(_backgroundProgram);
+		glBindVertexArray(data->_bufferVAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bigQuadEBO);
+		while (frontLayer <= curLayer) {
+			uint32 offset = data->_layers[curLayer]._offset;
+			for (uint32 i = offset; i < offset + data->_layers[curLayer]._numImages; ++i) {
+				glBindTexture(GL_TEXTURE_2D, textures[data->_verts[i]._texid]);
+
+				unsigned short startVertex = data->_verts[i]._pos / 4 * 6;
+				unsigned short numVertices = data->_verts[i]._verts / 4 * 6;
+				glDrawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_SHORT, (void *)(startVertex * sizeof(unsigned short)));
+			}
+			curLayer--;
+		}
+		glBindVertexArray(0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		return;
+	}
+
+	int format = bitmap->getFormat();
+	if ((format == 1 && !_renderBitmaps) || (format == 5 && !_renderZBitmaps)) {
+		return;
+	}
+
+	GLuint *textures = (GLuint *)bitmap->getTexIds();
+	if (bitmap->getFormat() == 1 && bitmap->getHasTransparency()) {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		curLayer = data->_numLayers - 2;
-		frontLayer = 0;
+	} else {
+		glDisable(GL_BLEND);
 	}
-
-	glDisable(GL_DEPTH_TEST);
 
 	glUseProgram(_backgroundProgram);
-	glBindVertexArray(data->_bufferVAO);
-	while (frontLayer <= curLayer) {
-		uint32 offset = data->_layers[curLayer]._offset;
-		for (uint32 i = offset; i < offset + data->_layers[curLayer]._numImages; ++i) {
-			glBindTexture(GL_TEXTURE_2D, textures[data->_verts[i]._texid]);
-
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bigQuadEBO);
-			glDrawElements(GL_TRIANGLES, data->_verts[i]._verts / 4 * 6, GL_UNSIGNED_SHORT, (void *)(data->_verts[i]._pos / 4 * 6));
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		}
-		curLayer--;
+	glBindVertexArray(_smushVAO);
+	GLuint drawToZPos = glGetUniformLocation(_backgroundProgram, "drawToZ");
+	GLuint offsetPos = glGetUniformLocation(_backgroundProgram, "offset");
+	GLuint sizePos = glGetUniformLocation(_backgroundProgram, "sizeWH");
+	if (bitmap->getFormat() == 1) { // Normal image
+		glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
+		glUniform1i(drawToZPos, GL_FALSE);
+	} else { // ZBuffer image
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_ALWAYS);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		glDepthMask(GL_TRUE);
+		glUniform1i(drawToZPos, GL_TRUE);
 	}
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bigQuadEBO);
+	int cur_tex_idx = bitmap->getNumTex() * (bitmap->getActiveImage() - 1);
+	for (int y = dy; y < (dy + bitmap->getHeight()); y += BITMAP_TEXTURE_SIZE) {
+		for (int x = dx; x < (dx + bitmap->getWidth()); x += BITMAP_TEXTURE_SIZE) {
+			glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
+			glUniform2f(offsetPos, x * _scaleW / _screenWidth, y * _scaleH / _screenHeight);
+			glUniform2f(sizePos, BITMAP_TEXTURE_SIZE * _scaleW / _screenWidth, BITMAP_TEXTURE_SIZE * _scaleH / _screenHeight);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+			cur_tex_idx++;
+		}
+	}
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glDisable(GL_BLEND);
+	if (bitmap->getFormat() == 1) {
+		glDepthMask(GL_TRUE);
+		glEnable(GL_DEPTH_TEST);
+	} else {
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glDepthFunc(GL_LESS);
+	}
+
 	glBindVertexArray(0);
 }
 
