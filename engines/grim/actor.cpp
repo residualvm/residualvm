@@ -749,6 +749,13 @@ void Actor::setRestChore(int chore, Costume *cost) {
 
 	_restChore.stop(true);
 
+	if (!cost) {
+		cost = _restChore._costume;
+	}
+	if (!cost) {
+		cost = getCurrentCostume();
+	}
+
 	_restChore = Chore(cost, chore);
 
 	_restChore.playLooping(true);
@@ -768,12 +775,26 @@ void Actor::setWalkChore(int chore, Costume *cost) {
 		_restChore.playLooping(true);
 	}
 
+	if (!cost) {
+		cost = _walkChore._costume;
+	}
+	if (!cost) {
+		cost = getCurrentCostume();
+	}
+
 	_walkChore = Chore(cost, chore);
 }
 
 void Actor::setTurnChores(int left_chore, int right_chore, Costume *cost) {
 	if (_leftTurnChore.equals(cost, left_chore) && _rightTurnChore.equals(cost, right_chore))
 		return;
+
+	if (!cost) {
+		cost = _leftTurnChore._costume;
+	}
+	if (!cost) {
+		cost = getCurrentCostume();
+	}
 
 	_leftTurnChore.stop(true);
 	_rightTurnChore.stop(true);
@@ -790,6 +811,13 @@ void Actor::setTalkChore(int index, int chore, Costume *cost) {
 		error("Got talk chore index out of range (%d)", index);
 
 	index--;
+
+	if (!cost) {
+		cost = _talkChore[index]._costume;
+	}
+	if (!cost) {
+		cost = getCurrentCostume();
+	}
 
 	if (_talkChore[index].equals(cost, chore))
 		return;
@@ -810,6 +838,13 @@ Costume *Actor::getTalkCostume(int index) const {
 void Actor::setMumbleChore(int chore, Costume *cost) {
 	if (_mumbleChore.isPlaying()) {
 		_mumbleChore.stop();
+	}
+
+	if (!cost) {
+		cost = _mumbleChore._costume;
+	}
+	if (!cost) {
+		cost = getCurrentCostume();
 	}
 
 	_mumbleChore = Chore(cost, chore);
