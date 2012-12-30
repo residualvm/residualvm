@@ -223,6 +223,9 @@ EditGameDialog::EditGameDialog(const String &domain, const String &desc)
 	for (; p->code; ++p) {
 		_platformPopUp->appendEntry(p->description, p->id);
 	}
+	//HACK: Disable platform selection
+	_platformPopUp->setEnabled(false);
+	_platformPopUpDesc->setEnabled(false);
 
 	//
 	// 2) The engine tab (shown only if there are custom engine options)
