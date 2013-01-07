@@ -44,7 +44,7 @@ SoundComponent::SoundComponent(Component *p, int parentID, const char *filename,
 
 SoundComponent::~SoundComponent() {
 	// Stop the sound if it's in progress
-	stop();
+	reset();
 }
 
 void SoundComponent::setKey(int val) {
@@ -69,7 +69,7 @@ void SoundComponent::setKey(int val) {
 	}
 }
 
-void SoundComponent::stop() {
+void SoundComponent::reset() {
 	// A lot of the sound components this gets called against aren't actually running
 	if (g_imuse && g_imuse->getSoundStatus(_soundName.c_str()))
 		g_imuse->stopSound(_soundName.c_str());

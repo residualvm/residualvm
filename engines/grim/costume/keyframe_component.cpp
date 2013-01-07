@@ -58,7 +58,7 @@ void KeyframeComponent::setKey(int val) {
 		_anim->play(Animation::FadeAtEnd);
 		break;
 	case 4: // "Stop"
-		stop();
+		reset();
 		break;
 	case 5: // "Pause"
 		_anim->pause(true);
@@ -99,7 +99,7 @@ void KeyframeComponent::setKey(int val) {
 	}
 }
 
-void KeyframeComponent::stop() {
+void KeyframeComponent::reset() {
 	if (_anim->getFadeMode() != Animation::FadeOut) {
 		_anim->stop();
 	}

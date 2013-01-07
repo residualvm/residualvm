@@ -33,7 +33,7 @@ public:
 	~SoundComponent();
 
 	void setKey(int val);
-	void stop();
+	void reset();
 
 private:
 	Common::String _soundName;
