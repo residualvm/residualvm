@@ -167,6 +167,7 @@ public:
 	bool areActorsTalking() const;
 
 	void setMovieSubtitle(TextObject *to);
+	void setMovieSetup();
 
 	void saveGame(const Common::String &file);
 	void loadGame(const Common::String &file);
@@ -216,6 +217,8 @@ private:
 	bool _refreshShadowMask;
 	bool _shortFrame;
 	bool _setupChanged;
+	// This holds the name of the setup in which the movie must be drawed
+	Common::String _movieSetup;
 
 	unsigned _frameStart, _frameTime, _movieTime;
 	int _prevSmushFrame;
