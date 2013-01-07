@@ -79,17 +79,14 @@ void Chore::playLooping() {
 	fade(Animation::None, 0);
 }
 
-void Chore::stop(bool reset) {
+void Chore::stop() {
 	_playing = false;
 	_hasPlayed = false;
 
 	for (int i = 0; i < _numTracks; i++) {
 		Component *comp = _owner->_components[_tracks[i].compID];
-		if (comp) {
-			comp->stop();
-			if (reset)
-				comp->reset();
-		}
+		if (comp)
+			comp->reset();
 	}
 }
 
