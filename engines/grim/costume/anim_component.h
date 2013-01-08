@@ -20,20 +20,24 @@
  *
  */
 
-#ifndef GRIM_BITMAP_COMPONENT_H
-#define GRIM_BITMAP_COMPONENT_H
+#ifndef GRIM_ANIM_COMPONENT_H
+#define GRIM_ANIM_COMPONENT_H
 
 #include "engines/grim/costume/component.h"
 
 namespace Grim {
 
-class BitmapComponent : public Component {
+// This is used in Grim demo only
+class AnimComponent : public Component {
 public:
-	BitmapComponent(Component *parent, int parentID, const char *filename, tag32 tag);
+	AnimComponent(Component *parent, int parentID, const char *filename, tag32 tag);
 	void setKey(int val);
+	void reset();
 
 private:
-	Common::String _filename;
+	Common::String _name;
+	bool _created;
+	bool _overlay;
 };
 
 } // end of namespace Grim
