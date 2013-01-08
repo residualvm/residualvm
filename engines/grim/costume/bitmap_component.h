@@ -34,6 +34,7 @@ public:
 
 private:
 	Common::String _filename;
+	bool _overlay;
 };
 
 } // end of namespace Grim
