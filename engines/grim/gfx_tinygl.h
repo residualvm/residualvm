@@ -27,6 +27,10 @@
 
 #include "graphics/tinygl/zgl.h"
 
+namespace TinyGL {
+	struct Buffer;
+}
+
 namespace Grim {
 
 class ModelNode;
@@ -113,10 +117,12 @@ public:
 	void drawMovieFrame(int offsetX, int offsetY);
 	void releaseMovieFrame();
 
-	void selectScreenBuffer();
-	void selectCleanBuffer();
-	void clearCleanBuffer();
-	void drawCleanBuffer();
+	int genBuffer();
+	void delBuffer(int buffer);
+	void selectBuffer(int buffer);
+	void clearBuffer(int buffer);
+	void drawBuffers();
+	void refreshBuffers();
 
 protected:
 
@@ -126,6 +132,7 @@ private:
 	int _smushWidth;
 	int _smushHeight;
 	Graphics::PixelBuffer _storedDisplay;
+	Common::HashMap<int, TinyGL::Buffer *> _buffers;
 
 	void blit(const Graphics::PixelFormat &format, BlitImage *blit, byte *dst, byte *src, int x, int y, int width, int height, bool trans);
 };

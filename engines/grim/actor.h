@@ -462,6 +462,10 @@ public:
 	void attachToActor(Actor *other, const char *joint);
 	void detach();
 
+	void restoreCleanBuffer();
+	void drawToCleanBuffer();
+	void clearCleanBuffer();
+
 private:
 	void costumeMarkerCallback(int marker);
 	void collisionHandlerCallback(Actor *other) const;
@@ -595,6 +599,9 @@ private:
 	int _talkDelay;
 	Actor *_attachedActor;
 	Common::String _attachedJoint;
+
+	int _cleanBuffer;
+	bool _drawnToClean;
 
 	friend class GrimEngine;
 };

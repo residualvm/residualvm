@@ -233,10 +233,12 @@ public:
 	void renderBitmaps(bool render);
 	void renderZBitmaps(bool render);
 
-	virtual void selectScreenBuffer() {}
-	virtual void selectCleanBuffer() {}
-	virtual void clearCleanBuffer() {}
-	virtual void drawCleanBuffer() {}
+	virtual int genBuffer() { return 0; }
+	virtual void delBuffer(int buffer) {}
+	virtual void selectBuffer(int buffer) {}
+	virtual void clearBuffer(int buffer) {}
+	virtual void drawBuffers() {}
+	virtual void refreshBuffers() {}
 
 protected:
 	static const int _gameHeight = 480;
