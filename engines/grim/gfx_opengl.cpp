@@ -599,7 +599,9 @@ void GfxOpenGL::translateViewpointFinish() {
 }
 
 void GfxOpenGL::enableLights() {
-	glEnable(GL_LIGHTING);
+	if (!isShadowModeActive()) {
+		glEnable(GL_LIGHTING);
+	}
 }
 
 void GfxOpenGL::disableLights() {
