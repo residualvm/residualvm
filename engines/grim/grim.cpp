@@ -834,6 +834,11 @@ void GrimEngine::restoreGRIM() {
 
 	// Set stuff
 	_currSet = Set::getPool().getObject(_savedState->readLESint32());
+	if (_savedState->saveMinorVersion() > 4) {
+		_movieSetup = _savedState->readString();
+	} else {
+		_movieSetup = _currSet->getCurrSetup()->_name;
+	}
 
 	_savedState->endSection();
 }
@@ -962,6 +967,7 @@ void GrimEngine::saveGRIM() {
 
 	//Set stuff
 	_savedState->writeLESint32(_currSet->getId());
+	_savedState->writeString(_movieSetup);
 
 	_savedState->endSection();
 }
