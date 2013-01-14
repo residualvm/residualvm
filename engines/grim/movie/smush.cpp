@@ -80,7 +80,7 @@ void SmushPlayer::postHandleFrame() {
 void SmushPlayer::restoreState(SaveGame *state) {
 	MoviePlayer::restoreState(state);
 	if (isPlaying()) {
-		_smushDecoder->seekToTime((uint32)_movieTime); // Currently not fully working (out of synch)
+		//_smushDecoder->seekToTime((uint32)_movieTime); // Currently not fully working (out of synch)
 	}
 }
 
