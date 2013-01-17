@@ -1707,6 +1707,10 @@ bool Actor::handleCollisionWith(Actor *actor, CollisionMode mode, Math::Vector3d
 		return false;
 	}
 
+	if (!actor->getCurrentCostume()) {
+		return false;
+	}
+
 	Model *model1 = getCurrentCostume()->getModel();
 	Model *model2 = actor->getCurrentCostume()->getModel();
 
