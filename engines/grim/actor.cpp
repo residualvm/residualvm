@@ -177,6 +177,7 @@ void Actor::saveState(SaveGame *savedState) const {
 	savedState->writeFloat(_roll.getDegrees());
 	savedState->writeFloat(_walkRate);
 	savedState->writeFloat(_turnRate);
+	savedState->writeFloat(_turnRateMultiplier);
 	savedState->writeBool(_followBoxes);
 	savedState->writeFloat(_reflectionAngle);
 	savedState->writeBool(_visible);
@@ -220,6 +221,8 @@ void Actor::saveState(SaveGame *savedState) const {
 
 	savedState->writeBool(_turning);
 	savedState->writeFloat(_moveYaw.getDegrees());
+	savedState->writeFloat(_movePitch.getDegrees());
+	savedState->writeFloat(_moveRoll.getDegrees());
 
 	savedState->writeBool(_walking);
 	savedState->writeVector3d(_destPos);
@@ -295,6 +298,11 @@ bool Actor::restoreState(SaveGame *savedState) {
 	_roll               = savedState->readFloat();
 	_walkRate           = savedState->readFloat();
 	_turnRate           = savedState->readFloat();
+	if (savedState->saveMinorVersion() > 6) {
+		_turnRateMultiplier = savedState->readFloat();
+	} else {
+		_turnRateMultiplier = 1.f;
+	}
 	_followBoxes        = savedState->readBool();
 	_reflectionAngle    = savedState->readFloat();
 	_visible            = savedState->readBool();
@@ -346,6 +354,13 @@ bool Actor::restoreState(SaveGame *savedState) {
 
 	_turning = savedState->readBool();
 	_moveYaw = savedState->readFloat();
+	if (savedState->saveMinorVersion() > 6) {
+		_movePitch = savedState->readFloat();
+		_moveRoll = savedState->readFloat();
+	} else {
+		_movePitch = _pitch;
+		_moveRoll = _roll;
+	}
 
 	_walking = savedState->readBool();
 	_destPos = savedState->readVector3d();
