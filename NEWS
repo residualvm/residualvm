@@ -42,6 +42,7 @@
 	- Fixed Toto's phone being rendered two times when Manny uses it (#622)
 	- Fixed Manny's animations freezing when using Toto's phone and skipping dialogue lines
 	- Made walking from behind Manny's desk in his room in the Café easier
+	- Fixed wrong Manny positioning when going from the stairs of the cat race track to the folding bridge
 
 	Demo:
 	- Fixed invisible Domino's drawer (#29)
