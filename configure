@@ -3597,8 +3597,8 @@ if test "$_freetype2" != "no"; then
 	if test -z "$_freetypeconfig"; then
 		_freetype2=no
 	else
-		FREETYPE2_LIBS=`$_freetypeconfig --prefix="$_freetypepath" --libs`
-		FREETYPE2_CFLAGS=`$_freetypeconfig --prefix="$_freetypepath" --cflags`
+		FREETYPE2_LIBS=`pkg-config --libs freetype2 2>/dev/null || $_freetypeconfig --prefix="$_freetypepath" --libs`
+		FREETYPE2_CFLAGS=`pkg-config --cflags freetype2 2>/dev/null || $_freetypeconfig --prefix="$_freetypepath" --cflags`
 
 		if test "$_freetype2" = "auto"; then
 			_freetype2=no
@@ -4075,7 +4075,7 @@ for engine in $_engines; do
 	fi
 
 	# Save the settings
-	defname="ENABLE_`echo $engine | tr '[a-z]' '[A-Z]'`"
+	defname="ENABLE_`echo $engine | tr '[:lower:]' '[:upper:]'`"
 	if test "$isbuilt" = "no" ; then
 		add_line_to_config_mk "# $defname"
 	else

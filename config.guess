@@ -855,7 +855,7 @@ EOF
 	exit ;;
     *:GNU/*:*:*)
 	# other systems with GNU libc and userland
-	echo ${UNAME_MACHINE}-unknown-`echo ${UNAME_SYSTEM} | sed 's,^[^/]*/,,' | tr '[A-Z]' '[a-z]'``echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'`-gnu
+	echo ${UNAME_MACHINE}-unknown-`echo ${UNAME_SYSTEM} | sed 's,^[^/]*/,,' | tr '[:upper:]' '[:lower:]'``echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'`-gnu
 	exit ;;
     i*86:Minix:*:*)
 	echo ${UNAME_MACHINE}-pc-minix
@@ -955,7 +955,7 @@ EOF
 	exit ;;
     parisc:Linux:*:* | hppa:Linux:*:*)
 	# Look for CPU level
-	case `grep '^cpu[^a-z]*:' /proc/cpuinfo 2>/dev/null | cut -d' ' -f2` in
+	case `grep '^cpu[^[:lower:]]*:' /proc/cpuinfo 2>/dev/null | cut -d' ' -f2` in
 	  PA7*) echo hppa1.1-unknown-linux-gnu ;;
 	  PA8*) echo hppa2.0-unknown-linux-gnu ;;
 	  *)    echo hppa-unknown-linux-gnu ;;
