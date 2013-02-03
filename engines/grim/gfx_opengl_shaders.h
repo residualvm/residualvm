@@ -24,26 +24,8 @@
 #define GRIM_GFX_OPENGL_SHADERS_H
 
 #include "engines/grim/gfx_base.h"
+#include "graphics/opengles2/shader.h"
 #include "common/stack.h"
-
-#if defined(USE_GLES2)
-#define GL_GLEXT_PROTOTYPES
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#undef GL_GLEXT_PROTOTYPES
-
-#define glMapBuffer glMapBufferOES
-#define glUnmapBuffer glUnmapBufferOES
-#define GL_WRITE_ONLY GL_WRITE_ONLY_OES
-
-#define glGenVertexArrays glGenVertexArraysOES
-#define glBindVertexArray glBindVertexArrayOES
-#define glDeleteVertexArrays glDeleteVertexArraysOES
-
-#define GL_BGRA GL_BGRA_EXT
-#else
-#include <GL/glew.h>
-#endif
 
 namespace Grim {
 
@@ -220,11 +202,12 @@ protected:
 
 private:
 	float _alpha;
-	GLuint _backgroundProgram;
-	GLuint _actorProgram;
-	GLuint _smushProgram;
-	GLuint _smushVAO, _smushVBO, _quadEBO, _bigQuadEBO;
-	GLuint _textProgram;
+	Graphics::Shader* _backgroundProgram;
+	Graphics::Shader* _actorProgram;
+	Graphics::Shader* _spriteProgram;
+	Graphics::Shader* _smushProgram;
+	GLuint _smushVBO, _quadEBO, _bigQuadEBO;
+	Graphics::Shader* _textProgram;
 
 	int _smushWidth;
 	int _smushHeight;
@@ -243,7 +226,6 @@ private:
 	void setupTexturedCenteredQuad();
 	void setupQuadEBO();
 
-	GLuint _spriteVAO;
 	GLuint _spriteVBO;
 
 	Common::Stack<Math::Matrix4> _matrixStack;

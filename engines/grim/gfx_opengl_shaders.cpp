@@ -124,59 +124,7 @@ GfxOpenGLS::~GfxOpenGLS() {
 
 }
 
-const GLchar* readFile(const Common::String& filename) {
-	Common::File file;
-	file.open(Common::String("shaders/") + filename);
-	if (!file.isOpen())
-		error("Could not open shader %s!", filename.c_str());
 
-	const int32 size = file.size();
-	GLchar *shaderSource = new GLchar[size + 1];
-	file.read(shaderSource, size);
-	file.close();
-	shaderSource[size] = '\0';
-	return shaderSource;
-}
-
-static GLuint loadShader(const char *base, const char *extension, GLenum shaderType) {
-	const Common::String filename = Common::String(base) + "." + extension;
-	const GLchar *shaderSource = readFile(filename);
-	const GLchar *compatSource = readFile(shaderType == GL_VERTEX_SHADER ? "compat.vertex" : "compat.fragment");
-	const GLchar *shaderSources[] = {
-			"#version 150\n",
-			compatSource,
-			shaderSource
-	};
-
-	GLuint shader = glCreateShader(shaderType);
-	glShaderSource(shader, 3, shaderSources, NULL);
-	glCompileShader(shader);
-
-	GLint status;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-	if (status != GL_TRUE) {
-		char buffer[512];
-		glGetShaderInfoLog(shader, 512, NULL, buffer);
-		error("Could not compile shader %s.%s: %s", base, extension, buffer);
-	}
-	delete[] shaderSource;
-	delete[] compatSource;
-
-	return shader;
-}
-
-GLuint GfxOpenGLS::compileShader(const char *vertex, const char *fragment) {
-	GLuint shaderProgram = glCreateProgram();
-
-	GLuint vertexShader = loadShader(vertex, "vertex", GL_VERTEX_SHADER);
-	GLuint fragmentShader = loadShader(fragment, "fragment", GL_FRAGMENT_SHADER);
-
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	return shaderProgram;
-}
 
 void GfxOpenGLS::setupBigEBO() {
 	// FIXME: Probably way too big...
@@ -190,81 +138,39 @@ void GfxOpenGLS::setupBigEBO() {
 		p[5] = start++;
 	}
 
-	GLuint ebo;
-	glGenBuffers(1, &ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quad_indices), quad_indices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	_bigQuadEBO = ebo;
+	_bigQuadEBO = Graphics::Shader::createBuffer(GL_ELEMENT_ARRAY_BUFFER, sizeof(quad_indices), quad_indices, GL_STATIC_DRAW);
 }
 
 void GfxOpenGLS::setupQuadEBO() {
-	unsigned short quad_indices[] = { 0, 2, 2, 0, 2, 3};
-	GLuint ebo;
-	glGenBuffers(1, &ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quad_indices), quad_indices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	_quadEBO = ebo;
+	unsigned short quad_indices[] = { 0, 1, 2, 0, 2, 3};
+	_quadEBO = Graphics::Shader::createBuffer(GL_ELEMENT_ARRAY_BUFFER, sizeof(quad_indices), quad_indices, GL_STATIC_DRAW);
 }
 
 void GfxOpenGLS::setupTexturedQuad() {
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	_smushVAO = vao;
-	GLuint vbo;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(textured_quad), textured_quad, GL_STATIC_DRAW);
-	_smushVBO = vbo;
-
-	glUseProgram(_smushProgram);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
-	GLint posAttrib = glGetAttribLocation(_smushProgram, "position");
-	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-	GLint coordAttrib = glGetAttribLocation(_smushProgram, "texcoord");
-	glEnableVertexAttribArray(coordAttrib);
-	glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (2 * sizeof(float)));
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	_smushVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, sizeof(textured_quad), textured_quad, GL_STATIC_DRAW);
+	_smushProgram->enableVertexAttribute("position", _smushVBO, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+	_smushProgram->enableVertexAttribute("texcoord", _smushVBO, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 2 * sizeof(float));
 }
 
 void GfxOpenGLS::setupTexturedCenteredQuad() {
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	_spriteVAO = vao;
-	GLuint vbo;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(textured_quad_centered), textured_quad_centered, GL_STATIC_DRAW);
-	_spriteVBO = vbo;
-
-	GLint posAttrib = glGetAttribLocation(_actorProgram, "position");
-	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-			0);
-	GLint coordAttrib = glGetAttribLocation(_actorProgram, "texcoord");
-	glEnableVertexAttribArray(coordAttrib);
-	glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-			(void *) (3 * sizeof(float)));
-	GLint colorAttrib = glGetAttribLocation(_actorProgram, "color");
-	glDisableVertexAttribArray(colorAttrib);
-	glVertexAttrib4f(colorAttrib, 1.0f, 1.0f, 1.0f, 1.0f);
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	_spriteVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, sizeof(textured_quad_centered), textured_quad_centered, GL_STATIC_DRAW);
+	_spriteProgram->enableVertexAttribute("position", _spriteVBO, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+	_spriteProgram->enableVertexAttribute("texcoord", _spriteVBO, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 3 * sizeof(float));
+	_spriteProgram->disableVertexAttribute("color", Math::Vector4d(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
 void GfxOpenGLS::setupShaders() {
 	bool isEMI = g_grim->getGameType() == GType_MONKEY4;
-	_backgroundProgram = compileShader(isEMI ? "emi_background" : "grim_background");
-	_smushProgram = compileShader("smush");
-	_textProgram = compileShader("text");
-	_actorProgram = compileShader(isEMI ? "emi_actor" : "grim_actor");
+
+	static const char* commonAttributes[] = {"position", "texcoord", NULL};
+	_backgroundProgram = Graphics::Shader::createShader(isEMI ? "emi_background" : "grim_background", commonAttributes);
+	_smushProgram = Graphics::Shader::createShader("smush", commonAttributes);
+	_textProgram = Graphics::Shader::createShader("text", commonAttributes);
+
+	static const char* actorAttributes[] = {"position", "texcoord", "color", NULL};
+	_actorProgram = Graphics::Shader::createShader(isEMI ? "emi_actor" : "grim_actor", actorAttributes);
+	_spriteProgram = _actorProgram->clone();
+
 	setupBigEBO();
 	setupQuadEBO();
 	setupTexturedQuad();
@@ -362,15 +268,7 @@ void GfxOpenGLS::getBoundingBoxPos(const Mesh *mesh, int *x1, int *y1, int *x2, 
 
 void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Math::Quaternion &quat,
                                 const bool inOverworld, const float alpha) {
-	glUseProgram(_actorProgram);
-	GLint modelMatrixPos = glGetUniformLocation(_actorProgram, "modelMatrix");
-	GLint projMatrixPos = glGetUniformLocation(_actorProgram, "projMatrix");
-	GLint viewMatrixPos = glGetUniformLocation(_actorProgram, "viewMatrix");
-	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
-	GLint cameraPos = glGetUniformLocation(_actorProgram, "cameraPos");
-	GLint actorPos = glGetUniformLocation(_actorProgram, "actorPos");
-	GLint billboardPos = glGetUniformLocation(_actorProgram, "isBillboard");
-
+	_actorProgram->use();
 	glEnable(GL_DEPTH_TEST);
 
 	Math::Matrix4 modelMatrix = quat.toMatrix();
@@ -381,23 +279,24 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 		Math::Matrix4 extraMatrix;
 //		_mvpMatrix = _projMatrix * viewMatrix * modelMatrix;
 
-		glUniformMatrix4fv(modelMatrixPos, GL_TRUE, 1, modelMatrix.getData());
-		glUniformMatrix4fv(viewMatrixPos, GL_TRUE, 1, viewMatrix.getData());
-		glUniformMatrix4fv(projMatrixPos, GL_TRUE, 1, _projMatrix.getData());
-		glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
-		glUniform3fv(cameraPos, 1, _currentPos.getData());
-		glUniform3fv(actorPos, 1, pos.getData());
-		glUniform1i(billboardPos, GL_FALSE);
+		_actorProgram->setUniform("modelMatrix", modelMatrix);
+		_actorProgram->setUniform("projMatrix", _projMatrix);
+		_actorProgram->setUniform("viewMatrix", viewMatrix);
+		_actorProgram->setUniform("extraMatrix", extraMatrix);
+
+		_actorProgram->setUniform("cameraPos", _currentPos);
+		_actorProgram->setUniform("actorPos", pos);
+		_actorProgram->setUniform("isBillboard", GL_FALSE);
 	} else {
 		Math::Matrix4 extraMatrix;
 
 		modelMatrix.setPosition(pos);
 		_mvpMatrix = _projMatrix * _viewMatrix * modelMatrix;
 
-		glUniformMatrix4fv(modelMatrixPos, GL_TRUE, 1, modelMatrix.getData());
-		glUniformMatrix4fv(viewMatrixPos, GL_TRUE, 1, _viewMatrix.getData());
-		glUniformMatrix4fv(projMatrixPos, GL_TRUE, 1, _projMatrix.getData());
-		glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
+		_actorProgram->setUniform("modelMatrix", modelMatrix);
+		_actorProgram->setUniform("projMatrix", _projMatrix);
+		_actorProgram->setUniform("viewMatrix", _viewMatrix);
+		_actorProgram->setUniform("extraMatrix", extraMatrix);
 	}
 }
 
@@ -473,60 +372,52 @@ void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face
 
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
-	glBindVertexArray(model->_modelVAO);
-	GLint texturedPos = glGetUniformLocation(_actorProgram, "textured");
-	glUniform1i(texturedPos, face->_hasTexture ? GL_TRUE : GL_FALSE);
 
-	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
+	model->_shader->use();
+	model->_shader->setUniform("textured", face->_hasTexture ? GL_TRUE : GL_FALSE);
+
 	Math::Matrix4 extraMatrix;
-	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
+	model->_shader->setUniform("extraMatrix", extraMatrix);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
-
-	GLint colAttrib = glGetAttribLocation(_actorProgram, "color");
-	glEnableVertexAttribArray(colAttrib);
 
 	glDrawElements(GL_TRIANGLES, 3 * face->_faceLength, GL_UNSIGNED_INT, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void GfxOpenGLS::drawModelFace(const Mesh *mesh, const MeshFace *face) {
-	glEnable(GL_DEPTH_TEST);
-
-	glBindVertexArray(mesh->_modelVAO);
-	GLint texturedPos = glGetUniformLocation(_actorProgram, "textured");
-	glUniform1i(texturedPos, /* face->_texVertices ? GL_TRUE : */ GL_FALSE);
-
-	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
-//	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, _matrixStack.top().getData());
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
-
-	glDrawElements(GL_TRIANGLES, face->_numVertices, GL_UNSIGNED_INT, 0);
-
-	glDisable(GL_DEPTH_TEST);
+	// TODO
+//	glEnable(GL_DEPTH_TEST);
+//
+//	glBindVertexArray(mesh->_modelVAO);
+//	_actorProgram->setUniform("textured", /* face->_texVertices ? GL_TRUE : */ GL_FALSE);
+//
+////	GLint extraMatrixPos = _actorProgram->getUniformLocation("extraMatrix");
+////	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, _matrixStack.top().getData());
+//
+//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
+//
+//	glDrawElements(GL_TRIANGLES, face->_numVertices, GL_UNSIGNED_INT, 0);
+//
+//	glDisable(GL_DEPTH_TEST);
 }
 
 void GfxOpenGLS::drawSprite(const Sprite *sprite) {
 	glDisable(GL_DEPTH_TEST);
-	GLint texturedPos = glGetUniformLocation(_actorProgram, "textured");
-	GLint billboardPos = glGetUniformLocation(_actorProgram, "isBillboard");
-	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
 
-	glBindVertexArray(_spriteVAO);
+	_spriteProgram->use();
 	Math::Matrix4 extraMatrix;
 	extraMatrix.setPosition(sprite->_pos);
 	extraMatrix(0,0) *= sprite->_width;
 	extraMatrix(1,1) *= sprite->_height;
-	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
+	_spriteProgram->setUniform("extraMatrix", extraMatrix);
 
-	glUniform1i(texturedPos, GL_TRUE);
-	glUniform1i(billboardPos, GL_TRUE);
+	_spriteProgram->setUniform("textured", GL_TRUE);
+	_spriteProgram->setUniform("isBillboard", GL_TRUE);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 }
 
 
@@ -736,33 +627,12 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 	delete[] texData;
 	bitmap->freeData();
 
+	bitmap->_shader = _backgroundProgram->clone();
+
 	if (g_grim->getGameType() == GType_MONKEY4) {
-		GLuint vao;
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
-		bitmap->_bufferVAO = vao;
-
-		GLuint vbo;
-		glGenBuffers(1, &vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, bitmap->_numCoords * 4 * sizeof(float), bitmap->_texc, GL_STATIC_DRAW);
-		bitmap->_bufferVBO = vbo;
-
-		glUseProgram(_backgroundProgram);
-
-		GLint posAttrib = glGetAttribLocation(_backgroundProgram, "position");
-		glEnableVertexAttribArray(posAttrib);
-		glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-
-		GLint coordAttrib = glGetAttribLocation(_backgroundProgram, "texcoord");
-		glEnableVertexAttribArray(coordAttrib);
-		glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2*sizeof(float)));
-
-		glBindVertexArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	} else {
-		bitmap->_bufferVBO = _smushVBO;
-		bitmap->_bufferVAO = _smushVAO;
+		GLuint vbo = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, bitmap->_numCoords * 4 * sizeof(float), bitmap->_texc, GL_STATIC_DRAW);
+		bitmap->_shader->enableVertexAttribute("position", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+		bitmap->_shader->enableVertexAttribute("texcoord", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 2*sizeof(float));
 	}
 }
 
@@ -785,8 +655,7 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 			frontLayer = 0;
 		}
 
-		glUseProgram(_backgroundProgram);
-		glBindVertexArray(data->_bufferVAO);
+		data->_shader->use();
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bigQuadEBO);
 		while (frontLayer <= curLayer) {
 			uint32 offset = data->_layers[curLayer]._offset;
@@ -799,8 +668,6 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 			}
 			curLayer--;
 		}
-		glBindVertexArray(0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		return;
 	}
 
@@ -817,21 +684,17 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 		glDisable(GL_BLEND);
 	}
 
-	glUseProgram(_backgroundProgram);
-	glBindVertexArray(_smushVAO);
-	GLuint drawToZPos = glGetUniformLocation(_backgroundProgram, "drawToZ");
-	GLuint offsetPos = glGetUniformLocation(_backgroundProgram, "offset");
-	GLuint sizePos = glGetUniformLocation(_backgroundProgram, "sizeWH");
+	bitmap->_data->_shader->use();
 	if (bitmap->getFormat() == 1) { // Normal image
 		glDisable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
-		glUniform1i(drawToZPos, GL_FALSE);
+		_backgroundProgram->setUniform("drawToZ", GL_FALSE);
 	} else { // ZBuffer image
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_ALWAYS);
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_TRUE);
-		glUniform1i(drawToZPos, GL_TRUE);
+		_backgroundProgram->setUniform("drawToZ", GL_TRUE);
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bigQuadEBO);
@@ -839,13 +702,12 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 	for (int y = dy; y < (dy + bitmap->getHeight()); y += BITMAP_TEXTURE_SIZE) {
 		for (int x = dx; x < (dx + bitmap->getWidth()); x += BITMAP_TEXTURE_SIZE) {
 			glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
-			glUniform2f(offsetPos, x * _scaleW / _screenWidth, y * _scaleH / _screenHeight);
-			glUniform2f(sizePos, BITMAP_TEXTURE_SIZE * _scaleW / _screenWidth, BITMAP_TEXTURE_SIZE * _scaleH / _screenHeight);
+			_backgroundProgram->setUniform("offset", Math::Vector2d(x * _scaleW / _screenWidth, y * _scaleH / _screenHeight));
+			_backgroundProgram->setUniform("sizeWH", Math::Vector2d(BITMAP_TEXTURE_SIZE * _scaleW / _screenWidth, BITMAP_TEXTURE_SIZE * _scaleH / _screenHeight));
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 			cur_tex_idx++;
 		}
 	}
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glDisable(GL_BLEND);
 	if (bitmap->getFormat() == 1) {
 		glDepthMask(GL_TRUE);
@@ -854,8 +716,6 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glDepthFunc(GL_LESS);
 	}
-
-	glBindVertexArray(0);
 }
 
 
@@ -866,9 +726,10 @@ void GfxOpenGLS::destroyBitmap(BitmapData *bitmap) {
 		delete[] textures;
 		bitmap->_texIds = 0;
 	}
-
-	glDeleteBuffers(1, &bitmap->_bufferVAO);
-	glDeleteBuffers(1, &bitmap->_bufferVBO);
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		glDeleteBuffers(1, &bitmap->_shader->getAttributeAt(0)._vbo);
+	}
+	delete bitmap->_shader;
 }
 
 struct FontUserData {
@@ -973,7 +834,7 @@ void GfxOpenGLS::destroyFont(Font *font) {
 }
 
 struct TextUserData {
-	GLuint vao, vbo;
+	Graphics::Shader * shader;
 	uint32 characters;
 	Color  color;
 	GLuint texture;
@@ -1028,32 +889,17 @@ void GfxOpenGLS::createTextObject(TextObject *text) {
 		}
 	}
 
-	GLuint vbo;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, numCharacters * 16 * sizeof(float), bufData, GL_STATIC_DRAW);
+	GLuint vbo = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, numCharacters * 16 * sizeof(float), bufData, GL_STATIC_DRAW);
 
-	glUseProgram(_textProgram);
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+	Graphics::Shader * textShader = _textProgram->clone();
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-	GLint posAttrib = glGetAttribLocation(_textProgram, "position");
-	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-	GLint coordAttrib = glGetAttribLocation(_textProgram, "texcoord");
-	glEnableVertexAttribArray(coordAttrib);
-	glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-			(void *) (2 * sizeof(float)));
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	textShader->enableVertexAttribute("position", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+	textShader->enableVertexAttribute("texcoord", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 2 * sizeof(float));
 
 	TextUserData * td = new TextUserData;
 	td->characters = numCharacters;
-	td->vao = vao;
-	td->vbo = vbo;
+	td->shader = textShader;
 	td->color = color;
 	td->texture = userData->texture;
 	text->setUserData(td);
@@ -1065,22 +911,21 @@ void GfxOpenGLS::drawTextObject(const TextObject *text) {
 	glDisable(GL_DEPTH_TEST);
 	const TextUserData * td = (const TextUserData *) text->getUserData();
 	assert(td);
-	glUseProgram(_textProgram);
-	glBindVertexArray(td->vao);
+	td->shader->use();
 
-	GLint colorAttrib = glGetUniformLocation(_textProgram, "color");
-	glUniform3f(colorAttrib, float(td->color.getRed()) / 255.0f, float(td->color.getGreen()) / 255.0f, float(td->color.getBlue()) / 255.0f);
+	Math::Vector3d colors(float(td->color.getRed()) / 255.0f,
+	                      float(td->color.getGreen()) / 255.0f,
+	                      float(td->color.getBlue()) / 255.0f);
+	_textProgram->setUniform("color", colors);
 	glBindTexture(GL_TEXTURE_2D, td->texture);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bigQuadEBO);
 	glDrawElements(GL_TRIANGLES, td->characters * 6, GL_UNSIGNED_SHORT, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 }
 
 void GfxOpenGLS::destroyTextObject(TextObject *text) {
 	const TextUserData * td = (const TextUserData *) text->getUserData();
-	glDeleteBuffers(1, &td->vbo);
-	glDeleteVertexArrays(1, &td->vao);
+	glDeleteBuffers(1, &td->shader->getAttributeAt(0)._vbo);
 	text->setUserData(NULL);
 	delete td;
 }
@@ -1180,29 +1025,22 @@ void GfxOpenGLS::prepareMovieFrame(Graphics::Surface* frame) {
 }
 
 void GfxOpenGLS::drawMovieFrame(int offsetX, int offsetY) {
-	glUseProgram(_smushProgram);
-	glBindVertexArray(_smushVAO);
+	_smushProgram->use();
 	glDisable(GL_DEPTH_TEST);
 
-	GLint offsetPos = glGetUniformLocation(_smushProgram, "offsetXY");
-	GLint sizePos = glGetUniformLocation(_smushProgram, "sizeWH");
-
-	glBindBuffer(GL_ARRAY_BUFFER, _smushVBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
 	int curTexIdx = 0;
 	for (int y = 0; y < _smushHeight; y += (int)(BITMAP_TEXTURE_SIZE * _scaleH)) {
 		for (int x = 0; x < _smushWidth; x += (int)(BITMAP_TEXTURE_SIZE * _scaleW)) {
 			glBindTexture(GL_TEXTURE_2D, _smushTexIds[curTexIdx]);
 
-			glUniform2f(offsetPos, float(x + offsetX) / _screenWidth, float(y + offsetY) / _screenHeight);
-			glUniform2f(sizePos, BITMAP_TEXTURE_SIZE * _scaleW / _screenWidth, BITMAP_TEXTURE_SIZE * _scaleH / _screenHeight);
+			_smushProgram->setUniform("offsetXY", Math::Vector2d(float(x + offsetX) / _screenWidth, float(y + offsetY) / _screenHeight));
+			_smushProgram->setUniform("sizeWH", Math::Vector2d(BITMAP_TEXTURE_SIZE * _scaleW / _screenWidth, BITMAP_TEXTURE_SIZE * _scaleH / _screenHeight));
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
 			curTexIdx++;
 		}
 	}
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
@@ -1234,114 +1072,64 @@ void GfxOpenGLS::createSpecialtyTextures() {
 }
 
 void GfxOpenGLS::createEMIModel(EMIModel *model) {
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	model->_modelVAO = vao;
+	model->_verticesVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_vertices, GL_STREAM_DRAW);
 
-	GLuint verticesVBO;
-	glGenBuffers(1, &verticesVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, verticesVBO);
-	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_vertices, GL_STREAM_DRAW);
-	model->_verticesVBO = verticesVBO;
+//	model->_normalsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_normals, GL_STATIC_DRAW);;
 
-//	GLuint normalsVBO;
-//	glGenBuffers(1, &normalsVBO);
-//	glBindBuffer(GL_ARRAY_BUFFER, normalsVBO);
-//	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_normals, GL_STATIC_DRAW);
-//	model->_normalsVBO = normalsVBO;
+	model->_texCoordsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, model->_numVertices * 2 * sizeof(float), model->_texVerts, GL_STATIC_DRAW);
 
-	GLuint texCoordsVBO;
-	glGenBuffers(1, &texCoordsVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, texCoordsVBO);
-	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 2 * sizeof(float), model->_texVerts, GL_STATIC_DRAW);
-	model->_texCoordsVBO = texCoordsVBO;
+	model->_colorMapVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, model->_numVertices * 4 * sizeof(byte), model->_colorMap, GL_STATIC_DRAW);
 
-	GLuint colorMapVBO;
-	glGenBuffers(1, &colorMapVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, colorMapVBO);
-	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 4 * sizeof(byte), model->_colorMap, GL_STATIC_DRAW);
-	model->_colorMapVBO = colorMapVBO;
-
-	glUseProgram(_actorProgram);
-	GLint posAttrib = glGetAttribLocation(_actorProgram, "position");
-	glEnableVertexAttribArray(posAttrib);
-	glBindBuffer(GL_ARRAY_BUFFER, verticesVBO);
-	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-
-	GLint texAttrib = glGetAttribLocation(_actorProgram, "texcoord");
-	glEnableVertexAttribArray(texAttrib);
-	glBindBuffer(GL_ARRAY_BUFFER, texCoordsVBO);
-	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
-
-	GLint colAttrib = glGetAttribLocation(_actorProgram, "color");
-	glEnableVertexAttribArray(colAttrib);
-	glBindBuffer(GL_ARRAY_BUFFER, colorMapVBO);
-	glVertexAttribPointer(colAttrib, 4, GL_UNSIGNED_BYTE, GL_TRUE, 4 * sizeof(byte), 0);
+	Graphics::Shader * actorShader = _actorProgram->clone();
+	actorShader->enableVertexAttribute("position", model->_verticesVBO, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+	actorShader->enableVertexAttribute("texcoord", model->_texCoordsVBO, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+	actorShader->enableVertexAttribute("color", model->_colorMapVBO, 4, GL_UNSIGNED_BYTE, GL_TRUE, 4 * sizeof(byte), 0);
+	model->_shader = actorShader;
 
 	for (uint32 i = 0; i < model->_numFaces; ++i) {
 		EMIMeshFace * face = &model->_faces[i];
-		GLuint indicesEBO;
-		glGenBuffers(1, &indicesEBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesEBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, face->_faceLength * 3 * sizeof(uint32), face->_indexes, GL_STATIC_DRAW);
-		face->_indicesEBO = indicesEBO;
+		face->_indicesEBO = Graphics::Shader::createBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_faceLength * 3 * sizeof(uint32), face->_indexes, GL_STATIC_DRAW);
 	}
 
-	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void GfxOpenGLS::createModel(Mesh *mesh) {
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	mesh->_modelVAO = vao;
-
-	GLuint verticesVBO;
-	glGenBuffers(1, &verticesVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, verticesVBO);
-	glBufferData(GL_ARRAY_BUFFER, mesh->_numVertices * 3 * sizeof(float), mesh->_vertices, GL_STREAM_DRAW);
-	mesh->_verticesVBO = verticesVBO;
-
-	//	GLuint normalsVBO;
-	//	glGenBuffers(1, &normalsVBO);
-	//	glBindBuffer(GL_ARRAY_BUFFER, normalsVBO);
-	//	glBufferData(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_normals, GL_STATIC_DRAW);
-	//	mesh->_normalsVBO = normalsVBO;
-
-	GLuint texCoordsVBO;
-	glGenBuffers(1, &texCoordsVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, texCoordsVBO);
-	glBufferData(GL_ARRAY_BUFFER, mesh->_numVertices * 2 * sizeof(float), mesh->_textureVerts, GL_STATIC_DRAW);
-	mesh->_texCoordsVBO = texCoordsVBO;
-
-	glUseProgram(_actorProgram);
-	GLint posAttrib = glGetAttribLocation(_actorProgram, "position");
-	glEnableVertexAttribArray(posAttrib);
-	glBindBuffer(GL_ARRAY_BUFFER, verticesVBO);
-	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-
-	GLint texAttrib = glGetAttribLocation(_actorProgram, "texcoord");
-	glEnableVertexAttribArray(texAttrib);
-	glBindBuffer(GL_ARRAY_BUFFER, texCoordsVBO);
-	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
-
-	GLint colAttrib = glGetAttribLocation(_actorProgram, "color");
-	glDisableVertexAttribArray(colAttrib);
-	glVertexAttrib4f(colAttrib, 1.f, 0.f, 1.f, 1.f);
-
-	for (int i = 0; i < mesh->_numFaces; ++i) {
-		MeshFace * face = &mesh->_faces[i];
-		GLuint indicesEBO;
-		glGenBuffers(1, &indicesEBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesEBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, face->_numVertices * sizeof(uint32), face->_vertices, GL_STATIC_DRAW);
-		face->_indicesEBO = indicesEBO;
-	}
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	return;
+	// TODO
+//	GLuint vao;
+//	glGenVertexArrays(1, &vao);
+//	glBindVertexArray(vao);
+//	mesh->_modelVAO = vao;
+//
+//	mesh->_verticesVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 3 * sizeof(float), mesh->_vertices, GL_STREAM_DRAW);
+//
+//	//	mesh->_normalsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_normals, GL_STATIC_DRAW);;
+//
+//	mesh->_texCoordsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 2 * sizeof(float), mesh->_textureVerts, GL_STATIC_DRAW);
+//
+//	_actorProgram->use();
+//	GLint posAttrib = _actorProgram->getAttribLocation("position");
+//	glEnableVertexAttribArray(posAttrib);
+//	glBindBuffer(GL_ARRAY_BUFFER, mesh->_verticesVBO);
+//	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+//
+//	GLint texAttrib = _actorProgram->getAttribLocation("texcoord");
+//	glEnableVertexAttribArray(texAttrib);
+//	glBindBuffer(GL_ARRAY_BUFFER, mesh->_texCoordsVBO);
+//	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+//
+//	GLint colAttrib = _actorProgram->getAttribLocation("color");
+//	glDisableVertexAttribArray(colAttrib);
+//	glVertexAttrib4f(colAttrib, 1.f, 0.f, 1.f, 1.f);
+//
+//	for (int i = 0; i < mesh->_numFaces; ++i) {
+//		MeshFace * face = &mesh->_faces[i];
+//		face->_indicesEBO = Graphics::Shader::createBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_numVertices * sizeof(uint32), face->_vertices, GL_STATIC_DRAW);
+//	}
+//
+//	glBindVertexArray(0);
+//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 }

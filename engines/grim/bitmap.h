@@ -33,6 +33,7 @@
 
 namespace Graphics {
 class PixelBuffer;
+class Shader;
 }
 
 namespace Common {
@@ -40,6 +41,7 @@ class SeekableReadStream;
 }
 
 namespace Grim {
+
 
 /**
  * This BitmapData class keeps the actual bitmap data and can be shared
@@ -122,8 +124,7 @@ public:
 // private:
 	Graphics::PixelBuffer *_data;
 #ifdef USE_OPENGL_SHADERS
-	uint32 _bufferVBO;
-	uint32 _bufferVAO;
+	Graphics::Shader* _shader;
 #endif
 };
 

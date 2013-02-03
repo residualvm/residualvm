@@ -29,6 +29,12 @@
 #include "math/vector3d.h"
 #include "math/vector4d.h"
 
+#ifdef USE_OPENGL_SHADERS
+namespace Graphics {
+class Shader;
+}
+#endif
+
 namespace Common {
 class SeekableReadStream;
 }
@@ -110,7 +116,7 @@ public:
 	Common::String _fname;
 
 #ifdef USE_OPENGL_SHADERS
-	uint32 _modelVAO;
+	Graphics::Shader *_shader;
 	uint32 _texCoordsVBO;
 	uint32 _colorMapVBO;
 	uint32 _normalsVBO;
