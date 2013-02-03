@@ -325,7 +325,6 @@ void GfxOpenGLS::setupCamera(float fov, float nclip, float fclip, float roll) {
 	proj(2,3) = -1.0f;
 	proj(3,2) = -(2.0f * fclip * nclip) / (fclip - nclip);
 	proj(3,3) = 0.0f;
-	proj.transpose();
 
 	_projMatrix = proj;
 }
@@ -375,15 +374,12 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 	glEnable(GL_DEPTH_TEST);
 
 	Math::Matrix4 modelMatrix = quat.toMatrix();
-	modelMatrix.transpose();
 
 	if (g_grim->getGameType() == GType_MONKEY4) {
 		Math::Matrix4 viewMatrix = _currentQuat.toMatrix();
-		viewMatrix.transpose();
 
 		Math::Matrix4 extraMatrix;
-
-		_mvpMatrix = _projMatrix * viewMatrix * modelMatrix;
+//		_mvpMatrix = _projMatrix * viewMatrix * modelMatrix;
 
 		glUniformMatrix4fv(modelMatrixPos, GL_TRUE, 1, modelMatrix.getData());
 		glUniformMatrix4fv(viewMatrixPos, GL_TRUE, 1, viewMatrix.getData());
