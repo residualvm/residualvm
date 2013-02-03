@@ -614,6 +614,7 @@ void GrimEngine::mainLoop() {
 
 		if (_changeHardwareState || _changeFullscreenState) {
 			_changeHardwareState = false;
+#ifdef USE_OPENGL
 			bool fullscreen = g_driver->isFullscreen();
 			if (_changeFullscreenState) {
 				fullscreen = !fullscreen;
@@ -648,6 +649,7 @@ void GrimEngine::mainLoop() {
 			}
 			setMode(mode);
 			_changeFullscreenState = false;
+#endif
 		}
 
 		g_imuse->flushTracks();
