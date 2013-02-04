@@ -91,12 +91,7 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 	g_imuse = NULL;
 
 	_showFps = g_registry->getBool("show_fps");
-
-#ifdef USE_OPENGL
-	_softRenderer = g_registry->getBool("soft_renderer");
-#else
 	_softRenderer = true;
-#endif
 
 	_mixer->setVolumeForSoundType(Audio::Mixer::kPlainSoundType, 192);
 	_mixer->setVolumeForSoundType(Audio::Mixer::kSFXSoundType, ConfMan.getInt("sfx_volume"));
@@ -204,6 +199,25 @@ void GrimEngine::clearPools() {
 	_currSet = NULL;
 }
 
+void GrimEngine::createRenderer() {
+#ifdef USE_OPENGL
+	_softRenderer = g_registry->getBool("soft_renderer");
+#endif
+
+	if (!_softRenderer && !g_system->hasFeature(OSystem::kFeatureOpenGL)){
+		warning("gfx backend doesn't support hardware rendering");
+		_softRenderer = true;
+	}
+
+	if (_softRenderer) {
+		g_driver = CreateGfxTinyGL();
+#ifdef USE_OPENGL
+	} else {
+		g_driver = CreateGfxOpenGL();
+#endif
+	}
+}
+
 Common::Error GrimEngine::run() {
 	// Try to see if we have the EMI Mac installer present
 	// Currently, this requires the data fork to be standalone
@@ -230,19 +244,7 @@ Common::Error GrimEngine::run() {
 	g_sound = new SoundPlayer();
 
 	bool fullscreen = g_registry->getBool("fullscreen");
-
-	if (!_softRenderer && !g_system->hasFeature(OSystem::kFeatureOpenGL)){
-		warning("gfx backend doesn't support hardware rendering");
-		_softRenderer=true;
-	}
-
-	if (_softRenderer)
-		g_driver = CreateGfxTinyGL();
-#ifdef USE_OPENGL
-	else
-		g_driver = CreateGfxOpenGL();
-#endif
-
+	createRenderer();
 	g_driver->setupScreen(640, 480, fullscreen);
 
 	if (getGameType() == GType_MONKEY4 && SearchMan.hasFile("AMWI.m4b")) {
@@ -614,7 +616,7 @@ void GrimEngine::mainLoop() {
 
 		if (_changeHardwareState || _changeFullscreenState) {
 			_changeHardwareState = false;
-#ifdef USE_OPENGL
+
 			bool fullscreen = g_driver->isFullscreen();
 			if (_changeFullscreenState) {
 				fullscreen = !fullscreen;
@@ -632,12 +634,7 @@ void GrimEngine::mainLoop() {
 			clearPools();
 
 			delete g_driver;
-			if (g_registry->getBool("soft_renderer")) {
-				g_driver = CreateGfxTinyGL();
-			} else {
-				g_driver = CreateGfxOpenGL();
-			}
-
+			createRenderer();
 			g_driver->setupScreen(screenWidth, screenHeight, fullscreen);
 			savegameRestore();
 
@@ -649,7 +646,6 @@ void GrimEngine::mainLoop() {
 			}
 			setMode(mode);
 			_changeFullscreenState = false;
-#endif
 		}
 
 		g_imuse->flushTracks();
