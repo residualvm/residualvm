@@ -133,6 +133,7 @@ private:
 	int _smushHeight;
 	Graphics::PixelBuffer _storedDisplay;
 	Common::HashMap<int, TinyGL::Buffer *> _buffers;
+	uint _bufferId;
 
 	void blit(const Graphics::PixelFormat &format, BlitImage *blit, byte *dst, byte *src, int x, int y, int width, int height, bool trans);
 };
