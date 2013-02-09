@@ -98,6 +98,7 @@ private:
 	Value _engineSpeed;
 	Value _transcript;
 	Value _useArbShaders;
+	Value _emptyString;
 
 	bool _dirty;
 

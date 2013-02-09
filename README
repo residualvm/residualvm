@@ -174,19 +174,13 @@ Unix users may be able to achieve playable framerates by using Mesa 5.0 or
 above, but people unable to upgrade or Windows users must use software
 renderer. Software renderer is generally faster on modern platforms.
 
-6.2 - I played a bit, but can't start a new game!
--------------------------------------------------
-This is because the last save and visited scene is stored in your configuration
-file, either delete grim-fandango from the ResidualVM-menu, and re-add it, or 
-go to your configuration file, and clean out the last-save and last-set entries.
-
-6.3 - My Save Games don't work any more
+6.2 - My Save Games don't work any more
 ---------------------------------------
 Did you recently update to a newer build of ResidualVM? 
 Grim engine is still a work in progress, which means that it might
 change between builds. 
 
-6.4 - In fullscreen mode picture is stretched!
+6.3 - In fullscreen mode picture is stretched!
 ----------------------------------------------
 This is know issue, in future versions it will be resolved.
 

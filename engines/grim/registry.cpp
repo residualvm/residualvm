@@ -21,6 +21,7 @@
  */
 
 #include "engines/grim/registry.h"
+#include "engines/grim/debug.h"
 
 #include "audio/mixer.h"
 
@@ -131,6 +132,8 @@ Registry::Registry() : _dirty(true) {
 	_movement.setString(ConfMan.get("movement"));
 	_joystick.setString(ConfMan.get("joystick"));
 	_transcript.setString(ConfMan.get("transcript"));
+
+	_emptyString.setString(Common::String(""));
 }
 
 Registry::Value &Registry::value(const Common::String &key) {
@@ -141,7 +144,11 @@ Registry::Value &Registry::value(const Common::String &key) {
 	} else if (scumm_stricmp("savepath", key.c_str()) == 0) {
 		return _savePath;
 	} else if (scumm_stricmp("GrimLastSet", key.c_str()) == 0) {
-		return _lastSet;
+		//Restore last_set only if engine debugflag is set
+		if (!Debug::isChannelEnabled(Debug::Engine))
+			return _emptyString;
+		else
+			return _lastSet;
 	} else if (scumm_stricmp("MusicVolume", key.c_str()) == 0) {
 		return _musicVolume;
 	} else if (scumm_stricmp("SfxVolume", key.c_str()) == 0) {
@@ -189,7 +196,11 @@ const Registry::Value &Registry::value(const Common::String &key) const {
 	} else if (scumm_stricmp("savepath", key.c_str()) == 0) {
 		return _savePath;
 	} else if (scumm_stricmp("GrimLastSet", key.c_str()) == 0) {
-		return _lastSet;
+		//Restore last_set only if engine debugflag is set
+		if (!Debug::isChannelEnabled(Debug::Engine))
+			return _emptyString;
+		else
+			return _lastSet;
 	} else if (scumm_stricmp("MusicVolume", key.c_str()) == 0) {
 		return _musicVolume;
 	} else if (scumm_stricmp("SfxVolume", key.c_str()) == 0) {
