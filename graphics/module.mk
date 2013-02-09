@@ -45,7 +45,8 @@ MODULE_OBJS := \
 
 ifdef USE_OPENGL_SHADERS
 MODULE_OBJS += \
-	opengles2/shader.o
+	opengles2/shader.o \
+	opengles2/framebuffer.o
 endif
 
 # Include common rules
