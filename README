@@ -154,32 +154,11 @@ some of them might make ResidualVM crash, or behave in weird ways.
 Grim Fandango had a few issues when it came out, and a few new and exciting
 issues when you try to run it on newer hardware. Some of these have been
 fixed in ResidualVM, but ResidualVM itself also has a few new issues that we know about:
-http://github.com/residualvm/residualvm/blob/branch-0-1-0/KNOWN_BUGS
+http://github.com/residualvm/residualvm/blob/branch-0-1/KNOWN_BUGS
 Look below for help with them, and if you can't find help here
 try either the forums at our homepage, or IRC: #residualvm at freenode.
 
-6.1 - The game runs really slow!
---------------------------------
-Some gfx cards do not have a fast glDrawPixels access to zbuffer
-implementation in their system driver.
-
-Unix users may be able to achieve playable framerates by using Mesa 5.0 or
-above, but people unable to upgrade or Windows users must use software
-renderer. Software renderer is generally faster on modern platforms.
-
-6.2 - I played a bit, but can't start a new game!
--------------------------------------------------
-This is because the last save and visited scene is stored in your configuration
-file, either delete grim-fandango from the ResidualVM-menu, and re-add it, or 
-go to your configuration file, and clean out the last-save and last-set entries.
-
-6.3 - My Save Games don't work any more
----------------------------------------
-Did you recently update to a newer build of ResidualVM?
-Grim engine is still a work in progress, which means that it might
-change between builds.
-
-6.4 - In fullscreen mode picture is stretched!
+6.1 - In fullscreen mode picture is stretched!
 ----------------------------------------------
 This is know issue, in future versions it will be resolved.
 
