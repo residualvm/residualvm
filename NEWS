@@ -1,5 +1,5 @@
 
-0.1.1 (2013-XX-XX)
+0.1.1 (2013-02-10)
 	New features:
 	- New config option "use_arb_shaders" to cope with some graphics drivers lying about their capabilities
 	and causing rendering problems.
@@ -17,7 +17,7 @@
 	- Fixed Manny freezing sometimes when talking to the Angelitos and in some other cases (#483)
 	- Fixed shadow artifacts when picking up some objects with the OpenGL renderer (#294)
 	- Fixed the spider orientation when entering the spiders room the first time (#368)
-	- Fixed Manny going inside some poles outside the Calavera Café and outside Velasco's garage (#578)
+	- Fixed Manny going inside some poles outside the Calavera Cafe and outside Velasco's garage (#578)
 	- Fixed Manny flickering with the OpenGL renderer outside the morgue (#678)
 	- Fixed subtitles overlapping when talking to Nick with Glottis screaming in the background (#685)
 	- Fixed the Bonewagon popping when Glottis starts driving in the Petrified Forest (#691)
@@ -41,7 +41,7 @@
 	- Fixed Toto not looking at Manny when speaking to him (#285)
 	- Fixed Toto's phone being rendered two times when Manny uses it (#622)
 	- Fixed Manny's animations freezing when using Toto's phone and skipping dialogue lines
-	- Made walking from behind Manny's desk in his room in the Café easier
+	- Made walking from behind Manny's desk in his room in the Cafe easier
 	- Fixed wrong Manny positioning when going from the stairs of the cat race track to the folding bridge
 
 	Demo:
@@ -53,5 +53,5 @@
 
 0.1.0 (2012-12-21)
 
- - First release.
- - Grim Fandango full game and demo supported.
+	- First release.
+	- Grim Fandango full game and demo supported.
