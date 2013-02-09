@@ -162,6 +162,12 @@ try either the forums at our homepage, or IRC: #residualvm at freenode.
 ----------------------------------------------
 This is know issue, in future versions it will be resolved.
 
+6.2 - I played a bit, but can't start a new game!
+-------------------------------------------------
+This is because the last save and visited scene is stored in your configuration
+file, either delete grim-fandango from the ResidualVM-menu, and re-add it, or 
+go to your configuration file, and clean out the last-save and last-set entries.
+
 
 --------------
 7. Bug Reports
