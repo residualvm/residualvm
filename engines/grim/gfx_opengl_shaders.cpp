@@ -116,7 +116,7 @@ GfxBase *CreateGfxOpenGL() {
 }
 
 GfxOpenGLS::GfxOpenGLS() {
-	_smushNumTex = 0;
+	_smushTexId = 0;
 	_matrixStack.push(Math::Matrix4());
 }
 
@@ -981,44 +981,40 @@ void GfxOpenGLS::drawPolygon(const PrimitiveObject *primitive) {
 
 
 void GfxOpenGLS::prepareMovieFrame(Graphics::Surface* frame) {
-	int height = frame->h;
 	int width = frame->w;
+	int height = frame->h;
 	byte *bitmap = (byte *)frame->pixels;
 
+	GLenum frame_type, frame_format;
+
+	switch (frame->format.bytesPerPixel) {
+	case 2:
+		frame_type = GL_UNSIGNED_SHORT_5_6_5;
+		frame_format = GL_RGB;
+		_smushSwizzle = false;
+		break;
+	case 4:
+		frame_type = GL_UNSIGNED_BYTE;
+		frame_format = GL_RGBA;
+		_smushSwizzle = true;
+		break;
+	default:
+		error("Video decoder returned invalid pixel format!");
+		return;
+	}
 
 	// create texture
-	_smushNumTex = ((width + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
-		((height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
-	_smushTexIds = new GLuint[_smushNumTex];
-	glGenTextures(_smushNumTex, _smushTexIds);
-	for (uint32 i = 0; i < _smushNumTex; i++) {
-		glBindTexture(GL_TEXTURE_2D, _smushTexIds[i]);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, BITMAP_TEXTURE_SIZE, BITMAP_TEXTURE_SIZE, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
-	}
+	glGenTextures(1, &_smushTexId);
+	glBindTexture(GL_TEXTURE_2D, _smushTexId);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 512, 0, frame_format, frame_type, NULL);
 
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
-#ifndef USE_GLES2
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-#endif
-
-	int curTexIdx = 0;
-	for (int y = 0; y < height; y += BITMAP_TEXTURE_SIZE) {
-		for (int x = 0; x < width; x += BITMAP_TEXTURE_SIZE) {
-			int t_width = (x + BITMAP_TEXTURE_SIZE >= width) ? (width - x) : BITMAP_TEXTURE_SIZE;
-			int t_height = (y + BITMAP_TEXTURE_SIZE >= height) ? (height - y) : BITMAP_TEXTURE_SIZE;
-			glBindTexture(GL_TEXTURE_2D, _smushTexIds[curTexIdx]);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t_width, t_height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, bitmap + (y * 2 * width) + (2 * x));
-			curTexIdx++;
-		}
-	}
+	glPixelStorei(GL_UNPACK_ALIGNMENT, frame->format.bytesPerPixel);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, frame_format, frame_type, bitmap);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-#ifndef USE_GLES2
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#endif
 
 	_smushWidth = (int)(width * _scaleW);
 	_smushHeight = (int)(height * _scaleH);
@@ -1029,27 +1025,20 @@ void GfxOpenGLS::drawMovieFrame(int offsetX, int offsetY) {
 	glDisable(GL_DEPTH_TEST);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
-	int curTexIdx = 0;
-	for (int y = 0; y < _smushHeight; y += (int)(BITMAP_TEXTURE_SIZE * _scaleH)) {
-		for (int x = 0; x < _smushWidth; x += (int)(BITMAP_TEXTURE_SIZE * _scaleW)) {
-			glBindTexture(GL_TEXTURE_2D, _smushTexIds[curTexIdx]);
+	_smushProgram->setUniform("texcrop", Math::Vector2d(float(_smushWidth) / 1024.0, float(_smushHeight) / 512.0));
+	_smushProgram->setUniform("swizzle", _smushSwizzle);
+	glBindTexture(GL_TEXTURE_2D, _smushTexId);
 
-			_smushProgram->setUniform("offsetXY", Math::Vector2d(float(x + offsetX) / _screenWidth, float(y + offsetY) / _screenHeight));
-			_smushProgram->setUniform("sizeWH", Math::Vector2d(BITMAP_TEXTURE_SIZE * _scaleW / _screenWidth, BITMAP_TEXTURE_SIZE * _scaleH / _screenHeight));
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
-			curTexIdx++;
-		}
-	}
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 
 void GfxOpenGLS::releaseMovieFrame() {
-	if (_smushNumTex > 0) {
-		glDeleteTextures(_smushNumTex, _smushTexIds);
-		delete[] _smushTexIds;
-		_smushNumTex = 0;
+	if (_smushTexId > 0) {
+		glDeleteTextures(1, &_smushTexId);
+		_smushTexId = 0;
 	}
 }
 
