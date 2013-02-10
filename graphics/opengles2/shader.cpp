@@ -32,6 +32,7 @@ static const GLchar *readFile(const Common::String &filename) {
 
 	const int32 size = file.size();
 	GLchar *shaderSource = new GLchar[size + 1];
+
 	file.read(shaderSource, size);
 	file.close();
 	shaderSource[size] = '\0';
@@ -43,7 +44,7 @@ static GLuint loadShader(const char *base, const char *extension, GLenum shaderT
 	const GLchar *shaderSource = readFile(filename);
 	const GLchar *compatSource = readFile(shaderType == GL_VERTEX_SHADER ? "compat.vertex" : "compat.fragment");
 	const GLchar *shaderSources[] = {
-			"#version 150\n",
+			"#version 100\n",
 			compatSource,
 			shaderSource
 	};

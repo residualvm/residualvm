@@ -20,7 +20,7 @@ void main()
 	if (isBillboard) {
 		vec4 scaled = extraMatrix * pos;
 		vec3 camToPos = normalize(actorPos - cameraPos);
-		vec3 up = vec3(0, 1, 0);
+		vec3 up = vec3(0.0, 1.0, 0.0);
 		vec3 right = cross(camToPos, up);
 		pos.xyz = scaled.x * right + scaled.y * up;
 		pos = modelMatrix * pos;
@@ -30,7 +30,7 @@ void main()
 	pos /= pos.w;
 	pos = viewMatrix * pos;
 	pos += viewMatrix * vec4(actorPos - cameraPos, 0.0);
-	pos.z *= -1;
+	pos.z *= -1.0;
 	
 	gl_Position = projMatrix * pos;
 	if (isBillboard)

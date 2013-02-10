@@ -12,8 +12,8 @@ void main()
 	
 	// Coordinates are [0.0;1.0], transform [-1.0; 1.0] and flip Y
 	vec2 pos = offsetXY + position * sizeWH;
-	pos.x = pos.x * 2 - 1;
-	pos.y = -1 * (pos.y * 2 - 1);
+	pos.x = pos.x * 2.0 - 1.0;
+	pos.y = -1.0 * (pos.y * 2.0 - 1.0);
 
 	gl_Position = vec4(pos, 0.0, 1.0);
 }

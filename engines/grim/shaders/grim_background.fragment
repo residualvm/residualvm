@@ -1,6 +1,6 @@
 in vec2 Texcoord;
 
-out vec4 outColor;
+OUTPUT
 
 uniform sampler2D tex;
 uniform bool drawToZ;
