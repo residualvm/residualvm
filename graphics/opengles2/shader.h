@@ -65,7 +65,6 @@ struct VertexAttrib {
 
 class Shader {
 public:
-	Shader(const char* vertex, const char* fragment, const char** attributes);
 
 	Shader* clone() {
 		return new Shader(*this);
@@ -124,15 +123,17 @@ public:
 
 	static GLuint createBuffer(GLenum target, GLsizeiptr size, const GLvoid* data, GLenum usage = GL_STATIC_DRAW);
 
-	static Shader* createShader(const char* shared, const char** attributes) {
-		return new Shader(shared, shared, attributes);
+	static Shader* fromFiles(const char *vertex, const char *fragment, const char **attributes);
+	static Shader* fromFiles(const char *shared, const char **attributes) {
+		return fromFiles(shared, shared, attributes);
 	}
 
+	static Shader* fromStrings(const Common::String &name, const char *vertex, const char *fragment, const char **attributes);
 
 private:
+	Shader(const Common::String &name, GLuint vertexShader, GLuint fragmentShader, const char **attributes);
 	GLuint _shaderNo;
 	Common::String _name;
-
 
 	Common::Array<VertexAttrib> _attributes;
 };

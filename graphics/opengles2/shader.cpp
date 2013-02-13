@@ -20,6 +20,7 @@
  *
  */
 
+#include "graphics/opengles2/compat_shaders.h"
 #include "graphics/opengles2/shader.h"
 
 namespace Graphics {
@@ -39,14 +40,29 @@ static const GLchar *readFile(const Common::String &filename) {
 	return shaderSource;
 }
 
-static GLuint loadShader(const char *base, const char *extension, GLenum shaderType) {
-	const Common::String filename = Common::String(base) + "." + extension;
-	const GLchar *shaderSource = readFile(filename);
-	const GLchar *compatSource = readFile(shaderType == GL_VERTEX_SHADER ? "compat.vertex" : "compat.fragment");
+static GLuint createDirectShader(const char *shaderSource, GLenum shaderType, const Common::String &name) {
+	GLuint shader = glCreateShader(shaderType);
+	glShaderSource(shader, 1, &shaderSource, NULL);
+	glCompileShader(shader);
+
+	GLint status;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+	if (status != GL_TRUE) {
+		char buffer[512];
+		glGetShaderInfoLog(shader, 512, NULL, buffer);
+		error("Could not compile shader %s: %s", name.c_str(), buffer);
+	}
+
+	return shader;
+}
+
+static GLuint createCompatShader(const char *shaderSource, GLenum shaderType, const Common::String &name) {
+	const GLchar *compatSource =
+			shaderType == GL_VERTEX_SHADER ? Graphics::BuiltinShaders::compatVertex : Graphics::BuiltinShaders::compatFragment;
 	const GLchar *shaderSources[] = {
-			"#version 100\n",
-			compatSource,
-			shaderSource
+		"#version 100\n",
+		compatSource,
+		shaderSource
 	};
 
 	GLuint shader = glCreateShader(shaderType);
@@ -58,21 +74,27 @@ static GLuint loadShader(const char *base, const char *extension, GLenum shaderT
 	if (status != GL_TRUE) {
 		char buffer[512];
 		glGetShaderInfoLog(shader, 512, NULL, buffer);
-		error("Could not compile shader %s.%s: %s", base, extension, buffer);
+		error("Could not compile shader %s: %s", name.c_str(), buffer);
 	}
-	delete[] shaderSource;
-	delete[] compatSource;
 
 	return shader;
 }
 
-Shader::Shader(const char *vertex, const char *fragment, const char** attributes) {
+static GLuint loadShaderFromFile(const char *base, const char *extension, GLenum shaderType) {
+	const Common::String filename = Common::String(base) + "." + extension;
+	const GLchar *shaderSource = readFile(filename);
+
+	GLuint shader = createCompatShader(shaderSource, shaderType, filename);
+
+	delete[] shaderSource;
+
+	return shader;
+}
+
+Shader::Shader(const Common::String &name, GLuint vertexShader, GLuint fragmentShader, const char **attributes)
+	: _name(name) {
 	assert(attributes);
 	GLuint shaderProgram = glCreateProgram();
-
-	GLuint vertexShader = loadShader(vertex, "vertex", GL_VERTEX_SHADER);
-	GLuint fragmentShader = loadShader(fragment, "fragment", GL_FRAGMENT_SHADER);
-
 	glAttachShader(shaderProgram, vertexShader);
 	glAttachShader(shaderProgram, fragmentShader);
 
@@ -83,7 +105,21 @@ Shader::Shader(const char *vertex, const char *fragment, const char** attributes
 	glLinkProgram(shaderProgram);
 
 	_shaderNo = shaderProgram;
-	_name = Common::String::format("%s/%s", vertex, fragment);
+}
+
+Shader *Shader::fromStrings(const Common::String &name, const char *vertex, const char *fragment, const char **attributes) {
+	GLuint vertexShader = createDirectShader(vertex, GL_VERTEX_SHADER, name + ".vertex");
+	GLuint fragmentShader = createDirectShader(fragment, GL_FRAGMENT_SHADER, name + ".fragment");
+	return new Shader(name, vertexShader, fragmentShader, attributes);
+}
+
+
+Shader *Shader::fromFiles(const char *vertex, const char *fragment, const char **attributes) {
+	GLuint vertexShader = loadShaderFromFile(vertex, "vertex", GL_VERTEX_SHADER);
+	GLuint fragmentShader = loadShaderFromFile(fragment, "fragment", GL_FRAGMENT_SHADER);
+
+	Common::String name = Common::String::format("%s/%s", vertex, fragment);
+	return new Shader(name, vertexShader, fragmentShader, attributes);
 }
 
 void Shader::use() {

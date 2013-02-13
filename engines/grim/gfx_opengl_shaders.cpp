@@ -163,12 +163,12 @@ void GfxOpenGLS::setupShaders() {
 	bool isEMI = g_grim->getGameType() == GType_MONKEY4;
 
 	static const char* commonAttributes[] = {"position", "texcoord", NULL};
-	_backgroundProgram = Graphics::Shader::createShader(isEMI ? "emi_background" : "grim_background", commonAttributes);
-	_smushProgram = Graphics::Shader::createShader("smush", commonAttributes);
-	_textProgram = Graphics::Shader::createShader("text", commonAttributes);
+	_backgroundProgram = Graphics::Shader::fromFiles(isEMI ? "emi_background" : "grim_background", commonAttributes);
+	_smushProgram = Graphics::Shader::fromFiles("smush", commonAttributes);
+	_textProgram = Graphics::Shader::fromFiles("text", commonAttributes);
 
 	static const char* actorAttributes[] = {"position", "texcoord", "color", NULL};
-	_actorProgram = Graphics::Shader::createShader(isEMI ? "emi_actor" : "grim_actor", actorAttributes);
+	_actorProgram = Graphics::Shader::fromFiles(isEMI ? "emi_actor" : "grim_actor", actorAttributes);
 	_spriteProgram = _actorProgram->clone();
 
 	setupBigEBO();
