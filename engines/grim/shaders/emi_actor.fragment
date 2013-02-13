@@ -10,6 +10,10 @@ void main()
 {
 	outColor = Color;
 	if (textured) {
-		outColor *= texture(tex, Texcoord);
+		vec4 texColor = texture(tex, Texcoord);
+#ifdef GL_ES
+		texColor.rgba = texColor.bgra;
+#endif 
+		outColor *= texColor;
 	}
 }

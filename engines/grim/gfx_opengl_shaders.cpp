@@ -26,8 +26,6 @@
 #undef ARRAYSIZE
 #endif
 
-#include <GL/glew.h>
-
 #include "common/endian.h"
 #include "common/file.h"
 #include "common/str.h"
@@ -275,11 +273,13 @@ void GfxOpenGLS::setupShaders() {
 
 byte *GfxOpenGLS::setupScreen(int screenW, int screenH, bool fullscreen) {
 	_pixelFormat = g_system->setupScreen(screenW, screenH, fullscreen, true).getFormat();
+#ifndef USE_GLES2
 	GLenum err = glewInit();
 	if (err != GLEW_OK) {
 		error("Error: %s\n", glewGetErrorString(err));
 	}
 	assert(GLEW_OK == err);
+#endif
 
 	_screenWidth = screenW;
 	_screenHeight = screenH;
@@ -492,8 +492,6 @@ void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face
 
 void GfxOpenGLS::drawModelFace(const Mesh *mesh, const MeshFace *face) {
 	glEnable(GL_DEPTH_TEST);
-	glAlphaFunc(GL_GREATER, 0.5);
-	glEnable(GL_ALPHA_TEST);
 
 	glBindVertexArray(mesh->_modelVAO);
 	GLint texturedPos = glGetUniformLocation(_actorProgram, "textured");
@@ -507,13 +505,10 @@ void GfxOpenGLS::drawModelFace(const Mesh *mesh, const MeshFace *face) {
 	glDrawElements(GL_TRIANGLES, face->_numVertices, GL_UNSIGNED_INT, 0);
 
 	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_ALPHA_TEST);
 }
 
 void GfxOpenGLS::drawSprite(const Sprite *sprite) {
 	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_ALPHA_TEST);
-	glAlphaFunc(GL_GREATER, 0);
 	GLint texturedPos = glGetUniformLocation(_actorProgram, "textured");
 	GLint billboardPos = glGetUniformLocation(_actorProgram, "isBillboard");
 	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
@@ -532,8 +527,6 @@ void GfxOpenGLS::drawSprite(const Sprite *sprite) {
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-
-	glDisable(GL_ALPHA_TEST);
 }
 
 
@@ -590,8 +583,13 @@ void GfxOpenGLS::createMaterial(Texture *material, const char *data, const CMap 
 		format = GL_BGRA;
 		internalFormat = GL_RGBA;
 	} else {	// The only other colorFormat we load right now is BGR
+#ifdef USE_GLES2
+		format = GL_RGB;
+		internalFormat = GL_RGB;
+#else
 		format = GL_BGR;
 		internalFormat = GL_RGB;
+#endif
 	}
 
 	GLuint *textures = (GLuint *)material->_texture;
@@ -674,7 +672,9 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 	}
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
+#ifndef USE_GLES2
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->_width);
+#endif
 
 	for (int pic = 0; pic < bitmap->_numImages; pic++) {
 		if (bitmap->_format == 1 && bitmap->_bpp == 16 && bitmap->_colorFormat != BM_RGB1555) {
@@ -729,7 +729,9 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 		}
 	}
 
+#ifndef USE_GLES2
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
 
 	delete[] texData;
 	bitmap->freeData();
@@ -771,7 +773,6 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 		GLuint *textures = (GLuint *)bitmap->getTexIds();
 
 		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_ALPHA_TEST);
 
 		int curLayer, frontLayer;
 		if (initialDraw) {
@@ -1155,7 +1156,9 @@ void GfxOpenGLS::prepareMovieFrame(Graphics::Surface* frame) {
 	}
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+#ifndef USE_GLES2
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+#endif
 
 	int curTexIdx = 0;
 	for (int y = 0; y < height; y += BITMAP_TEXTURE_SIZE) {
@@ -1168,7 +1171,9 @@ void GfxOpenGLS::prepareMovieFrame(Graphics::Surface* frame) {
 		}
 	}
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+#ifndef USE_GLES2
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
 
 	_smushWidth = (int)(width * _scaleW);
 	_smushHeight = (int)(height * _scaleH);
