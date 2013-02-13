@@ -14,4 +14,6 @@ void main()
 	if (textured) {
 		outColor *= texture(tex, Texcoord);
 	}
+	if (outColor.a == 0.0)
+		discard;
 }

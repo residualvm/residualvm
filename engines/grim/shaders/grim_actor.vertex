@@ -1,0 +1,28 @@
+#version 150
+
+in vec3 position;
+in vec2 texcoord;
+in vec4 color;
+
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projMatrix;
+uniform mat4 extraMatrix;
+uniform bool textured;
+
+out vec2 Texcoord;
+out vec4 Color;
+
+void main()
+{
+	vec4 pos = vec4(position, 1.0);
+	pos = viewMatrix * modelMatrix * /* extraMatrix * */ pos;
+	gl_Position = projMatrix * pos;
+
+	Color = color;
+	if (textured) {
+		Texcoord = texcoord;
+	} else {
+		Texcoord = vec2(0.0, 0.0);
+	}
+}

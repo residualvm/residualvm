@@ -67,12 +67,59 @@ static float textured_quad_centered[] = {
 	+0.5f, -0.5f, 0.0f, 1.0f, 1.0f,
 };
 
+// taken from glm
+Math::Matrix4 makeLookMatrix(const Math::Vector3d& pos, const Math::Vector3d& interest, const Math::Vector3d& up) {
+	Math::Vector3d f = (pos - interest).getNormalized();
+	Math::Vector3d u = up.getNormalized();
+	Math::Vector3d s = Math::Vector3d::crossProduct(f, u).getNormalized();
+	u = Math::Vector3d::crossProduct(s, f);
+
+	Math::Matrix4 look;
+	look(0,0) = s.x();
+	look(1,0) = s.y();
+	look(2,0) = s.z();
+	look(0,1) = u.x();
+	look(1,1) = u.y();
+	look(2,1) = u.z();
+	look(0,2) = -f.x();
+	look(1,2) = -f.y();
+	look(2,2) = -f.z();
+	look(3,0) = -Math::Vector3d::dotProduct(s, interest);
+	look(3,1) = -Math::Vector3d::dotProduct(u, interest);
+	look(3,2) =  Math::Vector3d::dotProduct(f, interest);
+	look.transpose();
+
+	return look;
+}
+
+// taken from glm
+Math::Matrix4 makeRotationMatrix(const Math::Angle& angle, Math::Vector3d axis) {
+	float c = angle.getCosine();
+	float s = angle.getSine();
+	axis.normalize();
+	Math::Vector3d temp = (1.f - c) * axis;
+	Math::Matrix4 rotate;
+	rotate(0, 0) = c + temp.x() * axis.x();
+	rotate(0, 1) = 0 + temp.x() * axis.y() + s * axis.z();
+	rotate(0, 2) = 0 + temp.x() * axis.z() - s * axis.y();
+	rotate(1, 0) = 0 + temp.y() * axis.x() - s * axis.z();
+	rotate(1, 1) = c + temp.y() * axis.y();
+	rotate(1, 2) = 0 + temp.y() * axis.z() + s * axis.x();
+	rotate(2, 0) = 0 + temp.z() * axis.x() + s * axis.y();
+	rotate(2, 1) = 0 + temp.z() * axis.y() - s * axis.x();
+	rotate(2, 2) = c + temp.z() * axis.z();
+
+	rotate.transpose();
+	return rotate;
+}
+
 GfxBase *CreateGfxOpenGL() {
 	return new GfxOpenGLS();
 }
 
 GfxOpenGLS::GfxOpenGLS() {
 	_smushNumTex = 0;
+	_matrixStack.push(Math::Matrix4());
 }
 
 GfxOpenGLS::~GfxOpenGLS() {
@@ -288,14 +335,15 @@ void GfxOpenGLS::positionCamera(const Math::Vector3d &pos, const Math::Vector3d 
 		_currentPos = pos;
 		_currentQuat = Math::Quaternion(interest.x(), interest.y(), interest.z(), roll);
 	} else {
-//		Math::Vector3d up_vec(0, 0, 1);
-//
-//		glRotatef(roll, 0, 0, -1);
-//
-//		if (pos.x() == interest.x() && pos.y() == interest.y())
-//			up_vec = Math::Vector3d(0, 1, 0);
-//
-//		gluLookAt(pos.x(), pos.y(), pos.z(), interest.x(), interest.y(), interest.z(), up_vec.x(), up_vec.y(), up_vec.z());
+		Math::Matrix4 viewMatrix = makeRotationMatrix(Math::Angle(roll), Math::Vector3d(0, 0, -1));
+		Math::Vector3d up_vec(0, 0, 1);
+
+		if (pos.x() == interest.x() && pos.y() == interest.y())
+			up_vec = Math::Vector3d(0, 1, 0);
+
+		Math::Matrix4 lookMatrix = makeLookMatrix(pos, interest, up_vec);
+
+		_viewMatrix = viewMatrix * lookMatrix;
 	}
 }
 
@@ -326,28 +374,40 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 
 	glEnable(GL_DEPTH_TEST);
 
-	Math::Matrix4 viewMatrix = _currentQuat.toMatrix();
-	viewMatrix.transpose();
-
 	Math::Matrix4 modelMatrix = quat.toMatrix();
 	modelMatrix.transpose();
 
-	Math::Matrix4 extraMatrix;
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		Math::Matrix4 viewMatrix = _currentQuat.toMatrix();
+		viewMatrix.transpose();
 
-	_mvpMatrix = _projMatrix * viewMatrix * modelMatrix;
+		Math::Matrix4 extraMatrix;
 
-	glUniformMatrix4fv(modelMatrixPos, GL_TRUE, 1, modelMatrix.getData());
-	glUniformMatrix4fv(viewMatrixPos, GL_TRUE, 1, viewMatrix.getData());
-	glUniformMatrix4fv(projMatrixPos, GL_TRUE, 1, _projMatrix.getData());
-	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
-	glUniform3fv(cameraPos, 1, _currentPos.getData());
-	glUniform3fv(actorPos, 1, pos.getData());
-	glUniform1i(billboardPos, GL_FALSE);
+		_mvpMatrix = _projMatrix * viewMatrix * modelMatrix;
+
+		glUniformMatrix4fv(modelMatrixPos, GL_TRUE, 1, modelMatrix.getData());
+		glUniformMatrix4fv(viewMatrixPos, GL_TRUE, 1, viewMatrix.getData());
+		glUniformMatrix4fv(projMatrixPos, GL_TRUE, 1, _projMatrix.getData());
+		glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
+		glUniform3fv(cameraPos, 1, _currentPos.getData());
+		glUniform3fv(actorPos, 1, pos.getData());
+		glUniform1i(billboardPos, GL_FALSE);
+	} else {
+		Math::Matrix4 extraMatrix;
+
+		modelMatrix.setPosition(pos);
+		_mvpMatrix = _projMatrix * _viewMatrix * modelMatrix;
+
+		glUniformMatrix4fv(modelMatrixPos, GL_TRUE, 1, modelMatrix.getData());
+		glUniformMatrix4fv(viewMatrixPos, GL_TRUE, 1, _viewMatrix.getData());
+		glUniformMatrix4fv(projMatrixPos, GL_TRUE, 1, _projMatrix.getData());
+		glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, extraMatrix.getData());
+	}
 }
 
 
 void GfxOpenGLS::finishActorDraw() {
-
+	glDisable(GL_DEPTH_TEST);
 }
 
 void GfxOpenGLS::setShadow(Shadow *shadow) {
@@ -385,19 +445,24 @@ void GfxOpenGLS::set3DMode() {
 
 
 void GfxOpenGLS::translateViewpointStart() {
-
+	_matrixStack.push(_matrixStack.top());
 }
 
 void GfxOpenGLS::translateViewpoint(const Math::Vector3d &vec) {
-
+	Math::Matrix4 temp;
+	temp.setPosition(vec);
+	_matrixStack.top() = _matrixStack.top() * temp;
 }
 
-void GfxOpenGLS::rotateViewpoint(const Math::Angle &angle, const Math::Vector3d &axis) {
 
+
+// Taken from glm
+void GfxOpenGLS::rotateViewpoint(const Math::Angle &angle, const Math::Vector3d &axis_) {
+	_matrixStack.top() = _matrixStack.top() * makeRotationMatrix(angle, axis_);
 }
 
 void GfxOpenGLS::translateViewpointFinish() {
-
+	_matrixStack.pop();
 }
 
 
@@ -430,7 +495,23 @@ void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face
 }
 
 void GfxOpenGLS::drawModelFace(const Mesh *mesh, const MeshFace *face) {
+	glEnable(GL_DEPTH_TEST);
+	glAlphaFunc(GL_GREATER, 0.5);
+	glEnable(GL_ALPHA_TEST);
 
+	glBindVertexArray(mesh->_modelVAO);
+	GLint texturedPos = glGetUniformLocation(_actorProgram, "textured");
+	glUniform1i(texturedPos, /* face->_texVertices ? GL_TRUE : */ GL_FALSE);
+
+	GLint extraMatrixPos = glGetUniformLocation(_actorProgram, "extraMatrix");
+//	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, _matrixStack.top().getData());
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
+
+	glDrawElements(GL_TRIANGLES, face->_numVertices, GL_UNSIGNED_INT, 0);
+
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_ALPHA_TEST);
 }
 
 void GfxOpenGLS::drawSprite(const Sprite *sprite) {
@@ -1068,7 +1149,7 @@ void GfxOpenGLS::prepareMovieFrame(Graphics::Surface* frame) {
 		((height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
 	_smushTexIds = new GLuint[_smushNumTex];
 	glGenTextures(_smushNumTex, _smushTexIds);
-	for (int i = 0; i < _smushNumTex; i++) {
+	for (uint32 i = 0; i < _smushNumTex; i++) {
 		glBindTexture(GL_TEXTURE_2D, _smushTexIds[i]);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -1244,6 +1325,10 @@ void GfxOpenGLS::createModel(Mesh *mesh) {
 	glEnableVertexAttribArray(texAttrib);
 	glBindBuffer(GL_ARRAY_BUFFER, texCoordsVBO);
 	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+
+	GLint colAttrib = glGetAttribLocation(_actorProgram, "color");
+	glDisableVertexAttribArray(colAttrib);
+	glVertexAttrib4f(colAttrib, 1.f, 0.f, 1.f, 1.f);
 
 	for (int i = 0; i < mesh->_numFaces; ++i) {
 		MeshFace * face = &mesh->_faces[i];
