@@ -124,7 +124,7 @@ Shader *Shader::fromFiles(const char *vertex, const char *fragment, const char *
 
 void Shader::use() {
 	glUseProgram(_shaderNo);
-	for (uint32_t i = 0; i < _attributes.size(); ++i) {
+	for (uint32 i = 0; i < _attributes.size(); ++i) {
 		Graphics::VertexAttrib &attrib = _attributes[i];
 		if (attrib._enabled) {
 			glEnableVertexAttribArray(i);
@@ -155,20 +155,20 @@ GLuint Shader::createBuffer(GLenum target, GLsizeiptr size, const GLvoid *data, 
 	return vbo;
 }
 
-VertexAttrib &Shader::getAttributeAt(uint32_t idx) {
+VertexAttrib &Shader::getAttributeAt(uint32 idx) {
 	assert(idx < _attributes.size());
 	return _attributes[idx];
 }
 
 VertexAttrib &Shader::getAttribute(const char *attrib) {
-	for (uint32_t i = 0; i < _attributes.size(); ++i)
+	for (uint32 i = 0; i < _attributes.size(); ++i)
 		if (_attributes[i]._name.equals(attrib))
 			return _attributes[i];
 	error("Could not find attribute %s in shader %s", attrib, _name.c_str());
 	return _attributes[0];
 }
 
-void Shader::enableVertexAttribute(const char *attrib, GLuint vbo, GLint size, GLenum type, GLboolean normalized, GLsizei stride, uint32_t offset) {
+void Shader::enableVertexAttribute(const char *attrib, GLuint vbo, GLint size, GLenum type, GLboolean normalized, GLsizei stride, uint32 offset) {
 	VertexAttrib &va = getAttribute(attrib);
 	va._enabled = true;
 	va._vbo = vbo;
