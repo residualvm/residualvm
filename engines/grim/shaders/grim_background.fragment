@@ -7,11 +7,5 @@ uniform bool drawToZ;
 
 void main()
 {
-	if (drawToZ) {
-		outColor = vec4(1.0, 1.0, 1.0, 1.0);
-		gl_FragDepth = texture(tex, Texcoord).r;
-	} else {
-		outColor = texture(tex, Texcoord);
-		gl_FragDepth = gl_DepthRange.far;
-	}
+	outColor = texture(tex, Texcoord);
 }

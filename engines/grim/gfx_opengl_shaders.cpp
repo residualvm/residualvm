@@ -130,6 +130,10 @@ GfxBase *CreateGfxOpenGL() {
 GfxOpenGLS::GfxOpenGLS() {
 	_smushTexId = 0;
 	_matrixStack.push(Math::Matrix4());
+#ifdef USE_GLES2
+	// FIXME: We cannot render depth bitmaps yet.
+	_renderZBitmaps = false;
+#endif
 }
 
 GfxOpenGLS::~GfxOpenGLS() {
@@ -162,6 +166,11 @@ void GfxOpenGLS::setupTexturedQuad() {
 	_smushVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, sizeof(textured_quad), textured_quad, GL_STATIC_DRAW);
 	_smushProgram->enableVertexAttribute("position", _smushVBO, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
 	_smushProgram->enableVertexAttribute("texcoord", _smushVBO, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 2 * sizeof(float));
+
+	if (g_grim->getGameType() == GType_GRIM) {
+		_backgroundProgram->enableVertexAttribute("position", _smushVBO, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+		_backgroundProgram->enableVertexAttribute("texcoord", _smushVBO, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 2 * sizeof(float));
+	}
 }
 
 void GfxOpenGLS::setupTexturedCenteredQuad() {
@@ -665,14 +674,13 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 		glDisable(GL_BLEND);
 	}
 
-	Graphics::Shader * shader = bitmap->_data->_shader;
+	Graphics::Shader *shader = bitmap->_data->_shader;
 	shader->use();
 	if (bitmap->getFormat() == 1) { // Normal image
 		glDisable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
 		shader->setUniform("drawToZ", GL_FALSE);
 	} else { // ZBuffer image
-		return;
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_ALWAYS);
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -680,12 +688,14 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 		shader->setUniform("drawToZ", GL_TRUE);
 	}
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bigQuadEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
 	int cur_tex_idx = bitmap->getNumTex() * (bitmap->getActiveImage() - 1);
 	glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
 	float width = bitmap->getWidth();
 	float height = bitmap->getHeight();
-	shader->setUniform("texcrop", Math::Vector2d(width / nextHigher2(bitmap->getWidth()), height / nextHigher2(bitmap->getHeight())));
+	shader->setUniform("offsetXY", Math::Vector2d(float(dx) / _screenWidth, float(dy) / _screenHeight));
+	shader->setUniform("sizeWH", Math::Vector2d(width / _screenWidth, height / _screenHeight));
+	shader->setUniform("texcrop", Math::Vector2d(width / nextHigher2((int)width), height / nextHigher2((int)height)));
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
 	glDisable(GL_BLEND);
