@@ -49,6 +49,18 @@
 
 namespace Grim {
 
+template<class T>
+static T nextHigher2(T k) {
+	if (k == 0)
+		return 1;
+	--k;
+
+	for (uint i = 1; i < sizeof(T) * 8; i <<= 1)
+		k = k | k >> i;
+
+	return k + 1;
+}
+
 static float textured_quad[] = {
 //	X   , Y   , S   , T
 	0.0f, 0.0f, 0.0f, 0.0f,
@@ -513,11 +525,7 @@ void GfxOpenGLS::destroyMaterial(Texture *material) {
 
 }
 
-#define BITMAP_TEXTURE_SIZE 256
-
 void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
-	GLuint *textures;
-
 	if (bitmap->_format != 1) {
 		for (int pic = 0; pic < bitmap->_numImages; pic++) {
 			uint16 *zbufPtr = reinterpret_cast<uint16 *>(bitmap->getImageData(pic).getRawBuffer());
@@ -529,25 +537,13 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 				}
 				zbufPtr[i] = 0xffff - ((uint32)val) * 0x10000 / 100 / (0x10000 - val);
 			}
-
-			// Flip the zbuffer image to match what GL expects
-			for (int y = 0; y < bitmap->_height / 2; y++) {
-				uint16 *ptr1 = zbufPtr + y * bitmap->_width;
-				uint16 *ptr2 = zbufPtr + (bitmap->_height - 1 - y) * bitmap->_width;
-				for (int x = 0; x < bitmap->_width; x++, ptr1++, ptr2++) {
-					uint16 tmp = *ptr1;
-					*ptr1 = *ptr2;
-					*ptr2 = tmp;
-				}
-			}
 		}
 	}
 
 	bitmap->_hasTransparency = false;
-	bitmap->_numTex = ((bitmap->_width + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
-	                  ((bitmap->_height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
-	bitmap->_texIds = new GLuint[bitmap->_numTex * bitmap->_numImages];
-	textures = (GLuint *)bitmap->_texIds;
+	bitmap->_numTex = 1;
+	GLuint *textures = new GLuint[bitmap->_numTex * bitmap->_numImages];
+	bitmap->_texIds = textures;
 	glGenTextures(bitmap->_numTex * bitmap->_numImages, textures);
 
 	byte *texData = 0;
@@ -563,9 +559,6 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 	}
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
-#ifndef USE_GLES2
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->_width);
-#endif
 
 	for (int pic = 0; pic < bitmap->_numImages; pic++) {
 		if (bitmap->_format == 1 && bitmap->_bpp == 16 && bitmap->_colorFormat != BM_RGB1555) {
@@ -597,34 +590,21 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 			texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
 		}
 
-			for (int i = 0; i < bitmap->_numTex; i++) {
-				glBindTexture(GL_TEXTURE_2D, textures[bitmap->_numTex * pic + i]);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-				glTexImage2D(GL_TEXTURE_2D, 0, format, BITMAP_TEXTURE_SIZE, BITMAP_TEXTURE_SIZE, 0, format, type, NULL);
-			}
+		int actualWidth = nextHigher2(bitmap->_width);
+		int actualHeight = nextHigher2(bitmap->_height);
 
-		int cur_tex_idx = bitmap->_numTex * pic;
+		glBindTexture(GL_TEXTURE_2D, textures[bitmap->_numTex * pic]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, actualWidth, actualHeight, 0, format, type, NULL);
 
-		for (int y = 0; y < bitmap->_height; y += BITMAP_TEXTURE_SIZE) {
-			for (int x = 0; x < bitmap->_width; x += BITMAP_TEXTURE_SIZE) {
-				int width  = (x + BITMAP_TEXTURE_SIZE >= bitmap->_width) ? (bitmap->_width - x) : BITMAP_TEXTURE_SIZE;
-				int height = (y + BITMAP_TEXTURE_SIZE >= bitmap->_height) ? (bitmap->_height - y) : BITMAP_TEXTURE_SIZE;
-				glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type,
-					texOut + (y * bytes * bitmap->_width) + (bytes * x));
-				cur_tex_idx++;
-			}
-		}
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, bitmap->_width, bitmap->_height, format, type, texOut);
 	}
 
-#ifndef USE_GLES2
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#endif
-
-	delete[] texData;
+	if (texData)
+		delete[] texData;
 	bitmap->freeData();
 
 	bitmap->_shader = _backgroundProgram->clone();
@@ -634,6 +614,7 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 		bitmap->_shader->enableVertexAttribute("position", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
 		bitmap->_shader->enableVertexAttribute("texcoord", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 2*sizeof(float));
 	}
+
 }
 
 
@@ -684,30 +665,29 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 		glDisable(GL_BLEND);
 	}
 
-	bitmap->_data->_shader->use();
+	Graphics::Shader * shader = bitmap->_data->_shader;
+	shader->use();
 	if (bitmap->getFormat() == 1) { // Normal image
 		glDisable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
-		_backgroundProgram->setUniform("drawToZ", GL_FALSE);
+		shader->setUniform("drawToZ", GL_FALSE);
 	} else { // ZBuffer image
+		return;
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_ALWAYS);
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_TRUE);
-		_backgroundProgram->setUniform("drawToZ", GL_TRUE);
+		shader->setUniform("drawToZ", GL_TRUE);
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bigQuadEBO);
 	int cur_tex_idx = bitmap->getNumTex() * (bitmap->getActiveImage() - 1);
-	for (int y = dy; y < (dy + bitmap->getHeight()); y += BITMAP_TEXTURE_SIZE) {
-		for (int x = dx; x < (dx + bitmap->getWidth()); x += BITMAP_TEXTURE_SIZE) {
-			glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
-			_backgroundProgram->setUniform("offset", Math::Vector2d(x * _scaleW / _screenWidth, y * _scaleH / _screenHeight));
-			_backgroundProgram->setUniform("sizeWH", Math::Vector2d(BITMAP_TEXTURE_SIZE * _scaleW / _screenWidth, BITMAP_TEXTURE_SIZE * _scaleH / _screenHeight));
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-			cur_tex_idx++;
-		}
-	}
+	glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
+	float width = bitmap->getWidth();
+	float height = bitmap->getHeight();
+	shader->setUniform("texcrop", Math::Vector2d(width / nextHigher2(bitmap->getWidth()), height / nextHigher2(bitmap->getHeight())));
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
 	glDisable(GL_BLEND);
 	if (bitmap->getFormat() == 1) {
 		glDepthMask(GL_TRUE);
@@ -1004,13 +984,15 @@ void GfxOpenGLS::prepareMovieFrame(Graphics::Surface* frame) {
 	}
 
 	// create texture
-	glGenTextures(1, &_smushTexId);
+	if (_smushTexId == 0) {
+		glGenTextures(1, &_smushTexId);
+	}
 	glBindTexture(GL_TEXTURE_2D, _smushTexId);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 512, 0, frame_format, frame_type, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, nextHigher2(width), nextHigher2(height), 0, frame_format, frame_type, NULL);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, frame->format.bytesPerPixel);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, frame_format, frame_type, bitmap);
@@ -1025,7 +1007,7 @@ void GfxOpenGLS::drawMovieFrame(int offsetX, int offsetY) {
 	glDisable(GL_DEPTH_TEST);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
-	_smushProgram->setUniform("texcrop", Math::Vector2d(float(_smushWidth) / 1024.0, float(_smushHeight) / 512.0));
+	_smushProgram->setUniform("texcrop", Math::Vector2d(float(_smushWidth) / nextHigher2(_smushWidth), float(_smushHeight) / nextHigher2(_smushHeight)));
 	_smushProgram->setUniform("swizzle", _smushSwizzle);
 	glBindTexture(GL_TEXTURE_2D, _smushTexId);
 
