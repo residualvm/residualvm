@@ -79,7 +79,7 @@ static float textured_quad_centered[] = {
 
 // taken from glm
 Math::Matrix4 makeLookMatrix(const Math::Vector3d& pos, const Math::Vector3d& interest, const Math::Vector3d& up) {
-	Math::Vector3d f = (pos - interest).getNormalized();
+	Math::Vector3d f = (interest - pos).getNormalized();
 	Math::Vector3d u = up.getNormalized();
 	Math::Vector3d s = Math::Vector3d::crossProduct(f, u).getNormalized();
 	u = Math::Vector3d::crossProduct(s, f);
@@ -94,9 +94,10 @@ Math::Matrix4 makeLookMatrix(const Math::Vector3d& pos, const Math::Vector3d& in
 	look(0,2) = -f.x();
 	look(1,2) = -f.y();
 	look(2,2) = -f.z();
-	look(3,0) = -Math::Vector3d::dotProduct(s, interest);
-	look(3,1) = -Math::Vector3d::dotProduct(u, interest);
-	look(3,2) =  Math::Vector3d::dotProduct(f, interest);
+	look(3,0) = -Math::Vector3d::dotProduct(s, pos);
+	look(3,1) = -Math::Vector3d::dotProduct(u, pos);
+	look(3,2) =  Math::Vector3d::dotProduct(f, pos);
+
 	look.transpose();
 
 	return look;
@@ -112,14 +113,20 @@ Math::Matrix4 makeRotationMatrix(const Math::Angle& angle, Math::Vector3d axis) 
 	rotate(0, 0) = c + temp.x() * axis.x();
 	rotate(0, 1) = 0 + temp.x() * axis.y() + s * axis.z();
 	rotate(0, 2) = 0 + temp.x() * axis.z() - s * axis.y();
+	rotate(0, 3) = 0;
 	rotate(1, 0) = 0 + temp.y() * axis.x() - s * axis.z();
 	rotate(1, 1) = c + temp.y() * axis.y();
 	rotate(1, 2) = 0 + temp.y() * axis.z() + s * axis.x();
+	rotate(1, 3) = 0;
 	rotate(2, 0) = 0 + temp.z() * axis.x() + s * axis.y();
 	rotate(2, 1) = 0 + temp.z() * axis.y() - s * axis.x();
 	rotate(2, 2) = c + temp.z() * axis.z();
+	rotate(2, 3) = 0;
+	rotate(3, 0) = 0;
+	rotate(3, 1) = 0;
+	rotate(3, 2) = 0;
+	rotate(3, 3) = 1;
 
-	rotate.transpose();
 	return rotate;
 }
 
@@ -270,7 +277,7 @@ void GfxOpenGLS::positionCamera(const Math::Vector3d &pos, const Math::Vector3d 
 		_currentPos = pos;
 		_currentQuat = Math::Quaternion(interest.x(), interest.y(), interest.z(), roll);
 	} else {
-		Math::Matrix4 viewMatrix = makeRotationMatrix(Math::Angle(roll), Math::Vector3d(0, 0, -1));
+		Math::Matrix4 viewMatrix = makeRotationMatrix(Math::Angle(roll), Math::Vector3d(0, 0, 1));
 		Math::Vector3d up_vec(0, 0, 1);
 
 		if (pos.x() == interest.x() && pos.y() == interest.y())
@@ -320,6 +327,7 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 	} else {
 		Math::Matrix4 extraMatrix;
 
+		modelMatrix.transpose();
 		modelMatrix.setPosition(pos);
 		_mvpMatrix = _projMatrix * _viewMatrix * modelMatrix;
 
@@ -376,14 +384,13 @@ void GfxOpenGLS::translateViewpointStart() {
 void GfxOpenGLS::translateViewpoint(const Math::Vector3d &vec) {
 	Math::Matrix4 temp;
 	temp.setPosition(vec);
-	_matrixStack.top() = _matrixStack.top() * temp;
+	temp.transpose();
+	_matrixStack.top() = temp * _matrixStack.top();
 }
 
-
-
-// Taken from glm
 void GfxOpenGLS::rotateViewpoint(const Math::Angle &angle, const Math::Vector3d &axis_) {
-	_matrixStack.top() = _matrixStack.top() * makeRotationMatrix(angle, axis_);
+	Math::Matrix4 temp = makeRotationMatrix(angle, axis_) * _matrixStack.top();
+	_matrixStack.top() = temp;
 }
 
 void GfxOpenGLS::translateViewpointFinish() {
