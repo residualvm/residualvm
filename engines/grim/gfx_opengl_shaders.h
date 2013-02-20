@@ -82,6 +82,7 @@ public:
 	virtual void drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face);
 	virtual void drawModelFace(const Mesh *mesh, const MeshFace *face);
 	virtual void drawSprite(const Sprite *sprite);
+	virtual void drawMesh(const Mesh *mesh);
 
 	virtual void enableLights();
 	virtual void disableLights();

@@ -118,7 +118,7 @@ public:
 	Math::Vector3d _normal;
 
 #ifdef USE_OPENGL_SHADERS
-	uint32 _indicesEBO;
+	uint32 _start;
 #endif
 };
 

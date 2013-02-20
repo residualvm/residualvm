@@ -422,15 +422,32 @@ void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+void GfxOpenGLS::drawMesh(const Mesh *mesh) {
+	mesh->_shader->setUniform("extraMatrix", _matrixStack.top());
+
+	Material *curMaterial = NULL;
+	for (int i = 0; i < mesh->_numFaces; i++) {
+		const MeshFace *face = &mesh->_faces[i];
+		if (face->_light == 0 && !isShadowModeActive())
+			disableLights();
+
+		if (curMaterial != face->_material) {
+			curMaterial = face->_material;
+			curMaterial->select();
+		}
+		drawModelFace(mesh, face);
+
+		if (face->_light == 0 && !isShadowModeActive())
+			enableLights();
+	}
+}
+
 void GfxOpenGLS::drawModelFace(const Mesh *mesh, const MeshFace *face) {
 	Graphics::Shader * actorShader = mesh->_shader;
 	actorShader->use();
 	actorShader->setUniform("textured", face->_texVertices ? GL_TRUE : GL_FALSE);
-	actorShader->setUniform("extraMatrix", _matrixStack.top());
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
-
-	glDrawElements(face->_numVertices == 3 ? GL_TRIANGLES : GL_TRIANGLE_FAN, face->_numVertices, GL_UNSIGNED_INT, 0);
+	glDrawArrays(face->_numVertices == 3 ? GL_TRIANGLES : GL_TRIANGLE_FAN, face->_start, face->_numVertices);
 }
 
 void GfxOpenGLS::drawSprite(const Sprite *sprite) {
@@ -1138,21 +1155,37 @@ void GfxOpenGLS::createEMIModel(EMIModel *model) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+struct GrimVertex {
+	GrimVertex(const float *verts, const float *texVerts) {
+		memcpy(_position, verts, 3 * sizeof(float));
+		memcpy(_texcoord, texVerts, 2 * sizeof(float));
+	}
+	float _position[3];
+	float _texcoord[2];
+};
+
 void GfxOpenGLS::createModel(Mesh *mesh) {
-	mesh->_verticesVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 3 * sizeof(float), mesh->_vertices, GL_STREAM_DRAW);
-	mesh->_texCoordsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 2 * sizeof(float), mesh->_textureVerts, GL_STATIC_DRAW);
-//	mesh->_normalsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 3 * sizeof(float), model->_normals, GL_STATIC_DRAW);;
+	Common::Array<GrimVertex> meshInfo;
+	meshInfo.reserve(mesh->_numVertices * 5);
+	for (int i = 0; i < mesh->_numFaces; ++i) {
+		MeshFace * face = &mesh->_faces[i];
+		face->_start = meshInfo.size();
+		for (int j = 0; j < face->_numVertices; ++j) {
+			const float *verts    = &mesh->_vertices[3*face->_vertices[j]];
+			const float *texVerts = &mesh->_textureVerts[2*face->_texVertices[j]];
+			meshInfo.push_back(GrimVertex(verts, texVerts));
+		}
+	}
+
+	GLuint meshInfoVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, meshInfo.size() * sizeof(GrimVertex), &meshInfo[0], GL_STATIC_DRAW);
 
 	Graphics::Shader *shader = _actorProgram->clone();
 	mesh->_shader = shader;
-	shader->enableVertexAttribute("position", mesh->_verticesVBO, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-	shader->enableVertexAttribute("texcoord", mesh->_texCoordsVBO, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+	shader->enableVertexAttribute("position", meshInfoVBO, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+	shader->enableVertexAttribute("texcoord", meshInfoVBO, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 3 * sizeof(float));
 	shader->disableVertexAttribute("color", Math::Vector4d(1.f, 1.f, 1.f, 1.f));
 
-	for (int i = 0; i < mesh->_numFaces; ++i) {
-		MeshFace * face = &mesh->_faces[i];
-		face->_indicesEBO = Graphics::Shader::createBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_numVertices * sizeof(uint32), face->_vertices, GL_STATIC_DRAW);
-	}
+
 }
 
 }
