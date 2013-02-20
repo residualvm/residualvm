@@ -105,6 +105,7 @@ Shader::Shader(const Common::String &name, GLuint vertexShader, GLuint fragmentS
 	glLinkProgram(shaderProgram);
 
 	_shaderNo = shaderProgram;
+	_uniforms = new Common::HashMap<Common::String, GLint>();
 }
 
 Shader *Shader::fromStrings(const Common::String &name, const char *vertex, const char *fragment, const char **attributes) {

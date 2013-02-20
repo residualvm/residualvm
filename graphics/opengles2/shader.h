@@ -64,8 +64,9 @@ struct VertexAttrib {
 };
 
 class Shader {
-public:
+	typedef Common::HashMap<Common::String, GLint> UniformsMap;
 
+public:
 	Shader* clone() {
 		return new Shader(*this);
 	}
@@ -108,8 +109,15 @@ public:
 			glUniform1i(pos, x);
 	}
 
-	GLint getUniformLocation(const char *uniform) {
-		return glGetUniformLocation(_shaderNo, uniform);
+	GLint getUniformLocation(const char *uniform) const {
+		UniformsMap::iterator kv = _uniforms->find(uniform);
+		if (kv == _uniforms->end()) {
+			GLint ret = glGetUniformLocation(_shaderNo, uniform);
+			_uniforms->setVal(uniform, ret);
+			return ret;
+		} else {
+			return kv->_value;
+		}
 	}
 
 	void enableVertexAttribute(const char *attrib, GLuint vbo, GLint size, GLenum type, GLboolean normalized, GLsizei stride, uint32 offset);
@@ -136,6 +144,7 @@ private:
 	Common::String _name;
 
 	Common::Array<VertexAttrib> _attributes;
+	UniformsMap *_uniforms;
 };
 
 }
