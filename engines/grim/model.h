@@ -155,6 +155,9 @@ public:
 	uint32 _verticesVBO;
 	uint32 _texCoordsVBO;
 #endif
+
+private:
+	void sortFaces();
 };
 
 class ModelNode {

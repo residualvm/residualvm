@@ -426,7 +426,7 @@ void GfxOpenGLS::drawMesh(const Mesh *mesh) {
 	mesh->_shader->setUniform("extraMatrix", _matrixStack.top());
 
 	Material *curMaterial = NULL;
-	for (int i = 0; i < mesh->_numFaces; i++) {
+	for (int i = 0; i < mesh->_numFaces;) {
 		const MeshFace *face = &mesh->_faces[i];
 		if (face->_light == 0 && !isShadowModeActive())
 			disableLights();
