@@ -5,6 +5,7 @@ in vec4 color;
 uniform highp mat4 projMatrix;
 uniform highp mat4 extraMatrix;
 uniform highp mat4 mvpMatrix;
+uniform highp vec2 texScale;
 uniform bool textured;
 
 out vec2 Texcoord;
@@ -21,7 +22,7 @@ void main()
 
 	Color = color;
 	if (textured) {
-		Texcoord = texcoord;
+		Texcoord = vec2(0.0, 1.0) + (texcoord / texScale);
 	} else {
 		Texcoord = vec2(0.0, 0.0);
 	}

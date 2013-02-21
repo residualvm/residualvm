@@ -233,6 +233,7 @@ private:
 	GLuint _spriteVBO;
 
 	Common::Stack<Math::Matrix4> _matrixStack;
+	Texture *_selectedTexture;
 };
 }
 #endif
