@@ -1028,17 +1028,17 @@ void GfxOpenGLS::prepareMovieFrame(Graphics::Surface* frame) {
 	int height = frame->h;
 	byte *bitmap = (byte *)frame->pixels;
 
-	GLenum frame_type, frame_format;
+	GLenum frameType, frameFormat;
 
 	switch (frame->format.bytesPerPixel) {
 	case 2:
-		frame_type = GL_UNSIGNED_SHORT_5_6_5;
-		frame_format = GL_RGB;
+		frameType = GL_UNSIGNED_SHORT_5_6_5;
+		frameFormat = GL_RGB;
 		_smushSwizzle = false;
 		break;
 	case 4:
-		frame_type = GL_UNSIGNED_BYTE;
-		frame_format = GL_RGBA;
+		frameType = GL_UNSIGNED_BYTE;
+		frameFormat = GL_RGBA;
 		_smushSwizzle = true;
 		break;
 	default:
@@ -1055,10 +1055,10 @@ void GfxOpenGLS::prepareMovieFrame(Graphics::Surface* frame) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, nextHigher2(width), nextHigher2(height), 0, frame_format, frame_type, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, frameFormat, nextHigher2(width), nextHigher2(height), 0, frameFormat, frameType, NULL);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, frame->format.bytesPerPixel);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, frame_format, frame_type, bitmap);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, frameFormat, frameType, bitmap);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
 	_smushWidth = (int)(width * _scaleW);
@@ -1071,6 +1071,8 @@ void GfxOpenGLS::drawMovieFrame(int offsetX, int offsetY) {
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
 	_smushProgram->setUniform("texcrop", Math::Vector2d(float(_smushWidth) / nextHigher2(_smushWidth), float(_smushHeight) / nextHigher2(_smushHeight)));
+	_smushProgram->setUniform("scale", Math::Vector2d(float(_smushWidth)/ float(_screenWidth), float(_smushHeight) / float(_screenHeight)));
+	_smushProgram->setUniform("offset", Math::Vector2d(float(offsetX) / float(_screenWidth), float(offsetY) / float(_screenHeight)));
 	_smushProgram->setUniform("swizzle", _smushSwizzle);
 	glBindTexture(GL_TEXTURE_2D, _smushTexId);
 
