@@ -342,7 +342,6 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 
 
 void GfxOpenGLS::finishActorDraw() {
-	glDisable(GL_DEPTH_TEST);
 }
 
 void GfxOpenGLS::setShadow(Shadow *shadow) {
@@ -409,7 +408,6 @@ void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 	}
 
-	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
 	model->_shader->use();
@@ -436,6 +434,7 @@ void GfxOpenGLS::drawModelFace(const Mesh *mesh, const MeshFace *face) {
 }
 
 void GfxOpenGLS::drawSprite(const Sprite *sprite) {
+	return;
 	glDisable(GL_DEPTH_TEST);
 
 	_spriteProgram->use();
@@ -451,6 +450,7 @@ void GfxOpenGLS::drawSprite(const Sprite *sprite) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
 }
 
 
@@ -923,6 +923,7 @@ void GfxOpenGLS::drawTextObject(const TextObject *text) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bigQuadEBO);
 	glDrawElements(GL_TRIANGLES, td->characters * 6, GL_UNSIGNED_SHORT, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
 }
 
 void GfxOpenGLS::destroyTextObject(TextObject *text) {
@@ -1085,6 +1086,7 @@ void GfxOpenGLS::drawMovieFrame(int offsetX, int offsetY) {
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
 }
 
 
