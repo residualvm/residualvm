@@ -124,6 +124,11 @@ Shader *Shader::fromFiles(const char *vertex, const char *fragment, const char *
 }
 
 void Shader::use() {
+	static Shader *previousShader = NULL;
+	if (this == previousShader)
+		return;
+	previousShader = this;
+
 	glUseProgram(_shaderNo);
 	for (uint32 i = 0; i < _attributes.size(); ++i) {
 		Graphics::VertexAttrib &attrib = _attributes[i];
