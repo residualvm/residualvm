@@ -2,12 +2,12 @@ in vec3 position;
 in vec2 texcoord;
 in vec4 color;
 
-uniform mat4 modelMatrix;
-uniform mat4 viewMatrix;
-uniform mat4 projMatrix;
-uniform mat4 extraMatrix;
-uniform vec3 cameraPos;
-uniform vec3 actorPos;
+uniform highp mat4 modelMatrix;
+uniform highp mat4 viewMatrix;
+uniform highp mat4 projMatrix;
+uniform highp mat4 extraMatrix;
+uniform highp vec3 cameraPos;
+uniform highp vec3 actorPos;
 uniform bool textured;
 uniform bool isBillboard;
 
@@ -38,8 +38,6 @@ void main()
 	
 	Color = color;
 	if (textured) {
-		if (isBillboard)
-			texcoord.x = 1.0 - texcoord.x;
 		Texcoord = texcoord;
 		if (isBillboard)
 			Texcoord.x = 1.0 - Texcoord.x;

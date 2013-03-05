@@ -26,6 +26,10 @@
 #include "engines/grim/object.h"
 #include "math/matrix4.h"
 
+namespace Graphics {
+class Shader;
+}
+
 namespace Common {
 class SeekableReadStream;
 }
@@ -147,7 +151,7 @@ public:
 	Math::Matrix4 _matrix;
 
 #ifdef USE_OPENGL_SHADERS
-	uint32 _modelVAO;
+	Graphics::Shader *_shader;
 	uint32 _verticesVBO;
 	uint32 _texCoordsVBO;
 #endif

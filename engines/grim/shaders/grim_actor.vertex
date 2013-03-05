@@ -2,10 +2,9 @@ in vec3 position;
 in vec2 texcoord;
 in vec4 color;
 
-uniform mat4 modelMatrix;
-uniform mat4 viewMatrix;
-uniform mat4 projMatrix;
-uniform mat4 extraMatrix;
+uniform highp mat4 projMatrix;
+uniform highp mat4 extraMatrix;
+uniform highp mat4 mvpMatrix;
 uniform bool textured;
 
 out vec2 Texcoord;
@@ -14,7 +13,10 @@ out vec4 Color;
 void main()
 {
 	vec4 pos = vec4(position, 1.0);
-	pos = viewMatrix * modelMatrix * /* extraMatrix * */ pos;
+	pos = mvpMatrix *
+	      extraMatrix *
+	      pos;
+
 	gl_Position = projMatrix * pos;
 
 	Color = color;

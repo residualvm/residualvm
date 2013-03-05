@@ -329,12 +329,14 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 
 		modelMatrix.transpose();
 		modelMatrix.setPosition(pos);
-		_mvpMatrix = _projMatrix * _viewMatrix * modelMatrix;
+		_mvpMatrix = _viewMatrix * modelMatrix;
+		_mvpMatrix.transpose();
 
 		_actorProgram->setUniform("modelMatrix", modelMatrix);
 		_actorProgram->setUniform("projMatrix", _projMatrix);
 		_actorProgram->setUniform("viewMatrix", _viewMatrix);
 		_actorProgram->setUniform("extraMatrix", extraMatrix);
+		_actorProgram->setUniform("mvpMatrix", _mvpMatrix);
 	}
 }
 
@@ -423,20 +425,14 @@ void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face
 }
 
 void GfxOpenGLS::drawModelFace(const Mesh *mesh, const MeshFace *face) {
-	// TODO
-//	glEnable(GL_DEPTH_TEST);
-//
-//	glBindVertexArray(mesh->_modelVAO);
-//	_actorProgram->setUniform("textured", /* face->_texVertices ? GL_TRUE : */ GL_FALSE);
-//
-////	GLint extraMatrixPos = _actorProgram->getUniformLocation("extraMatrix");
-////	glUniformMatrix4fv(extraMatrixPos, GL_TRUE, 1, _matrixStack.top().getData());
-//
-//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
-//
-//	glDrawElements(GL_TRIANGLES, face->_numVertices, GL_UNSIGNED_INT, 0);
-//
-//	glDisable(GL_DEPTH_TEST);
+	Graphics::Shader * actorShader = mesh->_shader;
+	actorShader->use();
+	actorShader->setUniform("textured", face->_texVertices ? GL_TRUE : GL_FALSE);
+	actorShader->setUniform("extraMatrix", _matrixStack.top());
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
+
+	glDrawElements(face->_numVertices == 3 ? GL_TRIANGLES : GL_TRIANGLE_FAN, face->_numVertices, GL_UNSIGNED_INT, 0);
 }
 
 void GfxOpenGLS::drawSprite(const Sprite *sprite) {
@@ -1141,41 +1137,20 @@ void GfxOpenGLS::createEMIModel(EMIModel *model) {
 }
 
 void GfxOpenGLS::createModel(Mesh *mesh) {
-	return;
-	// TODO
-//	GLuint vao;
-//	glGenVertexArrays(1, &vao);
-//	glBindVertexArray(vao);
-//	mesh->_modelVAO = vao;
-//
-//	mesh->_verticesVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 3 * sizeof(float), mesh->_vertices, GL_STREAM_DRAW);
-//
-//	//	mesh->_normalsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, model->_numVertices * 3 * sizeof(float), model->_normals, GL_STATIC_DRAW);;
-//
-//	mesh->_texCoordsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 2 * sizeof(float), mesh->_textureVerts, GL_STATIC_DRAW);
-//
-//	_actorProgram->use();
-//	GLint posAttrib = _actorProgram->getAttribLocation("position");
-//	glEnableVertexAttribArray(posAttrib);
-//	glBindBuffer(GL_ARRAY_BUFFER, mesh->_verticesVBO);
-//	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-//
-//	GLint texAttrib = _actorProgram->getAttribLocation("texcoord");
-//	glEnableVertexAttribArray(texAttrib);
-//	glBindBuffer(GL_ARRAY_BUFFER, mesh->_texCoordsVBO);
-//	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
-//
-//	GLint colAttrib = _actorProgram->getAttribLocation("color");
-//	glDisableVertexAttribArray(colAttrib);
-//	glVertexAttrib4f(colAttrib, 1.f, 0.f, 1.f, 1.f);
-//
-//	for (int i = 0; i < mesh->_numFaces; ++i) {
-//		MeshFace * face = &mesh->_faces[i];
-//		face->_indicesEBO = Graphics::Shader::createBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_numVertices * sizeof(uint32), face->_vertices, GL_STATIC_DRAW);
-//	}
-//
-//	glBindVertexArray(0);
-//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	mesh->_verticesVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 3 * sizeof(float), mesh->_vertices, GL_STREAM_DRAW);
+	mesh->_texCoordsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 2 * sizeof(float), mesh->_textureVerts, GL_STATIC_DRAW);
+//	mesh->_normalsVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, mesh->_numVertices * 3 * sizeof(float), model->_normals, GL_STATIC_DRAW);;
+
+	Graphics::Shader *shader = _actorProgram->clone();
+	mesh->_shader = shader;
+	shader->enableVertexAttribute("position", mesh->_verticesVBO, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+	shader->enableVertexAttribute("texcoord", mesh->_texCoordsVBO, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+	shader->disableVertexAttribute("color", Math::Vector4d(1.f, 1.f, 1.f, 1.f));
+
+	for (int i = 0; i < mesh->_numFaces; ++i) {
+		MeshFace * face = &mesh->_faces[i];
+		face->_indicesEBO = Graphics::Shader::createBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_numVertices * sizeof(uint32), face->_vertices, GL_STATIC_DRAW);
+	}
 }
 
 }

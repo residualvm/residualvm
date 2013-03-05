@@ -10,8 +10,6 @@ void main()
 {
 	outColor = Color;
 	if (textured) {
-		outColor *= texture(tex, Texcoord);
+		outColor.rgb *= texture(tex, Texcoord).rgb;
 	}
-	if (outColor.a == 0.0)
-		discard;
 }
