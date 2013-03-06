@@ -596,8 +596,8 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 	GLint type = GL_UNSIGNED_BYTE;
 	int bytes = 4;
 	if (bitmap->_format != 1) {
-		format = GL_DEPTH_COMPONENT;
-		type = GL_UNSIGNED_SHORT;
+		format = GL_LUMINANCE_ALPHA;
+		type = GL_UNSIGNED_BYTE;
 		bytes = 2;
 	}
 
