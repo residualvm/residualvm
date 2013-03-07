@@ -307,6 +307,7 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
                                 const bool inOverworld, const float alpha) {
 	_actorProgram->use();
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
 
 	Math::Matrix4 modelMatrix = quat.toMatrix();
 
