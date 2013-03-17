@@ -3,17 +3,18 @@ in vec4 Color;
 
 uniform sampler2D tex;
 uniform bool textured;
+uniform float alpha;
 
 OUTPUT
 
 void main()
 {
-	outColor = Color;
+	outColor = vec4(Color.rgb, alpha);
 	if (textured) {
 		vec4 texColor = texture(tex, Texcoord);
 #ifdef GL_ES
 		texColor.rgba = texColor.bgra;
 #endif 
-		outColor *= texColor;
+		outColor.rgb *= texColor.rgb;
 	}
 }

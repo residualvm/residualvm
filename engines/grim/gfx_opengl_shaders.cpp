@@ -325,6 +325,7 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 		_actorProgram->setUniform("cameraPos", _currentPos);
 		_actorProgram->setUniform("actorPos", pos);
 		_actorProgram->setUniform("isBillboard", GL_FALSE);
+		_actorProgram->setUniform1f("alpha", alpha);
 	} else {
 		Math::Matrix4 extraMatrix;
 
@@ -408,8 +409,6 @@ void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face
 		memcpy(bufData, model->_drawVertices, 3 * sizeof(float) * model->_numVertices);
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 	}
-
-	glDisable(GL_BLEND);
 
 	model->_shader->use();
 	model->_shader->setUniform("textured", face->_hasTexture ? GL_TRUE : GL_FALSE);
