@@ -316,14 +316,59 @@ void GrimEngine::handleControls(Common::EventType operation, const Common::KeySt
 	if (!LuaBase::instance()->callback("buttonHandler", objects)) {
 		error("handleControls: invalid keys handler");
 	}
-	//  if (!LuaBase::instance()->callback("axisHandler", objects)) {
-	//      error("handleControls: invalid joystick handler");
-	//  }
 
 	if (operation == Common::EVENT_KEYDOWN)
 		_controlsState[key.keycode] = true;
 	else if (operation == Common::EVENT_KEYUP)
 		_controlsState[key.keycode] = false;
+}
+
+void GrimEngine::handleJoyAxis(byte axis, int16 position) {
+	if (axis > NUM_JOY_AXES)
+		return;
+
+	int keycode = KEYCODE_AXIS_JOY1_X + axis;
+	if (!_controlsEnabled[keycode])
+		return;
+
+	float fpos = (float)position / 32768;
+
+	LuaObjects objects;
+	objects.add(keycode);
+	objects.add(fpos);
+	if (!LuaBase::instance()->callback("axisHandler", objects)) {
+		error("handleJoyAxis: invalid joystick handler");
+	}
+
+	_joyAxisPosition[axis] = fpos;
+}
+
+void GrimEngine::handleJoyButton(Common::EventType operation, byte button) {
+	if (button > NUM_JOY_BUTTONS)
+		return;
+
+	int keycode = KEYCODE_JOY1_B1 + button;
+	if (!_controlsEnabled[keycode])
+		return;
+
+	LuaObjects objects;
+	objects.add(keycode);
+	if (operation == Common::EVENT_JOYBUTTON_DOWN) {
+		objects.add(1);
+		objects.add(1);
+	} else if (operation == Common::EVENT_JOYBUTTON_UP) {
+		objects.addNil();
+		objects.add(0);
+	}
+	objects.add(0);
+	if (!LuaBase::instance()->callback("buttonHandler", objects)) {
+		error("handleControls: invalid keys handler");
+	}
+
+	if (operation == Common::EVENT_JOYBUTTON_DOWN)
+		_controlsState[keycode] = true;
+	else if (operation == Common::EVENT_JOYBUTTON_UP)
+		_controlsState[keycode] = false;
 }
 
 } // end of namespace Grim
