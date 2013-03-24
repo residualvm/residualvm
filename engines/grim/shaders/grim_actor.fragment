@@ -1,8 +1,11 @@
 in vec2 Texcoord;
 in vec4 Color;
+//in float Depth;
 
 uniform sampler2D tex;
+uniform sampler2D texZBuf;
 uniform bool textured;
+uniform vec2 texcropZBuf;
 
 OUTPUT
 
@@ -10,6 +13,21 @@ void main()
 {
 	outColor = Color;
 	if (textured) {
-		outColor *= texture(tex, Texcoord);
+		outColor *= texture(tex, Texcoord);		
+	}
+
+	vec2 screenSize = vec2(640.0, 480.0);
+	vec2 zCoord = vec2((gl_FragCoord.x-0.5)/screenSize.x, 1.0-(gl_FragCoord.y-0.5)/screenSize.y);
+	vec2 sampled = texture(texZBuf, zCoord * texcropZBuf).ra;
+	float sceneZ = sampled.y + sampled.x / 256.0; 		
+	
+	if (false) {
+		sceneZ = gl_FragCoord.y/480.0;//sampled.x;
+		//if (gl_FragCoord.z < sceneZ)
+		//	sceneZ = gl_FragCoord.z;
+		outColor = vec4(sceneZ, sceneZ, sceneZ, 1.0);
+	} else {
+		if (gl_FragCoord.z * 1.0039 > sceneZ)
+			discard;
 	}
 }

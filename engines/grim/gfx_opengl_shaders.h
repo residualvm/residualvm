@@ -220,6 +220,9 @@ private:
 	void setupTexturedQuad();
 	void setupBigEBO();
 
+	void setupZBuffer();
+	void drawDepthBitmap(int x, int y, int w, int h, char *data);
+
 	float _fov;
 	float _nclip;
 	float _fclip;
@@ -234,6 +237,9 @@ private:
 
 	Common::Stack<Math::Matrix4> _matrixStack;
 	Texture *_selectedTexture;
+
+	GLuint _zBufTex;
+	Math::Vector2d _zBufTexCrop;
 };
 }
 #endif

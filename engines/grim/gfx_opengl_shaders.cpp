@@ -142,17 +142,31 @@ GfxOpenGLS::GfxOpenGLS() {
 	_fclip = -1;
 	_selectedTexture = NULL;
 	_emergTexture = 0;
-#ifdef USE_GLES2
-	// FIXME: We cannot render depth bitmaps yet.
-	_renderZBitmaps = false;
-#endif
+	_renderZBitmaps = true;
 }
 
 GfxOpenGLS::~GfxOpenGLS() {
 
 }
 
+void GfxOpenGLS::setupZBuffer() {
+	GLint format = GL_LUMINANCE_ALPHA;
+	GLenum type = GL_UNSIGNED_BYTE;
+	float width = _gameWidth;
+	float height = _gameHeight;
 
+	glGenTextures(1, (GLuint *)&_zBufTex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, _zBufTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, format, nextHigher2((int)width), nextHigher2((int)height), 0, format, type, NULL);
+	glActiveTexture(GL_TEXTURE0);
+
+	_zBufTexCrop = Math::Vector2d(width / nextHigher2((int)width), height / nextHigher2((int)height));
+}
 
 void GfxOpenGLS::setupBigEBO() {
 	// FIXME: Probably way too big...
@@ -237,6 +251,7 @@ byte *GfxOpenGLS::setupScreen(int screenW, int screenH, bool fullscreen) {
 	sprintf(GLDriver, "ResidualVM: %s/%s with shaders", glGetString(GL_VENDOR), glGetString(GL_RENDERER));
 	g_system->setWindowCaption(GLDriver);
 
+	setupZBuffer();
 	setupShaders();
 
 	// Load emergency built-in font
@@ -339,6 +354,9 @@ void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Ma
 		_actorProgram->setUniform("viewMatrix", _viewMatrix);
 		_actorProgram->setUniform("extraMatrix", extraMatrix);
 		_actorProgram->setUniform("mvpMatrix", _mvpMatrix);
+		_actorProgram->setUniform("tex", 0);
+		_actorProgram->setUniform("texZBuf", 1);
+		_actorProgram->setUniform("texcropZBuf", _zBufTexCrop);
 	}
 }
 
@@ -584,80 +602,80 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 	}
 
 	bitmap->_hasTransparency = false;
-	bitmap->_numTex = 1;
-	GLuint *textures = new GLuint[bitmap->_numTex * bitmap->_numImages];
-	bitmap->_texIds = textures;
-	glGenTextures(bitmap->_numTex * bitmap->_numImages, textures);
+	if (bitmap->_format == 1) {
+		bitmap->_numTex = 1;
+		GLuint *textures = new GLuint[bitmap->_numTex * bitmap->_numImages];
+		bitmap->_texIds = textures;
+		glGenTextures(bitmap->_numTex * bitmap->_numImages, textures);
 
-	byte *texData = 0;
-	byte *texOut = 0;
+		byte *texData = 0;
+		byte *texOut = 0;
 
-	GLint format = GL_RGBA;
-	GLint type = GL_UNSIGNED_BYTE;
-	int bytes = 4;
-	if (bitmap->_format != 1) {
-		format = GL_LUMINANCE_ALPHA;
-		type = GL_UNSIGNED_BYTE;
-		bytes = 2;
-	}
+		GLint format = GL_RGBA;
+		GLint type = GL_UNSIGNED_BYTE;
+		int bytes = 4;
 
-	glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
 
-	for (int pic = 0; pic < bitmap->_numImages; pic++) {
-		if (bitmap->_format == 1 && bitmap->_bpp == 16 && bitmap->_colorFormat != BM_RGB1555) {
-			if (texData == 0)
-				texData = new byte[4 * bitmap->_width * bitmap->_height];
-			// Convert data to 32-bit RGBA format
-			byte *texDataPtr = texData;
-			uint16 *bitmapData = reinterpret_cast<uint16 *>(bitmap->getImageData(pic).getRawBuffer());
-			for (int i = 0; i < bitmap->_width * bitmap->_height; i++, texDataPtr += 4, bitmapData++) {
-				uint16 pixel = *bitmapData;
-				int r = pixel >> 11;
-				texDataPtr[0] = (r << 3) | (r >> 2);
-				int g = (pixel >> 5) & 0x3f;
-				texDataPtr[1] = (g << 2) | (g >> 4);
-				int b = pixel & 0x1f;
-				texDataPtr[2] = (b << 3) | (b >> 2);
-				if (pixel == 0xf81f) { // transparent
-					texDataPtr[3] = 0;
-					bitmap->_hasTransparency = true;
-				} else {
-					texDataPtr[3] = 255;
+		for (int pic = 0; pic < bitmap->_numImages; pic++) {
+			if (bitmap->_format == 1 && bitmap->_bpp == 16 && bitmap->_colorFormat != BM_RGB1555) {
+				if (texData == 0)
+					texData = new byte[4 * bitmap->_width * bitmap->_height];
+				// Convert data to 32-bit RGBA format
+				byte *texDataPtr = texData;
+				uint16 *bitmapData = reinterpret_cast<uint16 *>(bitmap->getImageData(pic).getRawBuffer());
+				for (int i = 0; i < bitmap->_width * bitmap->_height; i++, texDataPtr += 4, bitmapData++) {
+					uint16 pixel = *bitmapData;
+					int r = pixel >> 11;
+					texDataPtr[0] = (r << 3) | (r >> 2);
+					int g = (pixel >> 5) & 0x3f;
+					texDataPtr[1] = (g << 2) | (g >> 4);
+					int b = pixel & 0x1f;
+					texDataPtr[2] = (b << 3) | (b >> 2);
+					if (pixel == 0xf81f) { // transparent
+						texDataPtr[3] = 0;
+						bitmap->_hasTransparency = true;
+					} else {
+						texDataPtr[3] = 255;
+					}
 				}
+				texOut = texData;
+			} else if (bitmap->_format == 1 && bitmap->_colorFormat == BM_RGB1555) {
+				bitmap->convertToColorFormat(pic, Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
+				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
+			} else {
+				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
 			}
-			texOut = texData;
-		} else if (bitmap->_format == 1 && bitmap->_colorFormat == BM_RGB1555) {
-			bitmap->convertToColorFormat(pic, Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
-			texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
-		} else {
-			texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
+
+			int actualWidth = nextHigher2(bitmap->_width);
+			int actualHeight = nextHigher2(bitmap->_height);
+
+			glBindTexture(GL_TEXTURE_2D, textures[bitmap->_numTex * pic]);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_TEXTURE_2D, 0, format, actualWidth, actualHeight, 0, format, type, NULL);
+
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, bitmap->_width, bitmap->_height, format, type, texOut);
 		}
 
-		int actualWidth = nextHigher2(bitmap->_width);
-		int actualHeight = nextHigher2(bitmap->_height);
+		if (texData)
+			delete[] texData;
+		bitmap->freeData();
 
-		glBindTexture(GL_TEXTURE_2D, textures[bitmap->_numTex * pic]);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, actualWidth, actualHeight, 0, format, type, NULL);
+		bitmap->_shader = _backgroundProgram->clone();
 
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, bitmap->_width, bitmap->_height, format, type, texOut);
+		if (g_grim->getGameType() == GType_MONKEY4) {
+			GLuint vbo = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, bitmap->_numCoords * 4 * sizeof(float), bitmap->_texc, GL_STATIC_DRAW);
+			bitmap->_shader->enableVertexAttribute("position", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+			bitmap->_shader->enableVertexAttribute("texcoord", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 2*sizeof(float));
+		}
+	} else {
+		bitmap->_numTex = 0;
+		bitmap->_texIds = NULL;
+		bitmap->_shader = NULL;
 	}
-
-	if (texData)
-		delete[] texData;
-	bitmap->freeData();
-
-	bitmap->_shader = _backgroundProgram->clone();
-
-	if (g_grim->getGameType() == GType_MONKEY4) {
-		GLuint vbo = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, bitmap->_numCoords * 4 * sizeof(float), bitmap->_texc, GL_STATIC_DRAW);
-		bitmap->_shader->enableVertexAttribute("position", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-		bitmap->_shader->enableVertexAttribute("texcoord", vbo, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 2*sizeof(float));
-	}
-
 }
 
 
@@ -700,48 +718,62 @@ void GfxOpenGLS::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDr
 		return;
 	}
 
-	GLuint *textures = (GLuint *)bitmap->getTexIds();
-	if (bitmap->getFormat() == 1 && bitmap->getHasTransparency()) {
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	} else {
-		glDisable(GL_BLEND);
-	}
+	if (format == 1) {
+		GLuint *textures = (GLuint *)bitmap->getTexIds();
+		if (bitmap->getFormat() == 1 && bitmap->getHasTransparency()) {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		} else {
+			glDisable(GL_BLEND);
+		}
 
-	Graphics::Shader *shader = bitmap->_data->_shader;
-	shader->use();
-	if (bitmap->getFormat() == 1) { // Normal image
+		Graphics::Shader *shader = bitmap->_data->_shader;
+		shader->use();
 		glDisable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
-		shader->setUniform("drawToZ", GL_FALSE);
-	} else { // ZBuffer image
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_ALWAYS);
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDepthMask(GL_TRUE);
-		shader->setUniform("drawToZ", GL_TRUE);
-	}
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
-	int cur_tex_idx = bitmap->getNumTex() * (bitmap->getActiveImage() - 1);
-	glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
-	float width = bitmap->getWidth();
-	float height = bitmap->getHeight();
-	shader->setUniform("offsetXY", Math::Vector2d(float(dx) / _screenWidth, float(dy) / _screenHeight));
-	shader->setUniform("sizeWH", Math::Vector2d(width / _screenWidth, height / _screenHeight));
-	shader->setUniform("texcrop", Math::Vector2d(width / nextHigher2((int)width), height / nextHigher2((int)height)));
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEBO);
+		int cur_tex_idx = bitmap->getNumTex() * (bitmap->getActiveImage() - 1);
+		glBindTexture(GL_TEXTURE_2D, textures[cur_tex_idx]);
+		float width = bitmap->getWidth();
+		float height = bitmap->getHeight();
+		shader->setUniform("offsetXY", Math::Vector2d(float(dx) / _screenWidth, float(dy) / _screenHeight));
+		shader->setUniform("sizeWH", Math::Vector2d(width / _screenWidth, height / _screenHeight));
+		shader->setUniform("texcrop", Math::Vector2d(width / nextHigher2((int)width), height / nextHigher2((int)height)));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
-	glDisable(GL_BLEND);
-	if (bitmap->getFormat() == 1) {
+		glDisable(GL_BLEND);
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 	} else {
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glDepthFunc(GL_LESS);
+		// Only draw the manual zbuffer when enabled
+		if (bitmap->getActiveImage() - 1 < bitmap->getNumImages()) {
+			drawDepthBitmap(dx, dy, bitmap->getWidth(), bitmap->getHeight(), (char *)bitmap->getData(bitmap->getActiveImage() - 1).getRawBuffer());
+		} else {
+			warning("zbuffer image has index out of bounds! %d/%d", bitmap->getActiveImage(), bitmap->getNumImages());
+		}
+		return;
 	}
 }
 
+void GfxOpenGLS::drawDepthBitmap(int x, int y, int w, int h, char *data) {
+	//if (num != 0) {
+	//	warning("Animation not handled yet in GL texture path");
+	//}
+
+	if (y + h == 480) {
+		// y = _screenHeight - 1;
+	} else {
+		// y = y + h;
+	}
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, _zBufTex);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	glActiveTexture(GL_TEXTURE0);
+}
 
 void GfxOpenGLS::destroyBitmap(BitmapData *bitmap) {
 	GLuint *textures = (GLuint *)bitmap->_texIds;
@@ -754,6 +786,10 @@ void GfxOpenGLS::destroyBitmap(BitmapData *bitmap) {
 		glDeleteBuffers(1, &bitmap->_shader->getAttributeAt(0)._vbo);
 	}
 	delete bitmap->_shader;
+
+	if (bitmap->_format != 1) {
+		bitmap->freeData();
+	}
 }
 
 struct FontUserData {
