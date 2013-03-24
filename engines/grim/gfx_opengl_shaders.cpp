@@ -1065,7 +1065,7 @@ void GfxOpenGLS::drawEmergString(int x, int y, const char *text, const Color &fg
 		int blockrow = *text / 16;
 		_emergProgram->setUniform("offsetXY", Math::Vector2d(float(x) / _screenWidth, float(y) / _screenHeight));
 		_emergProgram->setUniform("texOffsetXY", Math::Vector2d(float(blockcol * 8) / 128, float(blockrow * 16) / 128));
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	}
 }
 
