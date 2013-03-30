@@ -1,6 +1,7 @@
 in vec3 position;
 in vec2 texcoord;
 in vec4 color;
+in vec3 normal;
 
 uniform highp mat4 projMatrix;
 uniform highp mat4 extraMatrix;
@@ -10,6 +11,7 @@ uniform bool textured;
 
 out vec2 Texcoord;
 out vec4 Color;
+out vec3 Normal;
 
 void main()
 {
@@ -21,6 +23,7 @@ void main()
 	gl_Position = projMatrix * pos;
 
 	Color = color;
+	Normal = normal;
 	if (textured) {
 		Texcoord = vec2(0.0, 1.0) + (texcoord / texScale);
 	} else {

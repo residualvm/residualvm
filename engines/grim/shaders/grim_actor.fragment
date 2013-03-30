@@ -1,6 +1,6 @@
 in vec2 Texcoord;
 in vec4 Color;
-//in float Depth;
+in vec3 Normal;
 
 uniform sampler2D tex;
 uniform sampler2D texZBuf;

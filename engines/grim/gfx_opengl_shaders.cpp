@@ -218,7 +218,7 @@ void GfxOpenGLS::setupShaders() {
 	_textProgram = Graphics::Shader::fromFiles("text", commonAttributes);
 	_emergProgram = Graphics::Shader::fromFiles("emerg", commonAttributes);
 
-	static const char* actorAttributes[] = {"position", "texcoord", "color", NULL};
+	static const char* actorAttributes[] = {"position", "texcoord", "color", "normal", NULL};
 	_actorProgram = Graphics::Shader::fromFiles(isEMI ? "emi_actor" : "grim_actor", actorAttributes);
 	_spriteProgram = _actorProgram->clone();
 
@@ -1251,12 +1251,14 @@ void GfxOpenGLS::createEMIModel(EMIModel *model) {
 }
 
 struct GrimVertex {
-	GrimVertex(const float *verts, const float *texVerts) {
+	GrimVertex(const float *verts, const float *texVerts, const float *normals) {
 		memcpy(_position, verts, 3 * sizeof(float));
 		memcpy(_texcoord, texVerts, 2 * sizeof(float));
+		memcpy(_normal, normals, 3 * sizeof(float));
 	}
 	float _position[3];
 	float _texcoord[2];
+	float _normal[3];
 };
 
 static float zero_texVerts[] = { 0.0, 0.0 };
@@ -1266,7 +1268,7 @@ void GfxOpenGLS::createModel(Mesh *mesh) {
 	Common::Array<GrimVertex> meshInfo;
 	meshInfo.reserve(mesh->_numVertices * 5);
 	for (int i = 0; i < mesh->_numFaces; ++i) {
-		MeshFace * face = &mesh->_faces[i];
+		MeshFace *face = &mesh->_faces[i];
 		face->_start = meshInfo.size();
 
 		if (face->_numVertices < 3)
@@ -1275,10 +1277,12 @@ void GfxOpenGLS::createModel(Mesh *mesh) {
 #define VERT(j) (&mesh->_vertices[3*face->_vertices[j]])
 #define TEXVERT(j) (face->_texVertices ? &mesh->_textureVerts[2*face->_texVertices[j]] : zero_texVerts)
 
+		const float *normal = face->_normal.getData();
+
 		for (int j = 2; j < face->_numVertices; ++j) {
-			meshInfo.push_back(GrimVertex(VERT(0), TEXVERT(0)));
-			meshInfo.push_back(GrimVertex(VERT(j-1), TEXVERT(j-1)));
-			meshInfo.push_back(GrimVertex(VERT(j), TEXVERT(j)));
+			meshInfo.push_back(GrimVertex(VERT(0), TEXVERT(0), normal));
+			meshInfo.push_back(GrimVertex(VERT(j-1), TEXVERT(j-1), normal));
+			meshInfo.push_back(GrimVertex(VERT(j), TEXVERT(j), normal));
 		}
 	}
 
@@ -1294,6 +1298,7 @@ void GfxOpenGLS::createModel(Mesh *mesh) {
 	shader->enableVertexAttribute("position", meshInfoVBO, 3, GL_FLOAT, GL_FALSE, sizeof(GrimVertex), 0);
 	shader->enableVertexAttribute("texcoord", meshInfoVBO, 2, GL_FLOAT, GL_FALSE, sizeof(GrimVertex), 3 * sizeof(float));
 	shader->disableVertexAttribute("color", Math::Vector4d(1.f, 1.f, 1.f, 1.f));
+	shader->enableVertexAttribute("normal", meshInfoVBO, 3, GL_FLOAT, GL_FALSE, sizeof(GrimVertex), 5 * sizeof(float));
 }
 
 #undef VERT
