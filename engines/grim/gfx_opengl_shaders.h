@@ -203,6 +203,7 @@ protected:
 
 private:
 	float _alpha;
+	uint32 _maxLights;
 	GLuint _emergTexture;
 	Graphics::Shader* _emergProgram;
 
@@ -240,6 +241,14 @@ private:
 
 	GLuint _zBufTex;
 	Math::Vector2d _zBufTexCrop;
+
+	struct Light {
+		Math::Vector4d _position;
+		Math::Vector4d _direction;
+		Math::Vector4d _color;
+	};
+
+	Light *_lights;
 };
 }
 #endif
