@@ -41,6 +41,8 @@ void main()
 
 	vec3 light = vec3(0.0, 0.0, 0.0);
 	for (int i = 0; i < maxLights; ++i) {
+		if (lights[i]._color.w == 0.0)
+			break;
 		vec3 faceToLight = normalize(lights[i]._position - pos).xyz;
 		if (lights[i]._position.w == 1.0) {
 			float incidence = dot(normal_eye, faceToLight);

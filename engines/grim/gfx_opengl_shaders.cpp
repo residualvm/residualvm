@@ -531,6 +531,12 @@ void GfxOpenGLS::setupLight(Grim::Light *light, int lightId) {
 		return;
 	}
 
+	// Disable previous lights.
+	if (lightId == 0) {
+		for (uint32 id = 0; id < _maxLights; ++id)
+			_lights[lightId]._color.w() = 0.0;
+	}
+
 	Math::Vector4d &lightColor = _lights[lightId]._color;
 	Math::Vector4d &lightPos   = _lights[lightId]._position;
 	Math::Vector4d &lightDir   = _lights[lightId]._direction;
