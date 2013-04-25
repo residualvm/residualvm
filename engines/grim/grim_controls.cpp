@@ -331,16 +331,24 @@ void GrimEngine::handleJoyAxis(byte axis, int16 position) {
 	if (!_controlsEnabled[keycode])
 		return;
 
-	float fpos = (float)position / 32768;
-
-	LuaObjects objects;
-	objects.add(keycode);
-	objects.add(fpos);
-	if (!LuaBase::instance()->callback("axisHandler", objects)) {
-		error("handleJoyAxis: invalid joystick handler");
+	float fpos;
+	if (position < Common::JOYAXIS_MIN / 2) {
+		fpos = -1;
+	} else if (position > Common::JOYAXIS_MAX / 2) {
+		fpos = 1;
+	} else {
+		fpos = 0;
 	}
 
-	_joyAxisPosition[axis] = fpos;
+	if (abs(fpos - _joyAxisPosition[axis]) > 0.1) {
+		LuaObjects objects;
+		objects.add(keycode);
+		objects.add(fpos);
+		if (!LuaBase::instance()->callback("axisHandler", objects)) {
+			error("handleJoyAxis: invalid joystick handler");
+		}
+		_joyAxisPosition[axis] = fpos;
+	}
 }
 
 void GrimEngine::handleJoyButton(Common::EventType operation, byte button) {
