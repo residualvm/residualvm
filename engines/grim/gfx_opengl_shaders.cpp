@@ -1135,7 +1135,7 @@ void GfxOpenGLS::loadEmergFont() {
 		int blockcol = c & 0xf;
 		for (int row = 0; row < 13; ++row) {
 			int base = 128 * (16 * blockrow + row) + 8 * blockcol;
-			uint8_t val = Font::emerFont[c-32][row];
+			uint8 val = Font::emerFont[c-32][row];
 			atlas[base+0] = (val & 0x80) ? 255 : 0;
 			atlas[base+1] = (val & 0x40) ? 255 : 0;
 			atlas[base+2] = (val & 0x20) ? 255 : 0;
