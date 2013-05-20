@@ -91,6 +91,8 @@ MODULE_OBJS := \
 	font.o \
 	gfx_base.o \
 	gfx_tinygl.o \
+	gfx_opengl.o \
+	gfx_opengl_shaders.o \
 	grim.o \
 	grim_controls.o \
 	inputdialog.o \
@@ -127,14 +129,6 @@ MODULE_OBJS := \
 ifdef USE_ARM_SMUSH_ASM
 MODULE_OBJS += \
 	movie/codecs/blocky8ARM.o
-endif
-
-ifdef USE_OPENGL_SHADERS
-MODULE_OBJS += \
-	gfx_opengl_shaders.o
-else
-MODULE_OBJS += \
-	gfx_opengl.o
 endif
 
 # This module can be built as a plugin

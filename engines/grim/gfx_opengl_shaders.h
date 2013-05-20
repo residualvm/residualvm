@@ -24,8 +24,11 @@
 #define GRIM_GFX_OPENGL_SHADERS_H
 
 #include "engines/grim/gfx_base.h"
-#include "graphics/opengles2/shader.h"
 #include "common/stack.h"
+
+#ifdef USE_OPENGL_SHADERS
+
+#include "graphics/opengles2/shader.h"
 
 namespace Grim {
 
@@ -251,4 +254,7 @@ private:
 	Light *_lights;
 };
 }
+
+#endif
+
 #endif

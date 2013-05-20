@@ -47,6 +47,8 @@
 #include "engines/grim/primitives.h"
 #include "engines/grim/set.h"
 
+#ifdef USE_OPENGL_SHADERS
+
 namespace Grim {
 
 template<class T>
@@ -1364,3 +1366,5 @@ void GfxOpenGLS::createModel(Mesh *mesh) {
 
 
 }
+
+#endif

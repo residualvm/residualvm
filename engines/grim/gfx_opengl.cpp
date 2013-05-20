@@ -63,9 +63,11 @@ PFNGLPROGRAMLOCALPARAMETER4FARBPROC glProgramLocalParameter4fARB;
 
 namespace Grim {
 
+#ifndef USE_OPENGL_SHADERS
 GfxBase *CreateGfxOpenGL() {
 	return new GfxOpenGL();
 }
+#endif
 
 // Simple ARB fragment program that writes the value from a texture to the Z-buffer.
 static char fragSrc[] =
