@@ -439,16 +439,14 @@ void GfxOpenGLS::translateViewpointFinish() {
 	_matrixStack.pop();
 }
 
+void GfxOpenGLS::updateEMIModel(const EMIModel* model) {
+	glBindBuffer(GL_ARRAY_BUFFER, model->_verticesVBO);
+	void * bufData = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	memcpy(bufData, model->_drawVertices, 3 * sizeof(float) * model->_numVertices);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+}
 
 void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face) {
-	if (model->_dirtySkeleton) {
-		model->_dirtySkeleton = false;
-		glBindBuffer(GL_ARRAY_BUFFER, model->_verticesVBO);
-		void * bufData = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-		memcpy(bufData, model->_drawVertices, 3 * sizeof(float) * model->_numVertices);
-		glUnmapBuffer(GL_ARRAY_BUFFER);
-	}
-
 	model->_shader->use();
 	model->_shader->setUniform("textured", face->_hasTexture ? GL_TRUE : GL_FALSE);
 

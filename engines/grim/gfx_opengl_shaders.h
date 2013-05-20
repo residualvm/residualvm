@@ -197,6 +197,7 @@ public:
 	virtual void createSpecialtyTextures();
 
 	virtual void createEMIModel(EMIModel *model);
+	virtual void updateEMIModel(const EMIModel *model);
 	virtual void createModel(Mesh *mesh);
 
 protected:

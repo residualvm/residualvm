@@ -121,7 +121,6 @@ public:
 	uint32 _colorMapVBO;
 	uint32 _normalsVBO;
 	uint32 _verticesVBO;
-	mutable bool _dirtySkeleton;
 #endif
 
 public:
