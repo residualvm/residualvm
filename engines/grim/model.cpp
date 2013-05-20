@@ -577,7 +577,7 @@ void Mesh::sortFaces() {
 		return;
 
 	MeshFace *newFaces = new MeshFace[_numFaces];
-	int *newMaterialid = new int[_numFaces];
+	int *newMaterialId = new int[_numFaces];
 	bool *copied = new bool[_numFaces];
 	for (int i = 0; i < _numFaces; ++i)
 		copied[i] = false;
@@ -590,7 +590,7 @@ void Mesh::sortFaces() {
 			if (_faces[cur]._material == _faces[other]._material && !copied[other]) {
 				copied[other] = true;
 				copyMeshFace(&newFaces[writeIdx], &_faces[other]);
-				newMaterialid[writeIdx] = _materialid[other];
+				newMaterialId[writeIdx] = _materialid[other];
 				writeIdx++;
 			}
 		}
@@ -599,7 +599,7 @@ void Mesh::sortFaces() {
 	delete[] _faces;
 	_faces = newFaces;
 	delete[] _materialid;
-	_materialid = newMaterialid;
+	_materialid = newMaterialId;
 	delete[] copied;
 }
 

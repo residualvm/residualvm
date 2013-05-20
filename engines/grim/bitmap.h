@@ -124,7 +124,7 @@ public:
 // private:
 	Graphics::PixelBuffer *_data;
 #ifdef USE_OPENGL_SHADERS
-	Graphics::Shader* _shader;
+	Graphics::Shader *_shader;
 #endif
 };
 
