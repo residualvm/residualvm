@@ -238,6 +238,7 @@ void EMIModel::prepareForRender() {
 		int animIndex = _vertexBoneInfo[_vertexBone[i]];
 		_skeleton->_joints[animIndex]._finalMatrix.transform(_drawVertices + i, true);
 	}
+	g_driver->updateEMIModel(this);
 }
 
 void EMIModel::prepareTextures() {
@@ -253,8 +254,6 @@ void EMIModel::prepareTextures() {
 
 void EMIModel::draw() {
 	prepareForRender();
-	// We will need to add a call to the skeleton, to get the modified vertices, but for now,
-	// I'll be happy with just static drawing
 	for(uint32 i = 0; i < _numFaces; i++) {
 		setTex(_faces[i]._texID);
 		g_driver->drawEMIModelFace(this, &_faces[i]);
@@ -288,6 +287,7 @@ EMIModel::EMIModel(const Common::String &filename, Common::SeekableReadStream *d
 	_boneNames = NULL;
 
 	loadMesh(data);
+	g_driver->createEMIModel(this);
 }
 
 EMIModel::~EMIModel() {

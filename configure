@@ -125,6 +125,7 @@ _faad=no
 _fluidsynth=no
 _opengl=auto
 _opengles=no
+_opengl_shaders=no
 _readline=auto
 _freetype2=auto
 _taskbar=yes
@@ -904,6 +905,7 @@ Optional Libraries:
   --disable-mpeg2          enable mpeg2 codec for cutscenes [autodetect]
 
   --disable-opengl         disable OpenGL (ES) support [autodetect]
+  --enable-opengl-shaders  enable use of modern OpenGL with shaders
 
   --with-png-prefix=DIR    Prefix where libpng is installed (optional)
   --disable-png            disable PNG decoder [autodetect]
@@ -1003,6 +1005,8 @@ for ac_option in $@; do
 	--disable-libunity)       _libunity=no    ;;
 	--enable-opengl)          _opengl=yes     ;;
 	--disable-opengl)         _opengl=no      ;;
+	--enable-opengl-shaders)  _opengl_shaders=yes     ;;
+	--disable-opengl-shaders) _opengl_shaders=no      ;;
 	--enable-bink)            _bink=yes       ;;
 	--disable-bink)           _bink=no        ;;
 	--enable-safedisc)        _safedisc=yes   ;;
@@ -3636,6 +3640,7 @@ echo "$_freetype2"
 
 define_in_config_if_yes "$_freetype2" "USE_FREETYPE2"
 
+
 #
 # Check for OpenGL (ES)
 #
@@ -3723,6 +3728,12 @@ EOF
 	if test "$_opengl" = yes ; then
 		LIBS="$LIBS $OPENGL_LIBS"
 		INCLUDES="$INCLUDES $OPENGL_CFLAGS"
+		if test "$_opengl_shaders" = yes ; then
+			LIBS="$LIBS `pkg-config --libs glew`"
+			INCLUDES="$INCLUDES `pkg-config --cflags glew`"
+		fi
+	else
+		_opengl_shaders="no"
 	fi
 fi
 
@@ -3742,6 +3753,7 @@ fi
 
 define_in_config_if_yes "$_opengl" "USE_OPENGL"
 define_in_config_if_yes "$_opengles" "USE_GLES"
+define_in_config_if_yes "$_opengl_shaders" "USE_OPENGL_SHADERS"
 
 
 #

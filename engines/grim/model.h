@@ -26,6 +26,10 @@
 #include "engines/grim/object.h"
 #include "math/matrix4.h"
 
+namespace Graphics {
+class Shader;
+}
+
 namespace Common {
 class SeekableReadStream;
 }
@@ -102,7 +106,7 @@ public:
 class MeshFace {
 public:
 	int loadBinary(Common::SeekableReadStream *data, Material *materials[]);
-	void draw(float *vertices, float *vertNormals, float *textureVerts) const;
+	void draw(const Mesh *mesh) const;
 	void changeMaterial(Material *material);
 	~MeshFace();
 
@@ -112,6 +116,10 @@ public:
 	int _numVertices;
 	int *_vertices, *_texVertices;
 	Math::Vector3d _normal;
+
+#ifdef USE_OPENGL_SHADERS
+	uint32 _start;
+#endif
 };
 
 class Mesh {
@@ -141,6 +149,15 @@ public:
 	int _numFaces;
 	MeshFace *_faces;
 	Math::Matrix4 _matrix;
+
+#ifdef USE_OPENGL_SHADERS
+	Graphics::Shader *_shader;
+	uint32 _verticesVBO;
+	uint32 _texCoordsVBO;
+#endif
+
+private:
+	void sortFaces();
 };
 
 class ModelNode {
