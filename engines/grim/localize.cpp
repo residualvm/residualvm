@@ -83,9 +83,15 @@ Localizer::Localizer() {
 
 	char *nextline;
 	Common::String last_entry;
-	for (char *line = data + 4; line != NULL && *line != '\0' && *line != '\r'; line = nextline + 1) {
+        //EMI script.tab ends with \0x1A\t\0x1A and has an empty line (line 37)
+	for (char *line = data + 4; line != NULL && *line != '\0'; line = nextline + 1) {
+            if(filename == "grim.tab" && *line == '\r')
+                break;
+            if(filename == "script.tab" && strcmp(line,"\x1A\t\x1A") == 0)
+                break;
+            
 		nextline = strchr(line, '\n');
-		assert(nextline);
+                assert(nextline);
 
 		char *tab = strchr(line, '\t');
 		assert(tab);
@@ -97,7 +103,7 @@ Localizer::Localizer() {
 			_entries[last_entry] += cont;
 		} else
 			_entries[last_entry = Common::String(line, tab - line)] = Common::String(tab + 1, (nextline - tab - 2));
-	}
+        }
 	delete[] data;
 }
 
