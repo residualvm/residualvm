@@ -282,12 +282,12 @@ void EMISound::pushStateToStack() {
 }
 
 void EMISound::popStateFromStack() {
-	if (_music) {
-		delete _music;
-		_music = _stateStack.pop();
-		if (_music)
-			_music->pause();
-	}
+    //even pop state from stack if music isn't set
+    if (_music) delete _music;
+
+    _music = _stateStack.pop();
+    if(_music)
+        _music->pause();
 }
 
 void EMISound::flushStack() {

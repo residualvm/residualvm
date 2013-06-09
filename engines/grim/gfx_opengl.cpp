@@ -532,11 +532,15 @@ void GfxOpenGL::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face)
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_ALPHA_TEST);
 	glDisable(GL_LIGHTING);
+
+    //Transparency-Support
+    glEnable(GL_BLEND);
+
 	if (face->_hasTexture)
 		glEnable(GL_TEXTURE_2D);
 	else
 		glDisable(GL_TEXTURE_2D);
-
+    
 	float dim = 1.0f - _dimLevel;
 	glBegin(GL_TRIANGLES);
 	for (uint j = 0; j < face->_faceLength * 3; j++) {
@@ -580,6 +584,7 @@ void GfxOpenGL::drawModelFace(const MeshFace *face, float *vertices, float *vert
 	glEnd();
 	// Done with transparency-capable objects
 	glDisable(GL_ALPHA_TEST);
+    glDisable(GL_BLEND);
 }
 
 void GfxOpenGL::drawSprite(const Sprite *sprite) {
@@ -806,6 +811,25 @@ void GfxOpenGL::createBitmap(BitmapData *bitmap) {
 				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
 			} else {
 				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
+                            
+                //add transparency support
+                if(bitmap->_format == 1 && bitmap->_bpp == 32 && bitmap->_colorFormat == BM_RGBA)
+                {
+                    byte *texDataPtr = texOut;
+                    
+                    for(int i = 0; i < bitmap->_width * bitmap->_height; i++, texDataPtr += sizeof(uint32))
+                    {
+                        uint32 *pixel = (uint32*)texDataPtr;
+                        if(*pixel == 0xff00ff)
+                        {
+                            texDataPtr[3] = 0;
+                            bitmap->_hasTransparency = true;
+                        } else {
+                            texDataPtr[3] = 255;
+                        }
+
+                    }
+                }
 			}
 
 			for (int i = 0; i < bitmap->_numTex; i++) {
@@ -857,13 +881,19 @@ void GfxOpenGL::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDra
 
 		glDisable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
+        
+       //Add transparency support
+        if (bitmap->getFormat() == 1 && bitmap->getHasTransparency()) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
 
 		glColor3f(1.0f - _dimLevel, 1.0f - _dimLevel, 1.0f  - _dimLevel);
 
 		BitmapData *data = bitmap->_data;
 		GLuint *textures = (GLuint *)bitmap->getTexIds();
 		float *texc = data->_texc;
-
+        
 		int curLayer, frontLayer;
 		if (initialDraw) {
 			curLayer = frontLayer = data->_numLayers - 1;
@@ -871,16 +901,16 @@ void GfxOpenGL::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDra
 			curLayer = data->_numLayers - 2;
 			frontLayer = 0;
 		}
-
+        
 		while (frontLayer <= curLayer) {
 			uint32 offset = data->_layers[curLayer]._offset;
 			for (uint32 i = offset; i < offset + data->_layers[curLayer]._numImages; ++i) {
 				glBindTexture(GL_TEXTURE_2D, textures[data->_verts[i]._texid]);
-				glBegin(GL_QUADS);
+				glBegin(GL_QUADS);           
 				uint32 ntex = data->_verts[i]._pos * 4;
 				for (uint32 x = 0; x < data->_verts[i]._verts; ++x) {
 					glTexCoord2f(texc[ntex + 2], texc[ntex + 3]);
-					glVertex2f(texc[ntex + 0], texc[ntex + 1]);
+					glVertex2f(texc[ntex + 0], texc[ntex + 1]);   
 					ntex += 4;
 				}
 				glEnd();
@@ -892,6 +922,7 @@ void GfxOpenGL::drawBitmap(const Bitmap *bitmap, int dx, int dy, bool initialDra
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_LIGHTING);
+        glDisable(GL_BLEND);
 
 		glPopMatrix();
 		glMatrixMode(GL_MODELVIEW);
@@ -1213,8 +1244,16 @@ void GfxOpenGL::createMaterial(Texture *material, const char *data, const CMap *
 
 	GLuint *textures = (GLuint *)material->_texture;
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        
+        //Remove darkened lines in EMI intro
+        if(g_grim->getGameType() == GType_MONKEY4)
+        {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        }
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, material->_width, material->_height, 0, format, GL_UNSIGNED_BYTE, texdata);
