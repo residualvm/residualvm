@@ -584,7 +584,6 @@ void GfxOpenGL::drawModelFace(const MeshFace *face, float *vertices, float *vert
 	glEnd();
 	// Done with transparency-capable objects
 	glDisable(GL_ALPHA_TEST);
-	glDisable(GL_BLEND);
 }
 
 void GfxOpenGL::drawSprite(const Sprite *sprite) {
