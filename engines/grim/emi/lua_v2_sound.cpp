@@ -30,6 +30,7 @@
 #include "engines/grim/emi/poolsound.h"
 #include "engines/grim/lua/lua.h"
 
+#include "engines/grim/debug.h"
 #include "engines/grim/sound.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/resource.h"
@@ -48,7 +49,7 @@ void Lua_V2::ImGetMillisecondPosition() {
 		// Currently a bit of guesswork, and probably wrong, as the stateId
 		// is ignored by emisound (which only has one music-track now).
 		uint32 msPos = g_sound->getMsPos(sound);
-		warning("Lua_V2::ImGetMillisecondPosition: sound: %d ms: %d", sound, msPos);
+		Debug::debug(Debug::EMISound | Debug::Scripts, "Lua_V2::ImGetMillisecondPosition: sound: %d ms: %d", sound, msPos);
 		lua_pushnumber(msPos);
 	}
 }
@@ -90,7 +91,7 @@ void Lua_V2::SetReverb() {
 	if (lua_isnumber(dampingObj))
 		damping = lua_getnumber(dampingObj);
 
-	warning("Lua_V2::SetReverb, eax: %d, decay: %f, mix: %f, predelay: %f, damping: %f", param, decay, mix, predelay, damping);
+	Debug::debug(Debug::EMISound | Debug::Scripts,"Lua_V2::SetReverb, eax: %d, decay: %f, mix: %f, predelay: %f, damping: %f", param, decay, mix, predelay, damping);
 	// FIXME: func(param, decay, mix, predelay, damping);
 }
 
@@ -101,7 +102,7 @@ void Lua_V2::ImSetState() {
 
 	int state = (int)lua_getnumber(stateObj);
 	g_imuseState = state;
-	warning("Lua_V2::ImSetState: stub, state: %d", state);
+	Debug::debug(Debug::EMISound | Debug::Scripts,"Lua_V2::ImSetState: stub, state: %d", state);
 }
 
 void Lua_V2::ImStateHasEnded() {
@@ -114,7 +115,7 @@ void Lua_V2::ImStateHasEnded() {
 	// FIXME: Make sure this logic is correct.
 	pushbool(g_imuseState != state);
 
-	warning("Lua_V2::ImStateHasEnded: state %d.", state);
+	Debug::debug(Debug::EMISound | Debug::Scripts,"Lua_V2::ImStateHasEnded: state %d.", state);
 }
 
 void Lua_V2::EnableVoiceFX() {
@@ -125,7 +126,7 @@ void Lua_V2::EnableVoiceFX() {
 		state = true;
 
 	// FIXME: func(state);
-	warning("Lua_V2::EnableVoiceFX: implement opcode, state: %d", (int)state);
+	Debug::debug(Debug::EMISound | Debug::Scripts,"Lua_V2::EnableVoiceFX: implement opcode, state: %d", (int)state);
 }
 
 void Lua_V2::SetGroupVolume() {
@@ -156,7 +157,7 @@ void Lua_V2::SetGroupVolume() {
 			error("Lua_V2::SetGroupVolume - unknown group %d", group);
 	}
 	// FIXME: func(group, volume);
-	warning("Lua_V2::SetGroupVolume: group: %d, volume %d", group, volume);
+	Debug::debug(Debug::EMISound | Debug::Scripts,"Lua_V2::SetGroupVolume: group: %d, volume %d", group, volume);
 }
 
 void Lua_V2::EnableAudioGroup() {
@@ -186,7 +187,7 @@ void Lua_V2::EnableAudioGroup() {
 			error("Lua_V2::EnableAudioGroup - unknown group %d", group);
 	}
 
-	warning("Lua_V2::EnableAudioGroup: group: %d, state %d", group, (int)state);
+	Debug::debug(Debug::EMISound | Debug::Scripts,"Lua_V2::EnableAudioGroup: group: %d, state %d", group, (int)state);
 }
 
 void Lua_V2::ImSelectSet() {
@@ -196,13 +197,13 @@ void Lua_V2::ImSelectSet() {
 		int quality = (int)lua_getnumber(qualityObj);
 		// FIXME: func(quality);
 		g_sound->selectMusicSet(quality);
-		warning("Lua_V2::ImSelectSet: quality mode: %d", quality);
+		Debug::debug(Debug::EMISound | Debug::Scripts,"Lua_V2::ImSelectSet: quality mode: %d", quality);
 	}
 }
 
 void Lua_V2::ImFlushStack() {
 	// FIXME
-	warning("Lua_V2::ImFlushStack: currently guesswork");
+	Debug::debug(Debug::EMISound | Debug::Scripts,"Lua_V2::ImFlushStack: currently guesswork");
 	g_sound->flushStack();
 }
 
@@ -262,7 +263,7 @@ void Lua_V2::PlayLoadedSound() {
 }
 
 void Lua_V2::PlayLoadedSoundFrom() {
-	warning("Lua_V2::PlayLoadedSoundFrom: implement opcode");
+	Debug::debug(Debug::EMISound | Debug::Scripts,"Lua_V2::PlayLoadedSoundFrom: implement opcode");
 }
 
 void Lua_V2::StopSound() {
@@ -291,7 +292,7 @@ void Lua_V2::PlaySound() {
 
 	Common::SeekableReadStream *stream = g_resourceloader->openNewStreamFile(filename, true);
 	if (!stream) {
-		warning("Lua_V2::PlaySound: Could not find sound '%s'", filename.c_str());
+		Debug::debug(Debug::EMISound | Debug::Scripts, "Lua_V2::PlaySound: Could not find sound '%s'", filename.c_str());
 		return;
 	}
 
@@ -323,7 +324,7 @@ void Lua_V2::ImSetMusicVol() {
 	if (!lua_isnumber(volumeObj))
 		return;
 	int volume = (int)lua_getnumber(volumeObj);
-	warning("Lua_V2::ImSetMusicVol: implement opcode, wants volume %d", volume);
+	Debug::debug(Debug::EMISound | Debug::Scripts, "Lua_V2::ImSetMusicVol: implement opcode, wants volume %d", volume);
 }
 
 void Lua_V2::ImSetSfxVol() {
@@ -333,7 +334,7 @@ void Lua_V2::ImSetSfxVol() {
 	if (!lua_isnumber(volumeObj))
 		return;
 	int volume = (int)lua_getnumber(volumeObj);
-	warning("Lua_V2::ImSetSfxVol: implement opcode, wants volume %d", volume);
+	Debug::debug(Debug::EMISound | Debug::Scripts, "Lua_V2::ImSetSfxVol: implement opcode, wants volume %d", volume);
 }
 
 void Lua_V2::ImSetVoiceVol() {
@@ -343,7 +344,7 @@ void Lua_V2::ImSetVoiceVol() {
 	if (!lua_isnumber(volumeObj))
 		return;
 	int volume = (int)lua_getnumber(volumeObj);
-	warning("Lua_V2::ImSetVoiceVol: implement opcode, wants volume %d", volume);
+	Debug::debug(Debug::EMISound | Debug::Scripts, "Lua_V2::ImSetVoiceVol: implement opcode, wants volume %d", volume);
 }
 
 void Lua_V2::ImSetVoiceEffect() {
@@ -354,20 +355,20 @@ void Lua_V2::ImSetVoiceEffect() {
 		return;
 
 	const char *str = lua_getstring(strObj);
-	warning("Lua_V2::ImSetVoiceEffect: implement opcode, wants effect %s", str);
+	Debug::debug(Debug::EMISound | Debug::Scripts, "Lua_V2::ImSetVoiceEffect: implement opcode, wants effect %s", str);
 }
 
 void Lua_V2::StopAllSounds() {
-	warning("Lua_V2::StopAllSounds: implement opcode");
+	Debug::debug(Debug::EMISound | Debug::Scripts, "Lua_V2::StopAllSounds: implement opcode");
 }
 
 void Lua_V2::ImPushState() {
 	g_sound->pushState();
-	warning("Lua_V2::ImPushState: currently guesswork");
+	Debug::debug(Debug::EMISound | Debug::Scripts, "Lua_V2::ImPushState: currently guesswork");
 }
 void Lua_V2::ImPopState() {
 	g_sound->popState();
-	warning("Lua_V2::ImPopState: currently guesswork");
+	Debug::debug(Debug::EMISound | Debug::Scripts, "Lua_V2::ImPopState: currently guesswork");
 }
 
 } // end of namespace Grim
