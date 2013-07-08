@@ -168,8 +168,8 @@ uint32 EMISound::getMsPos(int stateId) {
 		return 0;
 	return g_system->getMixer()->getSoundElapsedTime(*_music->getHandle());
 }
-	
-MusicEntry *initMusicTableDemo(const Common::String &filename) {
+
+MusicEntry *EMISound::initMusicTableDemo(Common::String &filename) {
 	Common::SeekableReadStream *data = g_resourceloader->openNewStreamFile(filename);
 
 	if (!data)
@@ -178,7 +178,7 @@ MusicEntry *initMusicTableDemo(const Common::String &filename) {
 	MusicEntry *musicTable = new MusicEntry[15];
 	for (unsigned int i = 0; i < 15; i++)
 		musicTable[i]._id = -1;
-	
+
 	TextSplitter *ts = new TextSplitter(filename, data);
 	int id, x, y, sync;
 	char musicfilename[64];
@@ -204,16 +204,16 @@ MusicEntry *initMusicTableDemo(const Common::String &filename) {
 	return musicTable;
 }
 
-MusicEntry *initMusicTableRetail(const Common::String &filename) {
+MusicEntry *EMISound::initMusicTableRetail(Common::String &filename) {
 	Common::SeekableReadStream *data = g_resourceloader->openNewStreamFile(filename);
-	
+
 	// Remember to check, in case we forgot to copy over those files from the CDs.
 	if (!data)
 		error("Couldn't open %s", filename.c_str());
 	MusicEntry *musicTable = new MusicEntry[126];
 	for (unsigned int i = 0; i < 126; i++)
 		musicTable[i]._id = -1;
-	
+
 	TextSplitter *ts = new TextSplitter(filename, data);
 	int id, x, y, sync, trim;
 	char musicfilename[64];
@@ -236,6 +236,28 @@ MusicEntry *initMusicTableRetail(const Common::String &filename) {
 			musicTable[id]._name = "";
 			musicTable[id]._trim = trim;
 			musicTable[id]._filename = musicfilename;
+			musicTable[id]._start = 0;
+			musicTable[id]._jumpFrom = 0;
+			musicTable[id]._jumpTo = 0;
+
+			// Look for the corresponding .jmm file containing that tracks start and loop data
+			Common::String trackname = Common::String(_musicPrefix + musicfilename);
+			trackname.deleteLastChar();
+			trackname.deleteLastChar();
+			trackname.deleteLastChar();
+			trackname += "jmm";
+
+			Common::SeekableReadStream *trackdata = g_resourceloader->openNewStreamFile(trackname);
+			if (!trackdata)
+				continue;
+
+			TextSplitter *jumpts = new TextSplitter(trackname, trackdata);
+			jumpts->scanString(".start %f", 1, &musicTable[id]._start);
+
+			if (jumpts->checkString(".jump"))
+				jumpts->scanString(".jump %f %f", 2, &musicTable[id]._jumpFrom, &musicTable[id]._jumpTo);
+			delete jumpts;
+			delete trackdata;
 		}
 		ts->nextLine();
 	}
@@ -246,16 +268,18 @@ MusicEntry *initMusicTableRetail(const Common::String &filename) {
 
 void EMISound::initMusicTable() {
 	if (g_grim->getGameFlags() == ADGF_DEMO) {
-		_musicTable = initMusicTableDemo("Music/FullMonkeyMap.imt");
+		Common::String filename("Music/FullMonkeyMap.imt");
 		_musicPrefix = "Music/";
+		_musicTable = initMusicTableDemo(filename);
 	} else if (g_grim->getGamePlatform() == Common::kPlatformPS2) {
 		// TODO, fill this in, data is in the binary.
 		//initMusicTablePS2()
 		_musicTable = NULL;
 		_musicPrefix = "";
 	} else {
-		_musicTable = initMusicTableRetail("Textures/FullMonkeyMap.imt");
+		Common::String filename("Textures/FullMonkeyMap.imt");
 		_musicPrefix = "Textures/spago/"; // Hardcode the high-quality music for now.
+		_musicTable = initMusicTableRetail(filename);
 	}
 }
 

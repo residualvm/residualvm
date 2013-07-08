@@ -36,6 +36,9 @@ struct MusicEntry {
 	int _sync;
 	int _trim;
 	int _id;
+	float _start;
+	float _jumpFrom;
+	float _jumpTo;
 	Common::String _type;
 	Common::String _name;
 	Common::String _filename;
@@ -56,6 +59,8 @@ class EMISound {
 	int32 getChannelByName(const Common::String &name);
 	void freeChannel(int32 channel);
 	void initMusicTable();
+	MusicEntry *initMusicTableRetail(Common::String &filename);
+	MusicEntry *initMusicTableDemo(Common::String &filename);
 public:
 	EMISound();
 	~EMISound();
