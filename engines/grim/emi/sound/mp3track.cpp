@@ -27,6 +27,7 @@
 #include "audio/decoders/mp3.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/emi/sound/mp3track.h"
+#include "engines/grim/emi/sound/emiaudiostream.h"
 
 namespace Grim {
 
@@ -62,7 +63,7 @@ MP3Track::~MP3Track() {
 	stop();
 	delete _handle;
 }
-	
+
 bool MP3Track::openSound(const Common::String &soundName, Common::SeekableReadStream *file) {
 #ifndef USE_MAD
 	return false;
@@ -73,10 +74,48 @@ bool MP3Track::openSound(const Common::String &soundName, Common::SeekableReadSt
 	}
 	_soundName = soundName;
 	parseRIFFHeader(file);
-	_stream = Audio::makeLoopingAudioStream(Audio::makeMP3Stream(file, DisposeAfterUse::YES), 0);
+	const Audio::Timestamp loopStart = 0;
+	Audio::SeekableAudioStream *stream = Audio::makeMP3Stream(file, DisposeAfterUse::YES);
+	const Audio::Timestamp loopEnd = stream->getLength();
+	_stream = new SubLoopingRewindableAudioStream(stream, -1, loopStart, loopEnd);
 	_handle = new Audio::SoundHandle();
 	return true;
 #endif
 }
+
+bool MP3Track::openSound(const Common::String &soundName, Common::SeekableReadStream *file, int playFrom, int loopStart, int loopEnd) {
+#ifndef USE_MAD
+	return false;
+#else
+	if (!file) {
+		warning("Stream for %s not open", soundName.c_str());
+		return false;
+	}
+	_soundName = soundName;
+	parseRIFFHeader(file);
+	Audio::SeekableAudioStream *stream = Audio::makeMP3Stream(file, DisposeAfterUse::YES);
+	_stream = new SubLoopingRewindableAudioStream(stream, -1, loopStart, loopEnd);
+	bool seekOK = _stream->seek(playFrom);
+	_handle = new Audio::SoundHandle();
+	return true;
+#endif
+}
+
+bool MP3Track::play() {
+	if (_stream) {
+		// If _disposeAfterPlaying is NO, the destructor will take care of the stream.
+		g_system->getMixer()->playStream(_soundType, _handle, _stream, -1, Audio::Mixer::kMaxChannelVolume, 0, _disposeAfterPlaying);
+		return true;
+	}
+	return false;
+}
+
+void MP3Track::pause() {
+	if (_stream) {
+		_paused = !_paused;
+		g_system->getMixer()->pauseHandle(*_handle, _paused);
+	}
+}
+
 
 } // end of namespace Grim
