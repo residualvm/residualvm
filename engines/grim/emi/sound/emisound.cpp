@@ -34,6 +34,7 @@
 #include "engines/grim/emi/sound/mp3track.h"
 #include "engines/grim/emi/sound/scxtrack.h"
 #include "engines/grim/emi/sound/vimatrack.h"
+#include "engines/grim/set.h"
 
 #define NUM_CHANNELS 32
 
@@ -46,15 +47,12 @@ EMISound::EMISound() {
 	for (int i = 0; i < NUM_CHANNELS; i++) {
 		_channels[i] = NULL;
 	}
-	_music = NULL;
-	initMusicTable();
 }
 	
 EMISound::~EMISound() {
 	for (int i = 0; i < NUM_CHANNELS; i++) {
 		freeChannel(i);
 	}
-	delete _music;
 	delete[] _channels;
 	delete[] _musicTable;
 }
@@ -130,8 +128,22 @@ void EMISound::setVolume(const char *soundName, int volume) {
 void EMISound::setPan(const char *soundName, int pan) {
 	warning("EMI doesn't support sound-panning yet, %s", soundName);
 }
+
+EMISoundPC::EMISoundPC() {
+	_music = NULL;
+	initMusicTable();
+}
 	
-void EMISound::setMusicState(int stateId) {
+EMISoundPC::~EMISoundPC() {
+	delete _music;
+}
+
+void EMISoundPC::setMusicState(int stateId) {
+
+	// Load MP3 music
+	uint32 startFrom = getMsPos(stateId);
+	bool musicPlaying = _music != NULL;
+
 	if (_music) {
 		delete _music;
 		_music = NULL;
@@ -146,30 +158,50 @@ void EMISound::setMusicState(int stateId) {
 		warning("Attempted to play track #%d, not found in music table!", stateId);
 		return;
 	}
-	Common::String filename;
-	if (g_grim->getGamePlatform() == Common::kPlatformPS2) {
-		warning("PS2 doesn't have musictable yet %d ignored, just playing 1195.SCX", stateId);
-		// So, we just rig up the menu-song hardcoded for now, as a test of the SCX-code.
-		filename = "1195.SCX";
-		_music = new SCXTrack(Audio::Mixer::kMusicSoundType);
-	} else {
-		filename = _musicTable[stateId]._filename;
-		_music = new MP3Track(Audio::Mixer::kMusicSoundType);	
+
+	// When the game changes set, or when no music is playing already,
+	// the track should start from the beginning of the new track
+	Grim::Set* currentSet = g_grim->getCurrSet();
+	Common::String setName = currentSet == NULL ? "" : currentSet->getName();
+	if ((setName != "" && setName != _currentSet) || !musicPlaying) {
+		_currentSet = setName;
+		startFrom = _musicTable[stateId]._start;
 	}
+
+	Common::String filename = _musicTable[stateId]._filename;
+	_music = new MP3Track(Audio::Mixer::kMusicSoundType);	
 	warning("Loading music: %s", filename.c_str());
 	Common::SeekableReadStream *str = g_resourceloader->openNewStreamFile(_musicPrefix + filename);
-
-	if (_music->openSound(filename, str))
-		_music->play();
-}
-
-uint32 EMISound::getMsPos(int stateId) {
-	if (!_music || !_music->getHandle())
-		return 0;
-	return g_system->getMixer()->getSoundElapsedTime(*_music->getHandle());
-}
+	int loopStart = _musicTable[stateId]._jumpTo;
+	int loopEnd = _musicTable[stateId]._jumpFrom;
 	
-MusicEntry *initMusicTableDemo(const Common::String &filename) {
+	// Try to open the music track
+	bool openOK = false;
+	if (loopEnd == 0 && _music->openSound(filename, str)) {
+		openOK = true;
+	} else if (_music->openSound(filename, str, startFrom, loopStart, loopEnd)) {
+		openOK = true;
+	}
+	
+	if (openOK) {
+		warning("EMISound::setMusicState: Start from: %d, loop %d -> %d", startFrom, loopStart, loopEnd);
+		_music->play();
+	} else {
+		warning("EMISound::setMusicState: Could not open sound");
+		delete str;
+		delete _music;
+		_music = NULL;
+	}
+}
+
+uint32 EMISoundPC::getMsPos(int stateId) {
+	if (_music) {
+		return _music->getPosition().msecs();
+	}
+	return 0;
+}
+
+MusicEntry *EMISoundPC::initMusicTableDemo(Common::String &filename) {
 	Common::SeekableReadStream *data = g_resourceloader->openNewStreamFile(filename);
 
 	if (!data)
@@ -178,7 +210,7 @@ MusicEntry *initMusicTableDemo(const Common::String &filename) {
 	MusicEntry *musicTable = new MusicEntry[15];
 	for (unsigned int i = 0; i < 15; i++)
 		musicTable[i]._id = -1;
-	
+
 	TextSplitter *ts = new TextSplitter(filename, data);
 	int id, x, y, sync;
 	char musicfilename[64];
@@ -204,16 +236,16 @@ MusicEntry *initMusicTableDemo(const Common::String &filename) {
 	return musicTable;
 }
 
-MusicEntry *initMusicTableRetail(const Common::String &filename) {
+MusicEntry *EMISoundPC::initMusicTableRetail(Common::String &filename) {
 	Common::SeekableReadStream *data = g_resourceloader->openNewStreamFile(filename);
-	
+
 	// Remember to check, in case we forgot to copy over those files from the CDs.
 	if (!data)
 		error("Couldn't open %s", filename.c_str());
 	MusicEntry *musicTable = new MusicEntry[126];
 	for (unsigned int i = 0; i < 126; i++)
 		musicTable[i]._id = -1;
-	
+
 	TextSplitter *ts = new TextSplitter(filename, data);
 	int id, x, y, sync, trim;
 	char musicfilename[64];
@@ -236,6 +268,28 @@ MusicEntry *initMusicTableRetail(const Common::String &filename) {
 			musicTable[id]._name = "";
 			musicTable[id]._trim = trim;
 			musicTable[id]._filename = musicfilename;
+			musicTable[id]._start = 0;
+			musicTable[id]._jumpFrom = 0;
+			musicTable[id]._jumpTo = 0;
+
+			// Look for the corresponding .jmm file containing that tracks start and loop data
+			Common::String trackname = Common::String(_musicPrefix + musicfilename);
+			trackname.deleteLastChar();
+			trackname.deleteLastChar();
+			trackname.deleteLastChar();
+			trackname += "jmm";
+
+			Common::SeekableReadStream *trackdata = g_resourceloader->openNewStreamFile(trackname);
+			if (!trackdata)
+				continue;
+
+			TextSplitter *jumpts = new TextSplitter(trackname, trackdata);
+			jumpts->scanString(".start %f", 1, &musicTable[id]._start);
+
+			if (jumpts->checkString(".jump"))
+				jumpts->scanString(".jump %f %f", 2, &musicTable[id]._jumpFrom, &musicTable[id]._jumpTo);
+			delete jumpts;
+			delete trackdata;
 		}
 		ts->nextLine();
 	}
@@ -244,27 +298,19 @@ MusicEntry *initMusicTableRetail(const Common::String &filename) {
 	return musicTable;
 }
 
-void EMISound::initMusicTable() {
+void EMISoundPC::initMusicTable() {
 	if (g_grim->getGameFlags() == ADGF_DEMO) {
-		_musicTable = initMusicTableDemo("Music/FullMonkeyMap.imt");
+		Common::String filename("Music/FullMonkeyMap.imt");
 		_musicPrefix = "Music/";
-	} else if (g_grim->getGamePlatform() == Common::kPlatformPS2) {
-		// TODO, fill this in, data is in the binary.
-		//initMusicTablePS2()
-		_musicTable = NULL;
-		_musicPrefix = "";
+		_musicTable = initMusicTableDemo(filename);
 	} else {
-		_musicTable = initMusicTableRetail("Textures/FullMonkeyMap.imt");
+		Common::String filename("Textures/FullMonkeyMap.imt");
 		_musicPrefix = "Textures/spago/"; // Hardcode the high-quality music for now.
+		_musicTable = initMusicTableRetail(filename);
 	}
 }
 
-void EMISound::selectMusicSet(int setId) {
-	if (g_grim->getGamePlatform() == Common::kPlatformPS2) {
-		assert(setId == 0);
-		_musicPrefix = "";
-		return;
-	}
+void EMISoundPC::selectMusicSet(int setId) {
 	if (setId == 0) {
 		_musicPrefix = "Textures/spago/";
 	} else if (setId == 1) {
@@ -274,29 +320,94 @@ void EMISound::selectMusicSet(int setId) {
 	}
 }
 
-void EMISound::pushStateToStack() {
+void EMISoundPC::pushStateToStack() {
 	if (_music)
 		_music->pause();
 	_stateStack.push(_music);
 	_music = NULL;
 }
 
-void EMISound::popStateFromStack() {
+void EMISoundPC::popStateFromStack() {
 	delete _music;
-
-	//even pop state from stack if music isn't set
-	_music = _stateStack.pop();
-
-	if(_music) {
+	_music = _stateStack.pop();		
+	if(_music) 
 		_music->pause();
-	}
 }
 
-void EMISound::flushStack() {
+void EMISoundPC::flushStack() {
 	while (!_stateStack.empty()) {
-		SoundTrack *temp = _stateStack.pop();
+		MP3Track *temp = _stateStack.pop();
 		delete temp;
 	}
 }
 
+EMISoundPS2::EMISoundPS2() {
+	_music = NULL;
+	initMusicTable();
+}
+	
+EMISoundPS2::~EMISoundPS2() {
+	delete _music;
+}
+
+void EMISoundPS2::setMusicState(int stateId) {	
+	if(_music) {
+		delete _music;
+		_music = NULL;
+	}
+	if (stateId == 0)
+		return;
+	warning("PS2 doesn't have musictable yet %d ignored, just playing 1195.SCX", stateId);
+	// So, we just rig up the menu-song hardcoded for now, as a test of the SCX-code.
+	Common::String filename = "1195.SCX";
+	_music = new SCXTrack(Audio::Mixer::kMusicSoundType);
+	warning("Loading music: %s", filename.c_str());
+	Common::SeekableReadStream *str = g_resourceloader->openNewStreamFile(_musicPrefix + filename);		
+	if (_music->openSound(filename, str)) {
+		_music->play();
+	} else {
+		delete str;
+		delete _music;
+		_music = NULL;
+	}
+}
+
+uint32 EMISoundPS2::getMsPos(int stateId) {
+	if (!_music || !_music->getHandle())
+		return 0;
+	return g_system->getMixer()->getSoundElapsedTime(*_music->getHandle());
+}
+
+void EMISoundPS2::initMusicTable() {
+	// TODO, fill this in, data is in the binary.
+	//initMusicTablePS2()
+	_musicTable = NULL;
+	_musicPrefix = "";
+}
+
+void EMISoundPS2::selectMusicSet(int setId) {
+	assert(setId == 0);
+	_musicPrefix = "";
+}
+
+void EMISoundPS2::pushStateToStack() {
+	if (_music)
+		_music->pause();
+	_stateStack.push(_music);
+	_music = NULL;
+}
+
+void EMISoundPS2::popStateFromStack() {
+	delete _music;
+	_music = _stateStack.pop();		
+	if(_music) 
+		_music->pause();
+}
+
+void EMISoundPS2::flushStack() {
+	while (!_stateStack.empty()) {
+		SCXTrack *temp = _stateStack.pop();
+		delete temp;
+	}
+}
 } // end of namespace Grim

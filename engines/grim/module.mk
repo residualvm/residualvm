@@ -27,6 +27,7 @@ MODULE_OBJS := \
 	emi/sound/scxtrack.o \
 	emi/sound/vimatrack.o \
 	emi/sound/track.o \
+	emi/sound/emiaudiostream.o \
 	emi/sound/emisound.o \
 	emi/sound/codecs/scx.o \
 	emi/animationemi.o \
