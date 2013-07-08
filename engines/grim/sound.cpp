@@ -31,10 +31,14 @@ SoundPlayer *g_sound = NULL;
 	
 SoundPlayer::SoundPlayer() {
 	// TODO: Replace this with g_emiSound when we get a full working sound-system for more than voices.
-	if (g_grim->getGameType() == GType_MONKEY4)
-		_emiSound = new EMISound();
-	else
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		if (g_grim->getGamePlatform() == Common::kPlatformPS2)
+			_emiSound = new EMISoundPS2();
+		else 
+			_emiSound = new EMISoundPC();
+	} else {
 		_emiSound = NULL;
+	}
 }
 	
 SoundPlayer::~SoundPlayer() {

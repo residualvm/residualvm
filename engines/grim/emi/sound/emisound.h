@@ -25,6 +25,8 @@
 
 #include "common/str.h"
 #include "common/stack.h"
+#include "engines/grim/emi/sound/mp3track.h"
+#include "engines/grim/emi/sound/scxtrack.h"
 
 namespace Grim {
 
@@ -48,41 +50,73 @@ struct MusicEntry {
 // from Actor, to allow for splitting that into EMI-sound and iMuse without
 // changing iMuse.
 class EMISound {
+
+protected:
 	SoundTrack **_channels;
-	SoundTrack *_music;
 	MusicEntry *_musicTable;
 	Common::String _musicPrefix;
-	Common::Stack<SoundTrack*> _stateStack;
+	Common::String _currentSet;
 
 	void removeItem(SoundTrack* item);
 	int32 getFreeChannel();
 	int32 getChannelByName(const Common::String &name);
 	void freeChannel(int32 channel);
-	void initMusicTable();
-	MusicEntry *initMusicTableRetail(Common::String &filename);
-	MusicEntry *initMusicTableDemo(Common::String &filename);
+
 public:
 	EMISound();
-	~EMISound();
+	virtual ~EMISound();
 	bool startVoice(const char *soundName, int volume = 127, int pan = 64);
 	bool getSoundStatus(const char *soundName);
 	void stopSound(const char *soundName);
 	int32 getPosIn16msTicks(const char *soundName);
-
 	void setVolume(const char *soundName, int volume);
 	void setPan(const char *soundName, int pan);
 
+	virtual void setMusicState(int stateId) = 0;
+	virtual void selectMusicSet(int setId) = 0;
+	virtual void pushStateToStack() = 0;
+	virtual void popStateFromStack() = 0;
+	virtual void flushStack() = 0;
+	virtual uint32 getMsPos(int stateId) = 0;
+};
+
+// Subclass used for PC/MAC versions of EMI
+class EMISoundPC : public EMISound {
+	MP3Track *_music;
+	Common::Stack<MP3Track*> _stateStack;
+
+	void initMusicTable();
+	MusicEntry *initMusicTableRetail(Common::String &filename);
+	MusicEntry *initMusicTableDemo(Common::String &filename);
+
+public:
+	EMISoundPC();
+	~EMISoundPC();
 	void setMusicState(int stateId);
 	void selectMusicSet(int setId);
-
-// The stack-classes currently ignore g_imusestate completely.
 	void pushStateToStack();
 	void popStateFromStack();
 	void flushStack();
-
 	uint32 getMsPos(int stateId);
 };
-	
+
+// Subclass used for PS2 versions of EMI
+class EMISoundPS2 : public EMISound {
+	SCXTrack *_music;
+	Common::Stack<SCXTrack*> _stateStack;
+	void initMusicTable();
+
+public:
+	EMISoundPS2();
+	~EMISoundPS2();
+	void setMusicState(int stateId);
+	void selectMusicSet(int setId);
+	void pushStateToStack();
+	void popStateFromStack();
+	void flushStack();
+	uint32 getMsPos(int stateId);
+};
+
 }
 
 #endif
