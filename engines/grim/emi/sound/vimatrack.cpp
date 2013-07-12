@@ -26,6 +26,7 @@
 #include "audio/audiostream.h"
 #include "audio/mixer.h"
 #include "audio/decoders/raw.h"
+#include "engines/grim/debug.h"
 #include "engines/grim/imuse/imuse_mcmp_mgr.h"
 #include "engines/grim/emi/sound/vimatrack.h"
 
@@ -188,7 +189,7 @@ void VimaTrack::playTrack() {
 				return;
 			}
 		} else {
-			warning("Out of regions");
+			Debug::debug(Debug::EMISound, "VimaTrack::playTrack() - Out of regions");
 			//return;
 		}
 		mixer_size -= result;
