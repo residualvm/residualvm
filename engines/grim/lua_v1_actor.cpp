@@ -488,8 +488,7 @@ void Lua_V1::SetActorTurnRate() {
 
 	Actor *actor = getactor(actorObj);
 	float rate = lua_getnumber(rateObj); // FIXME verify negate values of rate
-	// special handling of value 1 only used for voodoo chair in EMI
-	actor->setTurnRate((rate == 1) ? 100 : rate);
+	actor->setTurnRate(rate);
 }
 
 void Lua_V1::WalkActorForward() {
