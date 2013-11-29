@@ -81,17 +81,24 @@ void AnimationEmi::animate(const Skeleton *skel, float delta) {
 				}
 			}
 
+			int lastFrame = 0;
+			float timeDelta = 0;
 			if (keyfIdx == 0) {
-				quat = curBone._rotations[keyfIdx]._quat;
-			} else if (keyfIdx == curBone._count - 1) {
-				quat = curBone._rotations[keyfIdx - 1]._quat;
+				lastFrame = curBone._count - 1;
+				timeDelta = _duration - curBone._rotations[lastFrame]._time;
 			} else {
-				float timeDelta = curBone._rotations[keyfIdx - 1]._time - curBone._rotations[keyfIdx]._time;
-				float interpVal = (_time - curBone._rotations[keyfIdx]._time) / timeDelta;
-
-				// Might be the other way around (keyfIdx - 1 slerped against keyfIdx)
-				quat = curBone._rotations[keyfIdx]._quat.slerpQuat(curBone._rotations[keyfIdx - 1]._quat, interpVal);
+				lastFrame = keyfIdx - 1;
+				timeDelta = curBone._rotations[lastFrame]._time - curBone._rotations[keyfIdx]._time;
 			}
+
+			float interpVal = 0;
+			if (lastFrame != keyfIdx) {
+				interpVal = (_time - curBone._rotations[keyfIdx]._time) / timeDelta;
+			}
+
+			// Might be the other way around (keyfIdx - 1 slerped against keyfIdx)
+			quat = curBone._rotations[keyfIdx]._quat.slerpQuat(curBone._rotations[lastFrame]._quat, interpVal);
+
 			quat.toMatrix(relFinal);
 			quatFinal = quat;
 			relFinal.setPosition(relPos);
@@ -107,24 +114,29 @@ void AnimationEmi::animate(const Skeleton *skel, float delta) {
 					break;
 				}
 			}
-
+			int lastFrame = 0;
+			float timeDelta = 0;
 			if (keyfIdx == 0) {
-				vec = curBone._translations[keyfIdx]._vec;
-			} else if (keyfIdx == curBone._count - 1) {
-				vec = curBone._translations[keyfIdx - 1]._vec;
+				lastFrame = curBone._count - 1;
+				timeDelta = _duration - curBone._translations[lastFrame]._time;
 			} else {
-				float timeDelta = curBone._translations[keyfIdx - 1]._time - curBone._translations[keyfIdx]._time;
-				float interpVal = (_time - curBone._translations[keyfIdx]._time) / timeDelta;
-
-				vec.x() = curBone._translations[keyfIdx - 1]._vec.x() +
-						  (curBone._translations[keyfIdx]._vec.x() - curBone._translations[keyfIdx - 1]._vec.x()) * interpVal;
-
-				vec.y() = curBone._translations[keyfIdx - 1]._vec.y() +
-						  (curBone._translations[keyfIdx]._vec.y() - curBone._translations[keyfIdx - 1]._vec.y()) * interpVal;
-
-				vec.z() = curBone._translations[keyfIdx - 1]._vec.z() +
-						  (curBone._translations[keyfIdx]._vec.z() - curBone._translations[keyfIdx - 1]._vec.z()) * interpVal;
+				lastFrame = keyfIdx - 1;
+				timeDelta = curBone._translations[lastFrame]._time - curBone._translations[keyfIdx]._time;
 			}
+
+			float interpVal = 0;
+			if (lastFrame != keyfIdx) {
+				interpVal = (curBone._translations[keyfIdx]._time - _time) / timeDelta;
+			}
+
+			vec.x() = curBone._translations[lastFrame]._vec.x() +
+						(curBone._translations[keyfIdx]._vec.x() - curBone._translations[lastFrame]._vec.x()) * interpVal;
+
+			vec.y() = curBone._translations[lastFrame]._vec.y() +
+						(curBone._translations[keyfIdx]._vec.y() - curBone._translations[lastFrame]._vec.y()) * interpVal;
+
+			vec.z() = curBone._translations[lastFrame]._vec.z() +
+						(curBone._translations[keyfIdx]._vec.z() - curBone._translations[lastFrame]._vec.z()) * interpVal;
 			relFinal.setPosition(vec);
 		}
 	}
