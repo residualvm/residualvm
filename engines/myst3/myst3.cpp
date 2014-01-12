@@ -1147,6 +1147,13 @@ void Myst3Engine::animateDirectionChange(float targetPitch, float targetHeading,
 	float pitchDistance = targetPitch - startPitch;
 	float headingDistance = targetHeading - startHeading;
 
+
+	if (headingDistance > 180) {
+		headingDistance -= 360;
+	} else if (headingDistance < -180) {
+		headingDistance += 360;
+	}
+
 	// Compute animation duration in frames
 	float numFrames;
 	if (scriptFrames) {
