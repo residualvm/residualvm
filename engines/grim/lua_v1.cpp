@@ -290,9 +290,18 @@ void Lua_V1::SetHardwareState() {
 }
 
 void Lua_V1::SetVideoDevices() {
-	/*int devId = (int)*/lua_getnumber(lua_getparam(1));
-	/*int modeId = (int)*/lua_getnumber(lua_getparam(2));
+	int devId = (int)lua_getnumber(lua_getparam(1));
+	int modeId = (int)lua_getnumber(lua_getparam(2));
 	// ignore setting video devices
+	if (devId != 1) {
+		return;
+	}
+	if (modeId == 0) {
+		ConfMan.setBool("shaders", false);
+	} else {
+		ConfMan.setBool("shaders", true);
+	}
+	g_grim->changeHardwareState();
 }
 
 void Lua_V1::GetVideoDevices() {
@@ -303,7 +312,11 @@ void Lua_V1::GetVideoDevices() {
 void Lua_V1::EnumerateVideoDevices() {
 	lua_Object result = lua_createtable();
 	lua_pushobject(result);
-	lua_pushnumber(0.0); // id of device
+	int device = 0;
+	if (!ConfMan.getBool("soft_renderer")) {
+		device = 1;
+	}
+	lua_pushnumber(device); // id of device
 	lua_pushstring(g_driver->getVideoDeviceName()); // name of device
 	lua_settable();
 	lua_pushobject(result);
@@ -314,11 +327,18 @@ void Lua_V1::Enumerate3DDevices() {
 	lua_Object numObj = lua_getparam(1);
 	if (!lua_isnumber(numObj))
 		return;
-/*	int num = (int)lua_getnumber(numObj);*/
+	int num = (int)lua_getnumber(numObj);
 	lua_pushobject(result);
-	lua_pushnumber(-1.0);
+	lua_pushnumber(0);
 	if (g_driver->isHardwareAccelerated()) {
 		lua_pushstring("OpenGL"); // type of 3d renderer
+#ifdef USE_OPENGL_SHADERS
+		lua_settable();
+
+		lua_pushobject(result);
+		lua_pushnumber(1);
+		lua_pushstring("OpenGL Shaders");
+#endif
 	} else {
 		lua_pushstring("/engn003/Software"); // type of 3d renderer
 	}

@@ -170,7 +170,7 @@ Math::Matrix4 makeRotationMatrix(const Math::Angle& angle, Math::Vector3d axis) 
 	return rotate;
 }
 
-GfxBase *CreateGfxOpenGL() {
+GfxBase *CreateGfxOpenGLS() {
 	return new GfxOpenGLS();
 }
 

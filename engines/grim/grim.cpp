@@ -228,7 +228,12 @@ void GrimEngine::createRenderer() {
 		g_driver = CreateGfxTinyGL();
 #ifdef USE_OPENGL
 	} else {
-		g_driver = CreateGfxOpenGL();
+#ifdef USE_OPENGL_SHADERS
+		if (ConfMan.getBool("shaders"))
+			g_driver = CreateGfxOpenGLS();
+		else
+#endif
+			g_driver = CreateGfxOpenGL();
 #endif
 	}
 }
