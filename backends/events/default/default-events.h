@@ -49,10 +49,14 @@ class DefaultEventManager : public Common::EventManager, Common::EventObserver {
 	Common::ArtificialEventSource _artificialEventSource;
 
 	Common::Queue<Common::Event> _eventQueue;
-	bool notifyEvent(const Common::Event &ev) {
+
+	// ResidualVM: Make method public and virtual
+	public:
+	virtual bool notifyEvent(const Common::Event &ev) {
 		_eventQueue.push(ev);
 		return true;
 	}
+	private:
 
 	Common::Point _mousePos;
 	int _buttonState;

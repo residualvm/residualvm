@@ -220,6 +220,8 @@ void OSystem_Android::initSurface() {
 	logExtensions();
 	GLESTexture::initGL();
 
+	initTouchSurface(_egl_surface_width, _egl_surface_height);
+
 	if (_game_texture)
 		_game_texture->reinit();
 
@@ -459,8 +461,6 @@ Graphics::PixelBuffer OSystem_Android::setupScreen(uint screenW, uint screenH, b
 	_opengl = accel3d;
 	initViewport();
 
-	_touchControls.init(this, _egl_surface_width, _egl_surface_height);
-
 	if (_opengl) {
 		// resize game texture
 		initSize(screenW, screenH, 0);
@@ -508,7 +508,7 @@ void OSystem_Android::updateScreen() {
 
 		if (true || _focus_rect.isEmpty()) {
 			_game_texture->drawTextureRect();
-			drawVirtControls();
+			TouchControlsBackend::draw();
 		} else {
 // TODO what is this and do we have engines using it?
 #if 0
@@ -572,14 +572,6 @@ void OSystem_Android::updateScreen() {
 
 	if (_frame_buffer)
 		_frame_buffer->attach();
-}
-
-void OSystem_Android::drawVirtControls() {
-	if (_show_overlay)
-		return;
-
-	glEnable(GL_BLEND);
-	_touchControls.draw();
 }
 
 Graphics::Surface *OSystem_Android::lockScreen() {

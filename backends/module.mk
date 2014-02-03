@@ -116,6 +116,11 @@ MODULE_OBJS += \
 	mixer/sdl13/sdl13-mixer.o
 endif
 
+ifdef ENABLE_TOUCH
+MODULE_OBJS += \
+	touch/touchcontrols.o
+endif
+
 ifeq ($(BACKEND),tizen)
 MODULE_OBJS += \
 	timer/tizen/timer.o

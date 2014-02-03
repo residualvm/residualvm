@@ -59,6 +59,7 @@
 
 #include "backends/platform/android/jni.h"
 #include "backends/platform/android/android.h"
+#include "backends/platform/android/threadsafe_events.h"
 
 const char *android_log_tag = "ResidualVM";
 
@@ -131,21 +132,11 @@ OSystem_Android::OSystem_Android(int audio_sample_rate, int audio_buffer_size) :
 	_ar_correction(true),
 	_show_mouse(false),
 	_show_overlay(false),
-	_virtcontrols_on(false),
 	_enable_zoning(false),
 	_mixer(0),
-	_queuedEventTime(0),
-	_event_queue_lock(createMutex()),
-	_touch_pt_down(),
-	_touch_pt_scroll(),
-	_touch_pt_dt(),
 	_eventScaleX(100),
 	_eventScaleY(100),
-	// TODO put these values in some option dlg?
-	_touchpad_mode(true),
-	_touchpad_scale(66),
 	_dpad_scale(4),
-	_fingersDown(0),
 	_trackball_scale(2) {
 
 	_fsFactory = new POSIXFilesystemFactory();
@@ -173,8 +164,6 @@ OSystem_Android::~OSystem_Android() {
 	_fsFactory = 0;
 	delete _timerManager;
 	_timerManager = 0;
-
-	deleteMutex(_event_queue_lock);
 }
 
 void *OSystem_Android::timerThreadFunc(void *arg) {
@@ -347,10 +336,6 @@ void OSystem_Android::initBackend() {
 	ConfMan.setBool("FM_high_quality", false);
 	ConfMan.setBool("FM_medium_quality", true);
 
-	// TODO hackity hack
-	if (ConfMan.hasKey("multi_midi"))
-		_touchpad_mode = !ConfMan.getBool("multi_midi");
-
 	// must happen before creating TimerManager to avoid race in
 	// creating EventManager
 	setupKeymapper();
@@ -388,6 +373,7 @@ void OSystem_Android::initBackend() {
 
 	JNI::setReadyForEvents(true);
 
+	_eventManager = new ThreadsafeEventManager(getDefaultEventSource());
 	EventsBaseBackend::initBackend();
 }
 
@@ -396,7 +382,6 @@ bool OSystem_Android::hasFeature(Feature f) {
 			f == kFeatureAspectRatioCorrection ||
 			f == kFeatureCursorPalette ||
 			f == kFeatureVirtualKeyboard ||
-			f == kFeatureVirtControls ||
 #ifdef USE_OPENGL
 			f == kFeatureOpenGL ||
 #endif
@@ -419,9 +404,6 @@ void OSystem_Android::setFeatureState(Feature f, bool enable) {
 		_virtkeybd_on = enable;
 		showVirtualKeyboard(enable);
 		break;
-	case kFeatureVirtControls:
-		_virtcontrols_on = enable;
-		break;
 	case kFeatureCursorPalette:
 		_use_mouse_palette = enable;
 		if (!enable)
@@ -440,8 +422,6 @@ bool OSystem_Android::getFeatureState(Feature f) {
 		return _ar_correction;
 	case kFeatureVirtualKeyboard:
 		return _virtkeybd_on;
-	case kFeatureVirtControls:
-		return _virtcontrols_on;
 	case kFeatureCursorPalette:
 		return _use_mouse_palette;
 	default:

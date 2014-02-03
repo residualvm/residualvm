@@ -113,11 +113,6 @@ void OSystem_Android::scaleMouse(Common::Point &p, int x, int y,
 
 	const Common::Rect &r = tex->getDrawRect();
 
-	if (_touchpad_mode) {
-		x = x * 100 / _touchpad_scale;
-		y = y * 100 / _touchpad_scale;
-	}
-
 	if (deductDrawRect) {
 		x -= r.left;
 		y -= r.top;
@@ -389,205 +384,34 @@ void OSystem_Android::pushEvent(int type, int arg1, int arg2, int arg3,
 		}
 
 	case JE_DOWN:
-		_touch_pt_down = getEventManager()->getMousePos();
-		_touch_pt_scroll.x = -1;
-		_touch_pt_scroll.y = -1;
 		break;
 
 	case JE_SCROLL:
-		if (_show_mouse) {
-			e.type = Common::EVENT_MOUSEMOVE;
-
-			if (_touchpad_mode) {
-				if (_touch_pt_scroll.x == -1 && _touch_pt_scroll.y == -1) {
-					_touch_pt_scroll.x = arg3;
-					_touch_pt_scroll.y = arg4;
-					return;
-				}
-
-				scaleMouse(e.mouse, arg3 - _touch_pt_scroll.x,
-							arg4 - _touch_pt_scroll.y, false);
-				e.mouse += _touch_pt_down;
-				clipMouse(e.mouse);
-			} else {
-				scaleMouse(e.mouse, arg3, arg4);
-				clipMouse(e.mouse);
-			}
-
-			pushEvent(e);
-		}
-
 		return;
 
 	case JE_TAP:
-		if (_fingersDown > 0) {
-			_fingersDown = 0;
-			return;
-		}
-
-		if (!_virtcontrols_on) {
-			e.type = Common::EVENT_MOUSEMOVE;
-
-			if (_touchpad_mode) {
-				e.mouse = getEventManager()->getMousePos();
-			} else {
-				scaleMouse(e.mouse, arg1, arg2);
-				clipMouse(e.mouse);
-			}
-
-			Common::EventType down, up;
-
-			// TODO put these values in some option dlg?
-			if (arg3 > 1000) {
-				down = Common::EVENT_MBUTTONDOWN;
-				up = Common::EVENT_MBUTTONUP;
-			} else if (arg3 > 500) {
-				down = Common::EVENT_RBUTTONDOWN;
-				up = Common::EVENT_RBUTTONUP;
-			} else {
-				down = Common::EVENT_LBUTTONDOWN;
-				up = Common::EVENT_LBUTTONUP;
-			}
-
-			lockMutex(_event_queue_lock);
-
-			if (_queuedEventTime)
-				_event_queue.push(_queuedEvent);
-
-			if (!_touchpad_mode)
-				_event_queue.push(e);
-
-			e.type = down;
-			_event_queue.push(e);
-
-			e.type = up;
-			_queuedEvent = e;
-			_queuedEventTime = getMillis() + kQueuedInputEventDelay;
-
-			unlockMutex(_event_queue_lock);
-		} else {
-			keyPress(Common::KEYCODE_RETURN, KeyReceiver::PRESS);
-		}
-
 		return;
 
 	case JE_DOUBLE_TAP:
-		if (_show_mouse) {
-			e.type = Common::EVENT_MOUSEMOVE;
-
-			if (_touchpad_mode) {
-				e.mouse = getEventManager()->getMousePos();
-			} else {
-				scaleMouse(e.mouse, arg1, arg2);
-				clipMouse(e.mouse);
-			}
-
-			{
-				Common::EventType dptype = Common::EVENT_INVALID;
-
-				switch (arg3) {
-				case JACTION_DOWN:
-					dptype = Common::EVENT_LBUTTONDOWN;
-					_touch_pt_dt.x = -1;
-					_touch_pt_dt.y = -1;
-					break;
-				case JACTION_UP:
-					dptype = Common::EVENT_LBUTTONUP;
-					break;
-				// held and moved
-				case JACTION_MOVE:
-					if (_touch_pt_dt.x == -1 && _touch_pt_dt.y == -1) {
-						_touch_pt_dt.x = arg1;
-						_touch_pt_dt.y = arg2;
-						return;
-					}
-
-					dptype = Common::EVENT_MOUSEMOVE;
-
-					if (_touchpad_mode) {
-						scaleMouse(e.mouse, arg1 - _touch_pt_dt.x,
-									arg2 - _touch_pt_dt.y, false);
-						e.mouse += _touch_pt_down;
-
-						clipMouse(e.mouse);
-					}
-
-					break;
-				default:
-					LOGE("unhandled jaction on double tap: %d", arg3);
-					return;
-				}
-
-				lockMutex(_event_queue_lock);
-				_event_queue.push(e);
-				e.type = dptype;
-				_event_queue.push(e);
-				unlockMutex(_event_queue_lock);
-			}
-		} else {
-			keyPress(Common::KEYCODE_u, KeyReceiver::PRESS);
-		}
-
 		return;
 
 
 	case JE_TOUCH:
 	case JE_MULTI:
 	{
-		if (!_show_mouse) {
-			_touchControls.update(arg1, arg2, arg3, arg4);
-			return;
-		}
 		switch (arg2) {
-		case JACTION_POINTER_DOWN:
-			if (arg1 > _fingersDown)
-				_fingersDown = arg1;
-				/* no break */
-
-		case JACTION_DOWN:
-		case JACTION_MOVE:
-			return;
-
-		case JACTION_UP:
-		case JACTION_POINTER_UP: {
-			if (_show_mouse) {
-				if (arg1 != _fingersDown)
-					return;
-				Common::EventType up;
-
-				switch (_fingersDown) {
-				case 1:
-					e.type = Common::EVENT_RBUTTONDOWN;
-					up = Common::EVENT_RBUTTONUP;
-					break;
-				case 2:
-					e.type = Common::EVENT_MBUTTONDOWN;
-					up = Common::EVENT_MBUTTONUP;
-					break;
-				default:
-					LOGD("unmapped multi tap: %d", _fingersDown);
-					return;
-				}
-
-				e.mouse = getEventManager()->getMousePos();
-
-				lockMutex(_event_queue_lock);
-
-				if (_queuedEventTime)
-					_event_queue.push(_queuedEvent);
-
-				_event_queue.push(e);
-
-				e.type = up;
-				_queuedEvent = e;
-				_queuedEventTime = getMillis() + kQueuedInputEventDelay;
-
-				unlockMutex(_event_queue_lock);
-			}
-			return;
+			case JACTION_DOWN:
+			case JACTION_POINTER_DOWN:
+				TouchControlsBackend::pointerDown(arg1, arg3, arg4);
+				return;
+			case JACTION_MOVE:
+				TouchControlsBackend::pointerMove(arg1, arg3, arg4);
+				return;
+			case JACTION_UP:
+			case JACTION_POINTER_UP:
+				TouchControlsBackend::pointerUp(arg1, arg3, arg4);
+				return;
 		}
-		}
-
 		return;
 	}
 
@@ -668,53 +492,24 @@ bool OSystem_Android::pollEvent(Common::Event &event) {
 		}
 	}
 
-	lockMutex(_event_queue_lock);
-
-	if (_queuedEventTime && (getMillis() > _queuedEventTime)) {
-		event = _queuedEvent;
-		_queuedEventTime = 0;
-		unlockMutex(_event_queue_lock);
-		return true;
-	}
-
-	if (_event_queue.empty()) {
-		unlockMutex(_event_queue_lock);
-		return false;
-	}
-
-	event = _event_queue.pop();
-
-	unlockMutex(_event_queue_lock);
-
-	if (event.type == Common::EVENT_MOUSEMOVE) {
-		const Common::Point &m = getEventManager()->getMousePos();
-
-		if (m != event.mouse)
-			_force_redraw = true;
-	}
-
-	return true;
+	return false;
 }
 
 void OSystem_Android::pushEvent(const Common::Event &event) {
-	lockMutex(_event_queue_lock);
-	_event_queue.push(event);
-	unlockMutex(_event_queue_lock);
+	getEventManager()->pushEvent(event);
 }
 
 void OSystem_Android::keyPress(const Common::KeyCode keycode, const KeyReceiver::KeyPressType type) {
 	Common::Event e;
 	e.kbd.keycode = keycode;
-	lockMutex(_event_queue_lock);
 	if (type == KeyReceiver::DOWN || type == KeyReceiver::PRESS) {
 		e.type = Common::EVENT_KEYDOWN;
-		_event_queue.push(e);
+		getEventManager()->pushEvent(e);
 	}
 	if (type == KeyReceiver::UP || type == KeyReceiver::PRESS) {
 		e.type = Common::EVENT_KEYUP;
-		_event_queue.push(e);
+		getEventManager()->pushEvent(e);
 	}
-	unlockMutex(_event_queue_lock);
 }
 
 #endif
