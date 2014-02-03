@@ -108,8 +108,6 @@ private:
 	int _egl_surface_width;
 	int _egl_surface_height;
 
-	bool _force_redraw;
-
 	bool _opengl;
 
 	// Game layer

@@ -116,7 +116,6 @@ OSystem_Android::OSystem_Android(int audio_sample_rate, int audio_buffer_size) :
 	_screen_changeid(0),
 	_egl_surface_width(0),
 	_egl_surface_height(0),
-	_force_redraw(false),
 	_game_texture(0),
 	_game_pbuf(),
 	_overlay_texture(0),
