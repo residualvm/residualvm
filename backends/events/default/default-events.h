@@ -49,10 +49,6 @@ class DefaultEventManager : public Common::EventManager, Common::EventObserver {
 	Common::ArtificialEventSource _artificialEventSource;
 
 	Common::Queue<Common::Event> _eventQueue;
-	bool notifyEvent(const Common::Event &ev) {
-		_eventQueue.push(ev);
-		return true;
-	}
 
 	Common::Point _mousePos;
 	int _buttonState;
@@ -96,6 +92,11 @@ public:
 	 // this, please talk to tsoliman and/or LordHoto.
 	virtual Common::Keymapper *getKeymapper() { return _keymapper; }
 #endif
+
+	virtual bool notifyEvent(const Common::Event &ev) {
+		_eventQueue.push(ev);
+		return true;
+	}
 };
 
 #endif

@@ -33,13 +33,14 @@
 #include "graphics/pixelbuffer.h"
 #include "graphics/opengles2/system_headers.h"
 #include "graphics/opengles2/framebuffer.h"
+#include "graphics/opengles2/system_headers.h"
 #include "backends/base-backend.h"
 #include "backends/plugins/posix/posix-provider.h"
 #include "backends/fs/posix/posix-fs-factory.h"
+#include "backends/touch/touchcontrols.h"
 
 #include "backends/platform/android/events.h"
 #include "backends/platform/android/texture.h"
-#include "backends/platform/android/touchcontrols.h"
 
 #include <pthread.h>
 
@@ -98,7 +99,7 @@ extern void checkGlError(const char *expr, const char *file, int line);
 #define GLTHREADCHECK do {  } while (false)
 #endif
 
-class OSystem_Android : public EventsBaseBackend, public PaletteManager, public KeyReceiver {
+class OSystem_Android : public EventsBaseBackend, public PaletteManager, public KeyReceiver, public TouchControlsBackend {
 private:
 	// passed from the dark side
 	int _audio_sample_rate;
@@ -130,8 +131,6 @@ private:
 	int _mouse_targetscale;
 	bool _show_mouse;
 	bool _use_mouse_palette;
-
-	bool _virtcontrols_on;
 
 	int _graphicsMode;
 	bool _fullscreen;
@@ -217,28 +216,15 @@ public:
 	void keyPress(const Common::KeyCode keycode, const KeyReceiver::KeyPressType type);
 
 private:
-	Common::Queue<Common::Event> _event_queue;
-	Common::Event _queuedEvent;
-	uint32 _queuedEventTime;
-	MutexRef _event_queue_lock;
-
-	Common::Point _touch_pt_down, _touch_pt_scroll, _touch_pt_dt;
 	int _eventScaleX;
 	int _eventScaleY;
-	bool _touchpad_mode;
-	int _touchpad_scale;
 	int _trackball_scale;
 	int _dpad_scale;
-	int _fingersDown;
 
 	void clipMouse(Common::Point &p);
 	void scaleMouse(Common::Point &p, int x, int y, bool deductDrawRect = true);
 	void updateEventScale();
 	void disableCursorPalette();
-
-	TouchControls _touchControls;
-
-	void drawVirtControls();
 
 protected:
 	// PaletteManager API
