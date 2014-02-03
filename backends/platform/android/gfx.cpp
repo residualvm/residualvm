@@ -324,7 +324,6 @@ void OSystem_Android::clearScreen(FixupType type, byte count) {
 			break;
 
 		case kClearUpdate:
-			_force_redraw = true;
 			updateScreen();
 			break;
 		}
@@ -334,7 +333,6 @@ void OSystem_Android::clearScreen(FixupType type, byte count) {
 		GLCALL(glEnable(GL_SCISSOR_TEST));
 
 	_show_mouse = sm;
-	_force_redraw = true;
 }
 
 void OSystem_Android::updateScreenRect() {
@@ -470,14 +468,6 @@ void OSystem_Android::updateScreen() {
 					_game_pbuf.getRawBuffer(), pitch);
 		}
 
-		if (!_force_redraw &&
-				!_game_texture->dirty() &&
-				!_overlay_texture->dirty() &&
-				!_mouse_texture->dirty())
-			return;
-
-		_force_redraw = false;
-
 		if (_frame_buffer) {
 			_frame_buffer->detach();
 			glViewport(0,0, _egl_surface_width, _egl_surface_height);
@@ -602,7 +592,6 @@ void OSystem_Android::setFocusRectangle(const Common::Rect& rect) {
 
 	if (_enable_zoning) {
 		_focus_rect = rect;
-		_force_redraw = true;
 	}
 }
 
@@ -611,7 +600,6 @@ void OSystem_Android::clearFocusRectangle() {
 
 	if (_enable_zoning) {
 		_focus_rect = Common::Rect();
-		_force_redraw = true;
 	}
 }
 
@@ -619,7 +607,6 @@ void OSystem_Android::showOverlay() {
 	ENTER();
 
 	_show_overlay = true;
-	_force_redraw = true;
 
 	updateEventScale();
 
