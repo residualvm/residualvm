@@ -20,16 +20,84 @@
  *
  */
 
-#if defined(__ANDROID__)
-
+#include "common/archive.h"
 #include "common/fs.h"
 #include "common/stream.h"
-#include "common/archive.h"
+#include "common/system.h"
 #include "image/tga.h"
+
+#if defined(ENABLE_TOUCH)
 
 #include "backends/platform/android/events.h"
 #include "backends/platform/android/texture.h"
-#include "backends/platform/android/touchcontrols.h"
+
+#include "backends/touch/touchcontrols.h"
+#include "engines/grim/touchcontrols.h"
+
+namespace Grim {
+
+enum TouchArea {
+	kTouchAreaJoystick = 0xffff,
+	kTouchAreaCenter   = 0xfffe,
+	kTouchAreaRight    = 0xfffd,
+	kTouchAreaNone     = 0xfffc,
+};
+
+static TouchArea getTouchArea(float xPercent, float yPercent) {
+	if (xPercent < 0.3)
+		return kTouchAreaJoystick;
+	else if (xPercent < 0.8)
+		return kTouchAreaCenter;
+	else
+		return kTouchAreaRight;
+}
+
+class GrimControls {
+public:
+	GrimControls(KeyReceiver *kr, int width, int height);
+	~GrimControls();
+
+	void draw();
+	void update(int ptr, int action, int x, int y);
+
+private:
+	int _screenWidth, _screenHeight;
+	KeyReceiver *_key_receiver;
+
+	struct Pointer {
+		uint16 startX, startY;
+		uint16 currentX, currentY;
+		TouchArea function;
+		bool active;
+	};
+
+	enum { kNumPointers = 5 };
+	Pointer _pointers[kNumPointers];
+	int _activePointers[4];
+	Common::KeyCode _joystickPressing, _centerPressing, _rightPressing;
+	int &pointerFor(TouchArea ta);
+	GLESTexture *_arrowsTexture;
+
+};
+
+static GLES8888Texture *loadBuiltinTexture(const char *filename) {
+	Common::ArchiveMemberPtr member = SearchMan.getMember(filename);
+	Common::SeekableReadStream *str = member->createReadStream();
+	Image::TGADecoder dec;
+	dec.loadStream(*str);
+	const void *pixels = dec.getSurface()->getPixels();
+
+	GLES8888Texture *ret = new GLES8888Texture();
+	uint16 w = dec.getSurface()->w;
+	uint16 h = dec.getSurface()->h;
+	uint16 pitch = dec.getSurface()->pitch;
+	ret->allocBuffer(w, h);
+	ret->updateBuffer(0, 0, w, h, pixels, pitch);
+
+	delete str;
+	return ret;
+}
+
 
 static Common::Rect clipFor(const Common::KeyCode &cs) {
 	switch (cs) {
@@ -57,19 +125,20 @@ static Common::Rect clipFor(const Common::KeyCode &cs) {
 	}
 }
 
-TouchControls::TouchControls() :
-	_arrows_texture(NULL),
+GrimControls::GrimControls(KeyReceiver *kr, int width, int height) :
 	_joystickPressing(Common::KEYCODE_INVALID),
 	_centerPressing(Common::KEYCODE_INVALID),
 	_rightPressing(Common::KEYCODE_INVALID),
-	_key_receiver(NULL),
-	_screen_width(0),
-	_screen_height(0) {
+	_key_receiver(kr),
+	_screenWidth(width),
+	_screenHeight(height) {
+
+	_arrowsTexture = loadBuiltinTexture("arrows.tga");
 
 	for (int p = 0; p < kNumPointers; ++p) {
 		Pointer &pp = _pointers[p];
 		pp.currentX = pp.currentY = pp.startX = pp.startY = 0;
-		pp.active = false;
+		pp.active   = false;
 		pp.function = kTouchAreaNone;
 	}
 
@@ -77,22 +146,11 @@ TouchControls::TouchControls() :
 		_activePointers[i] = -1;
 }
 
-TouchControls::~TouchControls() {
-	if (_arrows_texture) {
-		delete _arrows_texture;
-		_arrows_texture = 0;
+GrimControls::~GrimControls() {
+	if (_arrowsTexture) {
+		delete _arrowsTexture;
+		_arrowsTexture = 0;
 	}
-}
-
-uint16 TouchControls::getTouchArea(int x, int y) {
-	float xPercent = float(x) / _screen_width;
-
-	if (xPercent < 0.3)
-		return kTouchAreaJoystick;
-	else if (xPercent < 0.8)
-		return kTouchAreaCenter;
-	else
-		return kTouchAreaRight;
 }
 
 static Common::KeyCode determineKey(int dX, int dY, Common::KeyCode def = Common::KEYCODE_INVALID) {
@@ -111,60 +169,39 @@ static Common::KeyCode determineKey(int dX, int dY, Common::KeyCode def = Common
 	return Common::KEYCODE_INVALID;
 }
 
-static GLES8888Texture *loadBuiltinTexture(const char *filename) {
-	Common::ArchiveMemberPtr member = SearchMan.getMember(filename);
-	Common::SeekableReadStream *str = member->createReadStream();
-	Image::TGADecoder dec;
-	dec.loadStream(*str);
-	const void *pixels = dec.getSurface()->getPixels();
-
-	GLES8888Texture *ret = new GLES8888Texture();
-	uint16 w = dec.getSurface()->w;
-	uint16 h = dec.getSurface()->h;
-	uint16 pitch = dec.getSurface()->pitch;
-	ret->allocBuffer(w, h);
-	ret->updateBuffer(0, 0, w, h, pixels, pitch);
-
-	delete str;
-	return ret;
-}
-
-void TouchControls::init(KeyReceiver *kr, int width, int height) {
-	_arrows_texture = loadBuiltinTexture("arrows.tga");
-	_screen_width = width;
-	_screen_height = height;
-	_key_receiver = kr;
-}
-
 const uint _numRightKeycodes = 4;
-const Common::KeyCode _rightKeycodes[] = { Common::KEYCODE_i, Common::KEYCODE_p, Common::KEYCODE_u, Common::KEYCODE_e };
+const Common::KeyCode _rightKeycodes[] = {
+	Common::KEYCODE_i,
+	Common::KEYCODE_p,
+	Common::KEYCODE_u,
+	Common::KEYCODE_e
+};
 
-void TouchControls::draw() {
+void GrimControls::draw() {
 	if (_joystickPressing != Common::KEYCODE_INVALID) {
 		Common::Rect clip = clipFor(_joystickPressing);
-		_arrows_texture->drawTexture(2 * _screen_width / 10, _screen_height / 2, 64, 64, clip);
+		_arrowsTexture->drawTexture(2 * _screenWidth / 10, _screenHeight / 2, 64, 64, clip);
 	}
 
 	if (_centerPressing != Common::KEYCODE_INVALID) {
 		Common::Rect clip = clipFor(_centerPressing);
-		_arrows_texture->drawTexture(_screen_width / 2, _screen_height / 2, 64, 64, clip);
+		_arrowsTexture->drawTexture(_screenWidth / 2, _screenHeight / 2, 64, 64, clip);
 	}
 
 	if (_rightPressing != Common::KEYCODE_INVALID) {
 		Common::Rect clip = clipFor(_rightPressing);
-		_arrows_texture->drawTexture( 8 * _screen_width / 10, _screen_height / 2, 64, 64, clip);
+		_arrowsTexture->drawTexture( 8 * _screenWidth / 10, _screenHeight / 2, 64, 64, clip);
 	}
 }
 
-void TouchControls::update(int ptr, int action, int x, int y) {
+void GrimControls::update(int ptr, int action, int x, int y) {
 	if (ptr > kNumPointers)
 		return;
 
-	TouchArea touchArea = (TouchArea) getTouchArea(x, y);
+	TouchArea touchArea = getTouchArea(float(x) / _screenWidth, float(y) / _screenHeight);
 
 	switch (action) {
-	case JACTION_POINTER_DOWN:
-	case JACTION_DOWN:
+	case JACTION_DOWN: {
 		if (touchArea > kTouchAreaNone && -1 == pointerFor(touchArea)) {
 			pointerFor(touchArea) = ptr;
 			_pointers[ptr].active = true;
@@ -175,6 +212,7 @@ void TouchControls::update(int ptr, int action, int x, int y) {
 		} else {
 			return;
 		}
+	}
 
 	case JACTION_MOVE: {
 		_pointers[ptr].currentX = x;
@@ -227,8 +265,7 @@ void TouchControls::update(int ptr, int action, int x, int y) {
 		return;
 	}
 
-	case JACTION_UP:
-	case JACTION_POINTER_UP: {
+	case JACTION_UP: {
 		switch (_pointers[ptr].function) {
 		case kTouchAreaJoystick:
 			pointerFor(kTouchAreaJoystick) = -1;
@@ -255,6 +292,7 @@ void TouchControls::update(int ptr, int action, int x, int y) {
 		default:
 			break;
 		}
+
 		_pointers[ptr].active = false;
 		_pointers[ptr].function = kTouchAreaNone;
 		return;
@@ -262,8 +300,41 @@ void TouchControls::update(int ptr, int action, int x, int y) {
 	}
 }
 
-int &TouchControls::pointerFor(TouchArea ta) {
+int &GrimControls::pointerFor(TouchArea ta) {
 	return _activePointers[ta - kTouchAreaNone];
 }
 
+JoystickMode *JoystickMode::create() {
+	TouchControlsBackend *tcb = dynamic_cast<TouchControlsBackend *>(g_system);
+	uint32 width  = tcb->getTouchWidth();
+	uint32 height = tcb->getTouchHeight();
+	return new JoystickMode(width, height);
+}
+
+JoystickMode::JoystickMode(uint32 width, uint32 height)
+	: TouchControlsImpl(width, height) {
+		_gc = new GrimControls(dynamic_cast<KeyReceiver*>(g_system), width, height);
+}
+
+JoystickMode::~JoystickMode() {
+	delete _gc;
+}
+
+void JoystickMode::draw() {
+	_gc->draw();
+}
+
+void JoystickMode::pointerDown(uint32 pointerId, uint32 x, uint32 y) {
+	_gc->update(pointerId, JACTION_DOWN, x, y);
+}
+
+void JoystickMode::pointerMove(uint32 pointerId, uint32 x, uint32 y) {
+	_gc->update(pointerId, JACTION_MOVE, x, y);
+}
+
+void JoystickMode::pointerUp(uint32 pointerId, uint32 x, uint32 y) {
+	_gc->update(pointerId, JACTION_UP, x, y);
+}
+
+}
 #endif

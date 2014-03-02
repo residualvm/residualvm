@@ -140,6 +140,11 @@ MODULE_OBJS += \
 	movie/codecs/blocky8ARM.o
 endif
 
+ifdef ENABLE_TOUCH
+MODULE_OBJS += \
+	touchcontrols.o
+endif
+
 # This module can be built as a plugin
 ifeq ($(ENABLE_GRIM), DYNAMIC_PLUGIN)
 PLUGIN := 1

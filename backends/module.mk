@@ -116,6 +116,7 @@ MODULE_OBJS += \
 	mixer/sdl13/sdl13-mixer.o
 endif
 
+# ResidualVM specific:
 ifdef ENABLE_TOUCH
 MODULE_OBJS += \
 	touch/touchcontrols.o
