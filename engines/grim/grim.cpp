@@ -68,6 +68,11 @@
 
 #include "engines/grim/lua/lua.h"
 
+#if defined(TOUCH_BACKEND)
+#include "backends/touch/touchcontrols.h"
+#include "backends/touch/touch_impl.h"
+#endif
+
 namespace Grim {
 
 GrimEngine *g_grim = NULL;
@@ -301,6 +306,10 @@ Common::Error GrimEngine::run() {
 		splash_bm = Bitmap::create("load.tga");
 
 	g_driver->clearScreen();
+
+#if defined(TOUCH_BACKEND)
+	dynamic_cast<TouchControlsBackend *>(g_system)->requestTouchControlMode(kJoystickMode);
+#endif
 
 	if (splash_bm != NULL)
 		splash_bm->draw();
