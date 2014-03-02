@@ -56,30 +56,7 @@ class TouchpadMode : public TouchControlsImpl {
 		Common::Point _screenStartPos;
 };
 
-class JoystickMode : public TouchControlsImpl {
-	public:
-		JoystickMode(uint32 width, uint32 height)
-			: TouchControlsImpl(width, height) {}
-
-		virtual void process(const Common::Event &ev) {
-
-		}
-
-		virtual void draw() {
-
-		}
-		virtual void pointerDown(uint32 pointerId, uint32 x, uint32 y) {
-
-		}
-
-		virtual void pointerMove(uint32 pointerId, uint32 x, uint32 y) {
-
-		}
-
-		virtual void pointerUp(uint32 pointerId, uint32 x, uint32 y) {
-
-		}
-};
+#include "backends/touch/grimcontrols.h"
 
 void TouchControlsBackend::requestTouchControlMode(const TouchControlsMode mode) {
 	if (mode == _touchMode)

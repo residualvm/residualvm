@@ -29,7 +29,7 @@
 
 #include "backends/platform/android/events.h"
 #include "backends/platform/android/texture.h"
-#include "backends/platform/android/touchcontrols.h"
+#include "backends/touch/grimcontrols.h"
 
 static Common::Rect clipFor(const Common::KeyCode &cs) {
 	switch (cs) {
@@ -57,7 +57,7 @@ static Common::Rect clipFor(const Common::KeyCode &cs) {
 	}
 }
 
-TouchControls::TouchControls() :
+GrimControls::GrimControls() :
 	_arrows_texture(NULL),
 	_joystickPressing(Common::KEYCODE_INVALID),
 	_centerPressing(Common::KEYCODE_INVALID),
@@ -77,14 +77,14 @@ TouchControls::TouchControls() :
 		_activePointers[i] = -1;
 }
 
-TouchControls::~TouchControls() {
+GrimControls::~GrimControls() {
 	if (_arrows_texture) {
 		delete _arrows_texture;
 		_arrows_texture = 0;
 	}
 }
 
-uint16 TouchControls::getTouchArea(int x, int y) {
+uint16 GrimControls::getTouchArea(int x, int y) {
 	float xPercent = float(x) / _screen_width;
 
 	if (xPercent < 0.3)
@@ -129,7 +129,7 @@ static GLES8888Texture *loadBuiltinTexture(const char *filename) {
 	return ret;
 }
 
-void TouchControls::init(KeyReceiver *kr, int width, int height) {
+void GrimControls::init(KeyReceiver *kr, int width, int height) {
 	_arrows_texture = loadBuiltinTexture("arrows.tga");
 	_screen_width = width;
 	_screen_height = height;
@@ -139,7 +139,7 @@ void TouchControls::init(KeyReceiver *kr, int width, int height) {
 const uint _numRightKeycodes = 4;
 const Common::KeyCode _rightKeycodes[] = { Common::KEYCODE_i, Common::KEYCODE_p, Common::KEYCODE_u, Common::KEYCODE_e };
 
-void TouchControls::draw() {
+void GrimControls::draw() {
 	if (_joystickPressing != Common::KEYCODE_INVALID) {
 		Common::Rect clip = clipFor(_joystickPressing);
 		_arrows_texture->drawTexture(2 * _screen_width / 10, _screen_height / 2, 64, 64, clip);
@@ -156,7 +156,7 @@ void TouchControls::draw() {
 	}
 }
 
-void TouchControls::update(int ptr, int action, int x, int y) {
+void GrimControls::update(int ptr, int action, int x, int y) {
 	if (ptr > kNumPointers)
 		return;
 
@@ -262,7 +262,7 @@ void TouchControls::update(int ptr, int action, int x, int y) {
 	}
 }
 
-int &TouchControls::pointerFor(TouchArea ta) {
+int &GrimControls::pointerFor(TouchArea ta) {
 	return _activePointers[ta - kTouchAreaNone];
 }
 

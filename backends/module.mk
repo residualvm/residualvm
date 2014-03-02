@@ -114,7 +114,8 @@ endif
 
 ifeq ($(BACKEND),android)
 MODULE_OBJS += \
-	touch/touchcontrols.o
+	touch/touchcontrols.o \
+	touch/grimcontrols.o
 endif
 
 ifeq ($(BACKEND),tizen)
