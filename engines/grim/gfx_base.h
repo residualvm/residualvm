@@ -307,8 +307,13 @@ protected:
 
 // Factory-like functions:
 
-GfxBase *CreateGfxOpenGL();
-GfxBase *CreateGfxTinyGL();
+enum RendererType {
+	GFX_DRIVER_OPENGL,
+	GFX_DRIVER_OPENGL_SHADERS,
+	GFX_DRIVER_TINYGL
+};
+
+GfxBase *CreateGfxDriver(RendererType preferredRendererType);
 
 extern GfxBase *g_driver;
 

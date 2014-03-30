@@ -109,12 +109,29 @@ void GfxBase::drawMesh(const Mesh *mesh) {
 		mesh->_faces[i].draw(mesh);
 }
 
-#ifndef USE_OPENGL
-// Allow CreateGfxOpenGL to be called even if OpenGL isn't included
-GfxBase *CreateGfxOpenGL() {
+// Prototypes for the factory-function below.
+GfxBase *CreateGfxOpenGL();
+GfxBase *CreateGfxOpenGLS();
+GfxBase *CreateGfxTinyGL();
+GfxBase *CreateGfxDriver(RendererType preferredRendererType) {
+#ifdef USE_OPENGL
+	if (preferredRendererType == GFX_DRIVER_OPENGL) {
+		return CreateGfxOpenGL();
+	}
+#endif
+
+#ifdef USE_OPENGL_SHADERS
+	if (preferredRendererType == GFX_DRIVER_OPENGL_SHADERS) {
+		return CreateGfxOpenGLS();
+	}
+#endif
+
+	if (preferredRendererType == GFX_DRIVER_TINYGL) {
+		return CreateGfxTinyGL();
+	}
+	// Fallthrough, in case the relevant if-block above was disabled.
 	return CreateGfxTinyGL();
 }
-#endif // USE_OPENGL
 
 Math::Matrix4 GfxBase::makeLookMatrix(const Math::Vector3d& pos, const Math::Vector3d& interest, const Math::Vector3d& up) {
 	Math::Vector3d f = (interest - pos).getNormalized();
