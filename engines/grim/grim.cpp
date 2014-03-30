@@ -718,6 +718,12 @@ void GrimEngine::mainLoop() {
 							g_movie->stop();
 							break;
 						}
+					// Also allow us to skip movies in the EMI Demo
+					} else if (g_grim->getGameType() == GType_MONKEY4 && g_movie->isPlaying() && getGameFlags() & ADGF_DEMO) {
+						if (event.kbd.keycode == Common::KEYCODE_ESCAPE) {
+							g_movie->stop();
+							break;
+						}
 					} else if (_mode != DrawMode && _mode != SmushMode && (event.kbd.ascii == 'q')) {
 						handleExit();
 						break;
