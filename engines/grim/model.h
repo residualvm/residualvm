@@ -98,7 +98,7 @@ public:
 	void draw(const Mesh *mesh) const;
 	void changeMaterial(Material *material);
 
-	bool hasTexture() const { return _texVertices != nullptr; }
+	bool hasTexture() const { return _texVertices != nullptr && !_texAllEqual; }
 
 	const Math::Vector3d &getNormal() const { return _normal; }
 	void setNormal(const Math::Vector3d &normal) { _normal = normal; }
@@ -115,6 +115,7 @@ private:
 	int _numVertices;
 	int *_vertices, *_texVertices;
 	Math::Vector3d _normal;
+	bool _texAllEqual;
 
 public:
 	void *_userData;

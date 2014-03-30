@@ -302,7 +302,7 @@ void Model::Geoset::changeMaterials(Material *materials[]) {
 MeshFace::MeshFace() :
 		_material(nullptr), _type(0), _geo(0), _light(0), _tex(0),
 		_extraLight(0), _numVertices(0), _vertices(nullptr),
-		_texVertices(nullptr), _userData(nullptr) {
+		_texVertices(nullptr), _userData(nullptr), _texAllEqual(false) {
 }
 
 MeshFace::~MeshFace() {
@@ -346,8 +346,12 @@ int MeshFace::loadBinary(Common::SeekableReadStream *data, Material *materials[]
 
 	if (texPtr != 0) {
 		_texVertices = new int[_numVertices];
+		_texAllEqual = true;
 		for (int i = 0; i < _numVertices; i++) {
 			_texVertices[i] = data->readUint32LE();
+			if (_texVertices[i] != _texVertices[0]) {
+				_texAllEqual = false;
+			}
 		}
 	}
 
