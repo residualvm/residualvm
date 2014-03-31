@@ -157,7 +157,7 @@ void registerDefaults() {
 
 	// Graphics
 	ConfMan.registerDefault("fullscreen", false);
-	ConfMan.registerDefault("soft_renderer", false);
+	ConfMan.registerDefault("renderer", "opengl");
 	ConfMan.registerDefault("show_fps", false);
 
 	// Sound & Music

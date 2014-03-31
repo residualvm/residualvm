@@ -114,7 +114,7 @@ GfxBase *CreateGfxOpenGL();
 GfxBase *CreateGfxOpenGLS();
 GfxBase *CreateGfxTinyGL();
 GfxBase *CreateGfxDriver(RendererType preferredRendererType) {
-#ifdef USE_OPENGL
+#if defined(USE_OPENGL) && !defined(USE_GLES2)
 	if (preferredRendererType == GFX_DRIVER_OPENGL) {
 		return CreateGfxOpenGL();
 	}

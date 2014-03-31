@@ -33,6 +33,7 @@
 
 #include "engines/grim/textobject.h"
 #include "engines/grim/iris.h"
+#include "engines/grim/gfx_base.h"
 
 namespace Grim {
 
@@ -238,7 +239,7 @@ protected:
 	unsigned int _lastFrameTime;
 	unsigned _speedLimitMs;
 	bool _showFps;
-	bool _softRenderer;
+	RendererType _rendererType;
 
 	bool *_controlsEnabled;
 	bool *_controlsState;
