@@ -898,8 +898,16 @@ void GfxOpenGLS::createMaterial(Texture *material, const char *data, const CMap 
 
 	GLuint *textures = (GLuint *)material->_texture;
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	//Remove darkened lines in EMI intro
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, material->_width, material->_height, 0, format, GL_UNSIGNED_BYTE, texdata);
@@ -980,6 +988,22 @@ void GfxOpenGLS::createBitmap(BitmapData *bitmap) {
 				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
 			} else {
 				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
+
+				//add transparency support
+				if (bitmap->_format == 1 && bitmap->_bpp == 32 && bitmap->_colorFormat == BM_RGBA) {
+					byte *texDataPtr = texOut;
+
+					for (int i = 0; i < bitmap->_width * bitmap->_height; i++, texDataPtr += sizeof(uint32)) {
+						uint32 *pixel = (uint32*)texDataPtr;
+						if (*pixel == 0xff00ff) {
+							texDataPtr[3] = 0;
+							bitmap->_hasTransparency = true;
+						} else {
+							texDataPtr[3] = 255;
+						}
+
+					}
+				}
 			}
 
 			int actualWidth = nextHigher2(bitmap->_width);
