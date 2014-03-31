@@ -712,8 +712,9 @@ void GrimEngine::mainLoop() {
 			Common::EventType type = event.type;
 			if (type == Common::EVENT_KEYDOWN || type == Common::EVENT_KEYUP) {
 				if (type == Common::EVENT_KEYDOWN) {
-					// Allow us to disgracefully skip movies in the PS2-version:
-					if (_mode == SmushMode && getGamePlatform() == Common::kPlatformPS2) {
+					// Allow us to disgracefully skip movies in the PS2-version and in the EMI Demo
+					if ((_mode == SmushMode && getGamePlatform() == Common::kPlatformPS2) ||
+					    (g_grim->getGameType() == GType_MONKEY4 && g_movie->isPlaying() && getGameFlags() & ADGF_DEMO)) {
 						if (event.kbd.keycode == Common::KEYCODE_ESCAPE) {
 							g_movie->stop();
 							break;

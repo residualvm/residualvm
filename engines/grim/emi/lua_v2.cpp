@@ -599,6 +599,26 @@ void Lua_V2::FRUTEY_End() {
 	error("Lua_V2::FRUTEY_End() - TODO: Implement opcode");
 }
 
+void Lua_V2::ReadRegistryValue() {
+       lua_Object keyObj = lua_getparam(1);
+       float res;
+
+       if (!lua_isstring(keyObj)) {
+               lua_pushnil();
+               return;
+       }
+
+       // It appears impossible to hit the LastSavedGame registry read in the scripts
+       // So, this simpler ReadRegistryValue should work for now
+       const Common::String key = lua_getstring(keyObj);
+       if(g_emiregistry->Get(key, res)) {
+               lua_pushnumber(res);
+       } else {
+               error("Registry Value not present: %s\n", key.c_str());
+       }
+       return;
+}
+
 // Monkey specific LUA_OPCODEs
 STUB_FUNC2(Lua_V2::ToggleDebugDraw)
 STUB_FUNC2(Lua_V2::ToggleDrawCameras)

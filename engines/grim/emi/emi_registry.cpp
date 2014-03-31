@@ -47,6 +47,7 @@ const char *EmiRegistry::_translTable[][2] = {
 	{"miscfx",			"misc_video_effects"},
 	{"moviequality",	"movie_quality"},
 	{"musicquality",	"music_quality"},
+	{"SpewOnError",		""},	// Translated key not needed
 	{0,0}
 };
 
@@ -129,6 +130,9 @@ bool EmiRegistry::Get(const Common::String key, float &res) const {
 			return false;
 
 		res = convertSpeechModeFromGUI(ConfMan.getBool("subtitles"), ConfMan.getBool("speech_mute"));
+	} else if (key == "SpewOnError") {
+		// This appears to be a debug key from Grim that's present in the demo, report it as off
+		res = 0.0;
 	} else {
 		if (!(ConfMan.hasKey(_transMap[key])))
 			return false;
