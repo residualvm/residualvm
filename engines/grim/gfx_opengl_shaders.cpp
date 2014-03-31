@@ -151,6 +151,26 @@ Math::Matrix4 makeLookMatrix(const Math::Vector3d& pos, const Math::Vector3d& in
 }
 
 // taken from glm
+Math::Matrix4 makeProjectionMatrix(float fov, float nclip, float fclip) {
+	float right = nclip * tan(fov / 2 * (LOCAL_PI / 180));
+	float left = -right;
+	float top = right * 0.75;
+	float bottom = -right * 0.75;
+
+	Math::Matrix4 proj;
+	proj(0,0) = (2.0f * nclip) / (right - left);
+	proj(1,1) = (2.0f * nclip) / (top - bottom);
+	proj(2,0) = (right + left) / (right - left);
+	proj(2,1) = (top + bottom) / (top - bottom);
+	proj(2,2) = -(fclip + nclip) / (fclip - nclip);
+	proj(2,3) = -1.0f;
+	proj(3,2) = -(2.0f * fclip * nclip) / (fclip - nclip);
+	proj(3,3) = 0.0f;
+
+	return proj;
+}
+
+// taken from glm
 Math::Matrix4 makeRotationMatrix(const Math::Angle& angle, Math::Vector3d axis) {
 	float c = angle.getCosine();
 	float s = angle.getSine();
@@ -354,22 +374,7 @@ void GfxOpenGLS::setupCamera(float fov, float nclip, float fclip, float roll) {
 
 	_fov = fov; _nclip = nclip; _fclip = fclip;
 
-	float right = nclip * tan(fov / 2 * (LOCAL_PI / 180));
-	float left = -right;
-	float top = right * 0.75;
-	float bottom = -right * 0.75;
-
-	Math::Matrix4 proj;
-	proj(0,0) = (2.0f * nclip) / (right - left);
-	proj(1,1) = (2.0f * nclip) / (top - bottom);
-	proj(2,0) = (right + left) / (right - left);
-	proj(2,1) = (top + bottom) / (top - bottom);
-	proj(2,2) = -(fclip + nclip) / (fclip - nclip);
-	proj(2,3) = -1.0f;
-	proj(3,2) = -(2.0f * fclip * nclip) / (fclip - nclip);
-	proj(3,3) = 0.0f;
-
-	_projMatrix = proj;
+	_projMatrix = makeProjectionMatrix(fov, nclip, fclip);
 }
 
 void GfxOpenGLS::positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest, float roll) {
@@ -506,13 +511,19 @@ void GfxOpenGLS::startActorDraw(const Actor *actor) {
 		modelMatrix.transpose();
 
 		_actorProgram->setUniform("modelMatrix", modelMatrix);
-		_actorProgram->setUniform("viewMatrix", viewMatrix);
-		_actorProgram->setUniform("projMatrix", _projMatrix);
+		if (actor->isInOverworld()) {
+			_actorProgram->setUniform("viewMatrix", quat.toMatrix());
+			_actorProgram->setUniform("projMatrix", makeProjectionMatrix(90, 1, 3276.8f));
+		} else {
+			_actorProgram->setUniform("viewMatrix", viewMatrix);
+			_actorProgram->setUniform("projMatrix", _projMatrix);
+		}
 
 		_actorProgram->setUniform("cameraPos", _currentPos);
 		_actorProgram->setUniform("actorPos", pos);
 		_actorProgram->setUniform("isBillboard", GL_FALSE);
 		_actorProgram->setUniform1f("alpha", alpha);
+		_actorProgram->setUniform("inOverworld", actor->isInOverworld());
 	} else {
 		Math::Matrix4 modelMatrix = quat.toMatrix();
 		bool hasZBuffer = g_grim->getCurrSet()->getCurrSetup()->_bkgndZBm;
@@ -1636,33 +1647,40 @@ void GfxOpenGLS::renderZBitmaps(bool render) {
 
 }
 
+static void readPixels(int x, int y, int width, int height, char *buffer) {
+	char *p = buffer;
+	for (int i = y; i < y + height; i++) {
+		glReadPixels(x, 479 - i, width, 1, GL_RGBA, GL_UNSIGNED_BYTE, p);
+		p += width * 4;
+	}
+}
 
 void GfxOpenGLS::createSpecialtyTextures() {
 	//make a buffer big enough to hold any of the textures
 	char *buffer = new char[256*256*4];
 
-	glReadPixels(0, 0, 256, 256, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	readPixels(0, 0, 256, 256, buffer);
 	_specialty[0].create(buffer, 256, 256);
 
-	glReadPixels(256, 0, 256, 256, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	readPixels(256, 0, 256, 256, buffer);
 	_specialty[1].create(buffer, 256, 256);
 
-	glReadPixels(512, 0, 128, 128, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	readPixels(512, 0, 128, 128, buffer);
 	_specialty[2].create(buffer, 128, 128);
 
-	glReadPixels(512, 128, 128, 128, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	readPixels(512, 128, 128, 128, buffer);
 	_specialty[3].create(buffer, 128, 128);
 
-	glReadPixels(0, 256, 256, 256, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	readPixels(0, 256, 256, 256, buffer);
 	_specialty[4].create(buffer, 256, 256);
 
-	glReadPixels(256, 256, 256, 256, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	readPixels(256, 256, 256, 256, buffer);
 	_specialty[5].create(buffer, 256, 256);
 
-	glReadPixels(512, 256, 128, 128, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	readPixels(512, 256, 128, 128, buffer);
 	_specialty[6].create(buffer, 128, 128);
 
-	glReadPixels(512, 384, 128, 128, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	readPixels(512, 384, 128, 128, buffer);
 	_specialty[7].create(buffer, 128, 128);
 
 	delete[] buffer;
