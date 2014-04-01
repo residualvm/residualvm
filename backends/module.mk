@@ -112,7 +112,7 @@ MODULE_OBJS += \
 	mixer/sdl13/sdl13-mixer.o
 endif
 
-ifeq ($(BACKEND),android)
+ifdef TOUCH_BACKEND
 MODULE_OBJS += \
 	touch/touchcontrols.o \
 	touch/grimcontrols.o
