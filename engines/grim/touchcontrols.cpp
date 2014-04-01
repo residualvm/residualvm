@@ -227,9 +227,9 @@ void GrimControls::update(int ptr, int action, int x, int y) {
 				_key_receiver->keyPress(_joystickPressing, KeyReceiver::UP);
 				_key_receiver->keyPress(newPressing, KeyReceiver::DOWN);
 				_joystickPressing = newPressing;
-			} else if(abs(dY) > 150) {
+			} else if(abs(dY) > _screenHeight / 5) {
 			   _key_receiver->keyPress(Common::KEYCODE_LSHIFT, KeyReceiver::DOWN);
-			} else if(abs(dY) <= 150){
+			} else if(abs(dY) <= _screenHeight / 5){
 			   _key_receiver->keyPress(Common::KEYCODE_LSHIFT, KeyReceiver::UP);
 			}
 			return;
