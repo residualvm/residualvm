@@ -92,7 +92,7 @@ void Lua_V2::SetReverb() {
 	if (lua_isnumber(dampingObj))
 		damping = lua_getnumber(dampingObj);
 
-	Debug::debug(Debug::Sound | Debug::Scripts,"Lua_V2::SetReverb, eax: %d, decay: %f, mix: %f, predelay: %f, damping: %f", param, decay, mix, predelay, damping);
+	Debug::debug(Debug::Sound | Debug::Scripts, "Lua_V2::SetReverb, eax: %d, decay: %f, mix: %f, predelay: %f, damping: %f", param, decay, mix, predelay, damping);
 	// FIXME: func(param, decay, mix, predelay, damping);
 }
 
@@ -103,7 +103,7 @@ void Lua_V2::ImSetState() {
 
 	int state = (int)lua_getnumber(stateObj);
 	g_imuseState = state;
-	Debug::debug(Debug::Sound | Debug::Scripts,"Lua_V2::ImSetState: stub, state: %d", state);
+	Debug::debug(Debug::Sound | Debug::Scripts, "Lua_V2::ImSetState: stub, state: %d", state);
 }
 
 void Lua_V2::ImStateHasEnded() {
@@ -116,7 +116,7 @@ void Lua_V2::ImStateHasEnded() {
 	// FIXME: Make sure this logic is correct.
 	pushbool(g_imuseState != state);
 
-	Debug::debug(Debug::Sound | Debug::Scripts,"Lua_V2::ImStateHasEnded: state %d.", state);
+	Debug::debug(Debug::Sound | Debug::Scripts, "Lua_V2::ImStateHasEnded: state %d.", state);
 }
 
 // TODO: Implement this:
@@ -138,7 +138,7 @@ void Lua_V2::EnableVoiceFX() {
 		state = true;
 
 	// FIXME: func(state);
-	Debug::debug(Debug::Sound | Debug::Scripts,"Lua_V2::EnableVoiceFX: implement opcode, state: %d", (int)state);
+	Debug::debug(Debug::Sound | Debug::Scripts, "Lua_V2::EnableVoiceFX: implement opcode, state: %d", (int)state);
 }
 
 void Lua_V2::SetGroupVolume() {
@@ -169,7 +169,7 @@ void Lua_V2::SetGroupVolume() {
 			error("Lua_V2::SetGroupVolume - unknown group %d", group);
 	}
 	// FIXME: func(group, volume);
-	Debug::debug(Debug::Sound | Debug::Scripts,"Lua_V2::SetGroupVolume: group: %d, volume %d", group, volume);
+	Debug::debug(Debug::Sound | Debug::Scripts, "Lua_V2::SetGroupVolume: group: %d, volume %d", group, volume);
 }
 
 void Lua_V2::EnableAudioGroup() {
@@ -199,7 +199,7 @@ void Lua_V2::EnableAudioGroup() {
 			error("Lua_V2::EnableAudioGroup - unknown group %d", group);
 	}
 
-	Debug::debug(Debug::Sound | Debug::Scripts,"Lua_V2::EnableAudioGroup: group: %d, state %d", group, (int)state);
+	Debug::debug(Debug::Sound | Debug::Scripts, "Lua_V2::EnableAudioGroup: group: %d, state %d", group, (int)state);
 }
 
 void Lua_V2::ImSelectSet() {
@@ -209,13 +209,13 @@ void Lua_V2::ImSelectSet() {
 		int quality = (int)lua_getnumber(qualityObj);
 		// FIXME: func(quality);
 		g_sound->selectMusicSet(quality);
-		Debug::debug(Debug::Sound | Debug::Scripts,"Lua_V2::ImSelectSet: quality mode: %d", quality);
+		Debug::debug(Debug::Sound | Debug::Scripts, "Lua_V2::ImSelectSet: quality mode: %d", quality);
 	}
 }
 
 void Lua_V2::ImFlushStack() {
 	// FIXME
-	Debug::debug(Debug::Sound | Debug::Scripts,"Lua_V2::ImFlushStack: currently guesswork");
+	Debug::debug(Debug::Sound | Debug::Scripts, "Lua_V2::ImFlushStack: currently guesswork");
 	g_sound->flushStack();
 }
 
