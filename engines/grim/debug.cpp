@@ -40,12 +40,13 @@ void Debug::registerDebugChannels() {
 	DebugMan.addDebugChannel(Fonts, "fonts", "");
 	DebugMan.addDebugChannel(Keyframes, "keyframes", "");
 	DebugMan.addDebugChannel(Movie, "movie", "");
-	DebugMan.addDebugChannel(Imuse, "imuse", "");
+	DebugMan.addDebugChannel(Sound, "sound", "");
 	DebugMan.addDebugChannel(Scripts, "scripts", "");
 	DebugMan.addDebugChannel(Sets, "sets", "");
 	DebugMan.addDebugChannel(TextObjects, "textobjects", "");
 	DebugMan.addDebugChannel(Patchr, "patchr", "");
 	DebugMan.addDebugChannel(Lipsync, "lipsync", "");
+
 	DebugMan.addDebugChannel(All, "all", "");
 }
 
