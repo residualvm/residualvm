@@ -751,6 +751,7 @@ void GfxTinyGL::drawEMIModelFace(const EMIModel *model, const EMIMeshFace *face)
 	int *indices = (int *)face->_indexes;
 	tglEnable(TGL_DEPTH_TEST);
 	tglDisable(TGL_ALPHA_TEST);
+	tglEnable(TGL_BLEND);
 	if (face->_hasTexture)
 		tglEnable(TGL_TEXTURE_2D);
 	else
@@ -776,6 +777,7 @@ void GfxTinyGL::drawEMIModelFace(const EMIModel *model, const EMIMeshFace *face)
 	tglEnable(TGL_TEXTURE_2D);
 	tglEnable(TGL_DEPTH_TEST);
 	tglEnable(TGL_ALPHA_TEST);
+	tglDisable(TGL_BLEND);
 }
 
 void GfxTinyGL::drawModelFace(const Mesh *mesh, const MeshFace *face) {
@@ -1066,6 +1068,11 @@ void GfxTinyGL::blit(const Graphics::PixelFormat &format, BlitImage *image, byte
 
 void GfxTinyGL::drawBitmap(const Bitmap *bitmap, int x, int y, uint32 layer) {
 
+	if (bitmap->getFormat() == 1 && bitmap->getHasTransparency()) {
+		tglEnable(TGL_BLEND);
+		//TODO: Support 1 byte alpha based transparency support
+		//tglBlendFunc(TGL_SRC_ALPHA, TGL_ONE_MINUS_SRC_ALPHA); 
+	}
 	// PS2 EMI uses a TGA for it's splash-screen, avoid using the following
 	// code for drawing that (as it has no tiles).
 	if (g_grim->getGameType() == GType_MONKEY4 && bitmap->_data->_numImages > 1) {
@@ -1115,6 +1122,8 @@ void GfxTinyGL::drawBitmap(const Bitmap *bitmap, int x, int y, uint32 layer) {
 	else
 		blit(bitmap->getPixelFormat(num), NULL, (byte *)_zb->zbuf, (byte *)bitmap->getData(num).getRawBuffer(),
 			 x, y, bitmap->getWidth(), bitmap->getHeight(), false);
+
+	tglDisable(TGL_BLEND);
 }
 
 void GfxTinyGL::destroyBitmap(BitmapData *bitmap) {
@@ -1275,8 +1284,11 @@ void GfxTinyGL::createMaterial(Texture *material, const char *data, const CMap *
 
 	TGLuint *textures = (TGLuint *)material->_texture;
 	tglBindTexture(TGL_TEXTURE_2D, textures[0]);
+
+	//TODO: for emi this should be TGL_CLAMP_TO_EDGE (like in gfx_opengl)
 	tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_WRAP_S, TGL_REPEAT);
 	tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_WRAP_T, TGL_REPEAT);
+	
 	tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_MAG_FILTER, TGL_LINEAR);
 	tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_MIN_FILTER, TGL_LINEAR);
 	tglTexImage2D(TGL_TEXTURE_2D, 0, 3, material->_width, material->_height, 0, format, TGL_UNSIGNED_BYTE, texdata);
