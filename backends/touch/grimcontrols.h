@@ -26,14 +26,17 @@
 #if defined(__ANDROID__)
 
 #include "common/events.h"
+#include "common/system.h"
+
+#include "backends/touch/touch_impl.h"
 
 #include "backends/platform/android/events.h"
 #include "backends/platform/android/texture.h"
 
-class TouchControls {
+class GrimControls {
 public:
-	TouchControls();
-	~TouchControls();
+	GrimControls();
+	~GrimControls();
 
 	void init(KeyReceiver *kr, int width, int height);
 	void draw();
@@ -66,6 +69,35 @@ private:
 	int &pointerFor(TouchArea ta);
 	GLESTexture *_arrows_texture;
 
+};
+
+class JoystickMode : public TouchControlsImpl {
+	public:
+		JoystickMode(uint32 width, uint32 height)
+			: TouchControlsImpl(width, height) {
+				gc.init(dynamic_cast<KeyReceiver*>(g_system), width, height);
+			}
+
+		virtual void process(const Common::Event &ev) {
+
+		}
+
+		virtual void draw() {
+			gc.draw();
+		}
+		virtual void pointerDown(uint32 pointerId, uint32 x, uint32 y) {
+			gc.update(pointerId, JACTION_DOWN, x, y);
+		}
+
+		virtual void pointerMove(uint32 pointerId, uint32 x, uint32 y) {
+			gc.update(pointerId, JACTION_MOVE, x, y);
+		}
+
+		virtual void pointerUp(uint32 pointerId, uint32 x, uint32 y) {
+			gc.update(pointerId, JACTION_UP, x, y);
+		}
+	private:
+		GrimControls gc;
 };
 
 #endif

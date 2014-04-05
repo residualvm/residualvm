@@ -194,6 +194,8 @@ void OSystem_Android::initSurface() {
 	// Initialize OpenGLES context.
 	GLESTexture::initGL();
 
+	initTouchSurface(_egl_surface_width, _egl_surface_height);
+
 	if (_game_texture)
 		_game_texture->reinit();
 
@@ -324,7 +326,6 @@ void OSystem_Android::clearScreen(FixupType type, byte count) {
 			break;
 
 		case kClearUpdate:
-			_force_redraw = true;
 			updateScreen();
 			break;
 		}
@@ -334,7 +335,6 @@ void OSystem_Android::clearScreen(FixupType type, byte count) {
 		GLCALL(glEnable(GL_SCISSOR_TEST));
 
 	_show_mouse = sm;
-	_force_redraw = true;
 }
 
 void OSystem_Android::updateScreenRect() {
@@ -435,8 +435,6 @@ Graphics::PixelBuffer OSystem_Android::setupScreen(int screenW, int screenH, boo
 	_opengl = accel3d;
 	initViewport();
 
-	_touchControls.init(this, _egl_surface_width, _egl_surface_height);
-
 	if (_opengl) {
 		// resize game texture
 		initSize(screenW, screenH, 0);
@@ -470,14 +468,6 @@ void OSystem_Android::updateScreen() {
 					_game_pbuf.getRawBuffer(), pitch);
 		}
 
-		if (!_force_redraw &&
-				!_game_texture->dirty() &&
-				!_overlay_texture->dirty() &&
-				!_mouse_texture->dirty())
-			return;
-
-		_force_redraw = false;
-
 		if (_frame_buffer) {
 			_frame_buffer->detach();
 			glViewport(0,0, _egl_surface_width, _egl_surface_height);
@@ -492,7 +482,7 @@ void OSystem_Android::updateScreen() {
 
 		if (true || _focus_rect.isEmpty()) {
 			_game_texture->drawTextureRect();
-			drawVirtControls();
+			TouchControlsBackend::draw();
 		} else {
 // TODO what is this and do we have engines using it?
 #if 0
@@ -558,14 +548,6 @@ void OSystem_Android::updateScreen() {
 		_frame_buffer->attach();
 }
 
-void OSystem_Android::drawVirtControls() {
-	if (_show_overlay)
-		return;
-
-	glEnable(GL_BLEND);
-	_touchControls.draw();
-}
-
 Graphics::Surface *OSystem_Android::lockScreen() {
 	ENTER();
 
@@ -602,7 +584,6 @@ void OSystem_Android::setFocusRectangle(const Common::Rect& rect) {
 
 	if (_enable_zoning) {
 		_focus_rect = rect;
-		_force_redraw = true;
 	}
 }
 
@@ -611,7 +592,6 @@ void OSystem_Android::clearFocusRectangle() {
 
 	if (_enable_zoning) {
 		_focus_rect = Common::Rect();
-		_force_redraw = true;
 	}
 }
 
@@ -619,7 +599,6 @@ void OSystem_Android::showOverlay() {
 	ENTER();
 
 	_show_overlay = true;
-	_force_redraw = true;
 
 	updateEventScale();
 

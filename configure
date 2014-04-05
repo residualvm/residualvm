@@ -2080,6 +2080,8 @@ case $_host_os in
 		LDFLAGS="$LDFLAGS -L$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++/`$CXX -dumpversion`/libs/$ABI/"
 		LIBS="$LIBS -lsupc++"
 		add_line_to_config_mk "ANDROID_SDK = $ANDROID_SDK"
+		add_line_to_config_h "#define TOUCH_BACKEND"
+		add_line_to_config_mk "TOUCH_BACKEND = 1"
 		_seq_midi=no
 		;;
 	beos*)
