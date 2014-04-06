@@ -47,6 +47,7 @@ const char *EmiRegistry::_translTable[][2] = {
 	{"miscfx",			"misc_video_effects"},
 	{"moviequality",	"movie_quality"},
 	{"musicquality",	"music_quality"},
+	{"spewonerror",		"spewonerror"},
 	{0,0}
 };
 
@@ -58,6 +59,7 @@ const char *EmiRegistry::_boolValues[] = {
 	"vocfx",
 	"moviequality",
 	"musicquality",
+	"spewonerror",
 	0
 };
 
