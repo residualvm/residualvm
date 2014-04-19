@@ -152,6 +152,7 @@ _enable_prof=no
 _global_constructors=no
 _bink=yes
 _safedisc=no
+_touch=no
 # Default vkeybd/keymapper/eventrec options
 _vkeybd=no
 _keymapper=no
@@ -2079,6 +2080,7 @@ case $_host_os in
 		_port_mk="backends/platform/sdl/amigaos/amigaos.mk"
 		;;
 	android)
+		_touch=yes
 		case $_host in
 			android | android-arm)
 				CXXFLAGS="$CXXFLAGS -march=armv5te"
@@ -4219,6 +4221,7 @@ define_in_config_if_yes "$_opengl" "USE_OPENGL"
 define_in_config_if_yes "$_opengles" "USE_GLES"
 define_in_config_if_yes "$_opengles2" "USE_GLES2"
 define_in_config_if_yes "$_opengl_shaders" "USE_OPENGL_SHADERS"
+define_in_config_if_yes "$_touch" "ENABLE_TOUCH"
 # ResidualVM specific ends here <-
 
 
@@ -4482,6 +4485,11 @@ fi
 
 if test "$_vkeybd" = yes ; then
 	echo_n ", virtual keyboard"
+fi
+
+# ResidualVM specific
+if test "$_touch" = yes ; then
+	echo_n ", touch controls"
 fi
 
 if test "$_keymapper" = yes ; then
