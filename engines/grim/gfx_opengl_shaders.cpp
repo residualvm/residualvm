@@ -413,9 +413,6 @@ byte *GfxOpenGLS::setupScreen(int screenW, int screenH, bool fullscreen) {
 	_scaleH = _screenHeight / (float)_gameHeight;
 
 	_isFullscreen = g_system->getFeatureState(OSystem::kFeatureFullscreenMode);
-#ifdef USE_GLES2
-	g_system->setFeatureState(OSystem::kFeatureVirtControls, true);
-#endif
 
 	g_system->showMouse(false);
 
