@@ -499,17 +499,4 @@ void OSystem_Android::pushEvent(const Common::Event &event) {
 	getEventManager()->pushEvent(event);
 }
 
-void OSystem_Android::keyPress(const Common::KeyCode keycode, const KeyReceiver::KeyPressType type) {
-	Common::Event e;
-	e.kbd.keycode = keycode;
-	if (type == KeyReceiver::DOWN || type == KeyReceiver::PRESS) {
-		e.type = Common::EVENT_KEYDOWN;
-		getEventManager()->pushEvent(e);
-	}
-	if (type == KeyReceiver::UP || type == KeyReceiver::PRESS) {
-		e.type = Common::EVENT_KEYUP;
-		getEventManager()->pushEvent(e);
-	}
-}
-
 #endif

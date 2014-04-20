@@ -21,6 +21,7 @@
  */
 
 #include "common/archive.h"
+#include "common/events.h"
 #include "common/fs.h"
 #include "common/stream.h"
 #include "common/system.h"
@@ -54,7 +55,7 @@ static TouchArea getTouchArea(float xPercent, float yPercent) {
 
 class GrimControls {
 public:
-	GrimControls(KeyReceiver *kr, int width, int height);
+	GrimControls(int width, int height);
 	~GrimControls();
 
 	void draw();
@@ -62,7 +63,6 @@ public:
 
 private:
 	int _screenWidth, _screenHeight;
-	KeyReceiver *_key_receiver;
 
 	struct Pointer {
 		uint16 startX, startY;
@@ -70,6 +70,9 @@ private:
 		TouchArea function;
 		bool active;
 	};
+
+	enum KeyPressType { DOWN, UP, PRESS };
+	void keyPress(const Common::KeyCode code, const KeyPressType type = PRESS);
 
 	enum { kNumPointers = 5 };
 	Pointer _pointers[kNumPointers];
@@ -125,11 +128,10 @@ static Common::Rect clipFor(const Common::KeyCode &cs) {
 	}
 }
 
-GrimControls::GrimControls(KeyReceiver *kr, int width, int height) :
+GrimControls::GrimControls(int width, int height) :
 	_joystickPressing(Common::KEYCODE_INVALID),
 	_centerPressing(Common::KEYCODE_INVALID),
 	_rightPressing(Common::KEYCODE_INVALID),
-	_key_receiver(kr),
 	_screenWidth(width),
 	_screenHeight(height) {
 
@@ -176,6 +178,20 @@ const Common::KeyCode _rightKeycodes[] = {
 	Common::KEYCODE_u,
 	Common::KEYCODE_e
 };
+
+void GrimControls::keyPress(const Common::KeyCode code, const KeyPressType type) {
+	Common::EventManager *em = g_system->getEventManager();
+	Common::Event e;
+	e.kbd.keycode = code;
+	if (type == DOWN || type == PRESS) {
+		e.type = Common::EVENT_KEYDOWN;
+		em->pushEvent(e);
+	}
+	if (type == UP || type == PRESS) {
+		e.type = Common::EVENT_KEYUP;
+		em->pushEvent(e);
+	}
+}
 
 void GrimControls::draw() {
 	if (_joystickPressing != Common::KEYCODE_INVALID) {
@@ -224,13 +240,13 @@ void GrimControls::update(int ptr, int action, int x, int y) {
 		case kTouchAreaJoystick: {
 			Common::KeyCode newPressing = determineKey(dX, dY);
 			if (newPressing != _joystickPressing) {
-				_key_receiver->keyPress(_joystickPressing, KeyReceiver::UP);
-				_key_receiver->keyPress(newPressing, KeyReceiver::DOWN);
+				keyPress(_joystickPressing, UP);
+				keyPress(newPressing, DOWN);
 				_joystickPressing = newPressing;
 			} else if(abs(dY) > _screenHeight / 5) {
-			   _key_receiver->keyPress(Common::KEYCODE_LSHIFT, KeyReceiver::DOWN);
+			   keyPress(Common::KEYCODE_LSHIFT, DOWN);
 			} else if(abs(dY) <= _screenHeight / 5){
-			   _key_receiver->keyPress(Common::KEYCODE_LSHIFT, KeyReceiver::UP);
+			   keyPress(Common::KEYCODE_LSHIFT, UP);
 			}
 			return;
 		}
@@ -270,21 +286,21 @@ void GrimControls::update(int ptr, int action, int x, int y) {
 		case kTouchAreaJoystick:
 			pointerFor(kTouchAreaJoystick) = -1;
 			if (_joystickPressing != Common::KEYCODE_INVALID) {
-				_key_receiver->keyPress(_joystickPressing, KeyReceiver::UP);
+				keyPress(_joystickPressing, UP);
 				_joystickPressing = Common::KEYCODE_INVALID;
-				_key_receiver->keyPress(Common::KEYCODE_LSHIFT, KeyReceiver::UP);
+				keyPress(Common::KEYCODE_LSHIFT, UP);
 			}
 			break;
 
 		case kTouchAreaCenter:
 			pointerFor(kTouchAreaCenter) = -1;
-			_key_receiver->keyPress(_centerPressing);
+			keyPress(_centerPressing);
 			_centerPressing = Common::KEYCODE_INVALID;
 			break;
 
 		case kTouchAreaRight:
 			pointerFor(kTouchAreaRight) = -1;
-			_key_receiver->keyPress(_rightPressing);
+			keyPress(_rightPressing);
 			_rightPressing = Common::KEYCODE_INVALID;
 			break;
 
@@ -313,7 +329,7 @@ JoystickMode *JoystickMode::create() {
 
 JoystickMode::JoystickMode(uint32 width, uint32 height)
 	: TouchControlsImpl(width, height) {
-		_gc = new GrimControls(dynamic_cast<KeyReceiver*>(g_system), width, height);
+		_gc = new GrimControls(width, height);
 }
 
 JoystickMode::~JoystickMode() {
