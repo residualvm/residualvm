@@ -14,6 +14,11 @@ List of fixed bugs in EMI scripts:
 	There is a varible that is never declared in mot.lua which positions Guybrush on
 	the raft. Instead of using that one, just use the other variable they probably meant to use.
 
+	-In the Demo, there were still calls to ReadRegistryValue and WriteRegistryValue. While it
+	appears that only the call to ReadRegistryValue(SpewOnError) could be reached, these
+	references are patched out of _music.lua, _options.lua and _system.lua and replaced with
+	checks from the system_prefs array.
+
 Contents of residualvm-emi-patch.m4b and its rebuild:
 
 residualvm-emi-patch.m4b contains all .patchr files in the
