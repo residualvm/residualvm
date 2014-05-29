@@ -29,7 +29,6 @@
 
 #if defined(ENABLE_TOUCH)
 
-#include "backends/platform/android/events.h"
 #include "backends/platform/android/texture.h"
 
 #include "backends/touch/touchcontrols.h"
@@ -57,6 +56,8 @@ class GrimControls {
 public:
 	GrimControls(int width, int height);
 	~GrimControls();
+
+	enum { Touch_DOWN, Touch_MOVE, Touch_UP };
 
 	void draw();
 	void update(int ptr, int action, int x, int y);
@@ -217,7 +218,7 @@ void GrimControls::update(int ptr, int action, int x, int y) {
 	TouchArea touchArea = getTouchArea(float(x) / _screenWidth, float(y) / _screenHeight);
 
 	switch (action) {
-	case JACTION_DOWN: {
+	case Touch_DOWN: {
 		if (touchArea > kTouchAreaNone && -1 == pointerFor(touchArea)) {
 			pointerFor(touchArea) = ptr;
 			_pointers[ptr].active = true;
@@ -230,7 +231,7 @@ void GrimControls::update(int ptr, int action, int x, int y) {
 		}
 	}
 
-	case JACTION_MOVE: {
+	case Touch_MOVE: {
 		_pointers[ptr].currentX = x;
 		_pointers[ptr].currentY = y;
 		int dX = x - _pointers[ptr].startX;
@@ -281,7 +282,7 @@ void GrimControls::update(int ptr, int action, int x, int y) {
 		return;
 	}
 
-	case JACTION_UP: {
+	case Touch_UP: {
 		switch (_pointers[ptr].function) {
 		case kTouchAreaJoystick:
 			pointerFor(kTouchAreaJoystick) = -1;
@@ -341,15 +342,15 @@ void JoystickMode::draw() {
 }
 
 void JoystickMode::pointerDown(uint32 pointerId, uint32 x, uint32 y) {
-	_gc->update(pointerId, JACTION_DOWN, x, y);
+	_gc->update(pointerId, GrimControls::Touch_DOWN, x, y);
 }
 
 void JoystickMode::pointerMove(uint32 pointerId, uint32 x, uint32 y) {
-	_gc->update(pointerId, JACTION_MOVE, x, y);
+	_gc->update(pointerId, GrimControls::Touch_MOVE, x, y);
 }
 
 void JoystickMode::pointerUp(uint32 pointerId, uint32 x, uint32 y) {
-	_gc->update(pointerId, JACTION_UP, x, y);
+	_gc->update(pointerId, GrimControls::Touch_UP, x, y);
 }
 
 }
