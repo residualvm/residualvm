@@ -463,10 +463,8 @@ void Lua_V2::WorldToScreen() {
 	Math::Vector4d screen = proj * Math::Vector4d(pos.x(), pos.y(), pos.z(), 1.0);
 	screen /= screen.w();
 
-//  warning("Lua_V2::WorldToScreen: (%f,%f,%f) -> (%f, %f)", x,y,z, screen.x(), screen.y());
-	
-	lua_pushnumber(screen.x());
-	lua_pushnumber(screen.y());
+	lua_pushnumber((screen.x() + 1)*320);
+	lua_pushnumber((1- screen.y())*240);
 }
 
 void Lua_V2::NewLayer() {
