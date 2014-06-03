@@ -10,6 +10,7 @@ uniform highp vec3 cameraPos;
 uniform highp vec3 actorPos;
 uniform bool textured;
 uniform bool isBillboard;
+uniform bool inOverworld;
 
 out vec2 Texcoord;
 out vec4 Color;
@@ -17,7 +18,10 @@ out vec4 Color;
 void main()
 {
 	vec4 pos = vec4(position, 1.0);
-	if (isBillboard) {
+	if (inOverworld) {
+		pos = viewMatrix * extraMatrix * pos;
+		pos += vec4(pos.w * actorPos, 0.0);
+	} else if (isBillboard) {
 		vec4 offset = modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
 		offset -= vec4(cameraPos * offset.w, 0.0);
 		offset = viewMatrix * offset;
@@ -29,6 +33,7 @@ void main()
 		pos -= vec4(cameraPos * pos.w, 0.0);
 		pos = viewMatrix * pos;
 	}
+
 	pos /= pos.w;
 	pos.z *= -1.0;
 	

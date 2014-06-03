@@ -627,6 +627,10 @@ void GfxOpenGL::drawEMIModelFace(const EMIModel *model, const EMIMeshFace *face)
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_ALPHA_TEST);
 	glDisable(GL_LIGHTING);
+
+	//Transparency-Support
+	glEnable(GL_BLEND);
+
 	if (face->_hasTexture)
 		glEnable(GL_TEXTURE_2D);
 	else
@@ -639,7 +643,7 @@ void GfxOpenGL::drawEMIModelFace(const EMIModel *model, const EMIMeshFace *face)
 		if (face->_hasTexture) {
 			glTexCoord2f(model->_texVerts[index].getX(), model->_texVerts[index].getY());
 		}
-		glColor4ub((byte)(model->_colorMap[index].r * dim), (byte)(model->_colorMap[index].g * dim), (byte)(model->_colorMap[index].b * dim), (int)(model->_colorMap[index].a * _alpha));
+		glColor4ub((byte)(model->_colorMap[index].r * dim), (byte)(model->_colorMap[index].g * dim), (byte)(model->_colorMap[index].b * dim), (byte)(255 * _alpha));
 
 		Math::Vector3d normal = model->_normals[index];
 		Math::Vector3d vertex = model->_drawVertices[index];
@@ -928,6 +932,22 @@ void GfxOpenGL::createBitmap(BitmapData *bitmap) {
 				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
 			} else {
 				texOut = (byte *)bitmap->getImageData(pic).getRawBuffer();
+
+				//add transparency support
+				if (bitmap->_format == 1 && bitmap->_bpp == 32 && bitmap->_colorFormat == BM_RGBA) {
+					byte *texDataPtr = texOut;
+
+					for (int i = 0; i < bitmap->_width * bitmap->_height; i++, texDataPtr += sizeof(uint32)) {
+						uint32 *pixel = (uint32*)texDataPtr;
+						if (*pixel == 0xff00ff) {
+							texDataPtr[3] = 0;
+							bitmap->_hasTransparency = true;
+						} else {
+							texDataPtr[3] = 255;
+						}
+
+					}
+				}
 			}
 
 			for (int i = 0; i < bitmap->_numTex; i++) {
@@ -981,6 +1001,12 @@ void GfxOpenGL::drawBitmap(const Bitmap *bitmap, int dx, int dy, uint32 layer) {
 		glDisable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
 
+		//Add transparency support
+		if (bitmap->getFormat() == 1 && bitmap->getHasTransparency()) {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
+
 		glColor3f(1.0f - _dimLevel, 1.0f - _dimLevel, 1.0f  - _dimLevel);
 
 		BitmapData *data = bitmap->_data;
@@ -1007,6 +1033,7 @@ void GfxOpenGL::drawBitmap(const Bitmap *bitmap, int dx, int dy, uint32 layer) {
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_LIGHTING);
+		glDisable(GL_BLEND);
 
 		glPopMatrix();
 		glMatrixMode(GL_MODELVIEW);
