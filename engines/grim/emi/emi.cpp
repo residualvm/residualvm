@@ -131,10 +131,6 @@ void EMIEngine::purgeText() {
 
 void EMIEngine::drawNormalMode() {
 
-	// Draw Primitives
-	foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
-		p->draw();
-	}
 
 	_currSet->setupCamera();
 
@@ -173,6 +169,12 @@ void EMIEngine::drawNormalMode() {
 		if (a->isInOverworld())
 			a->draw();
 	}
+
+	// Draw Primitives
+	foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
+		p->draw();
+	}
+
 
 	flagRefreshShadowMask(false);
 
