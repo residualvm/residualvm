@@ -27,38 +27,49 @@
 
 namespace Grim {
 
+struct Stream;
+
 class Blocky16 {
 private:
 
-	byte *_deltaBufs[2];
-	byte *_deltaBuf;
-	byte *_curBuf;
-	int32 _prevSeqNb;
-	int _lastTableWidth;
-	const byte *_d_src, *_paramPtr, *_param6_7Ptr;
-	int _d_pitch;
-	int32 _offset1, _offset2;
-	byte *_tableBig;
-	byte *_tableSmall;
-	int16 _table[256];
+	int _bufSize;
 	int32 _frameSize;
-	int _offset;
 	int _width, _height;
+	int _alignedWidth, _alignedHeight;
+	uint16 *_frm0, *_frm1, *_frm2;
+	uint8 *_rleBuf;
+	int _pitch;
+	int _npixels;
 	int _blocksWidth, _blocksHeight;
+	int8 _4x4glyphs[256][16];
+	int8 _8x8glyphs[256][64];
+	uint16 _codebook[256];
+	uint16 _smallCodebook[4];
 
-	void makeTablesInterpolation(int param);
-	void makeTables47(int width);
-	void level1(byte *d_dst);
-	void level2(byte *d_dst);
-	void level3(byte *d_dst);
-	void decode2(byte *dst, const byte *src, int width, int height, const byte *param_ptr, const byte *param6_7_ptr);
+	typedef bool (Blocky16::*Subcodec)(Stream *src);
+	static const Subcodec subcodecs[];
+
+	bool subcodecNop(Stream *src);
+	bool subcodec0(Stream *src);
+	bool subcodec2(Stream *src);
+	bool subcodec3(Stream *src);
+	bool subcodec4(Stream *src);
+	bool subcodec5(Stream *src);
+	bool subcodec6(Stream *src);
+	bool subcodec8(Stream *src);
+
+	bool subcodec2Block(Stream *src, int cx, int cy, int size);
+	bool isGoodMvec(int cx, int cy, int mx, int my, int blockSize);
+	bool opcode0xf7(Stream *src, int cx, int cy, int block_size);
+	bool opcode0xf8(Stream *src, int cx, int cy, int block_size);
+	bool drawGlyph(uint16 *dst, int index, uint16 fg_color, uint16 bg_color, int block_size);
 
 public:
 	Blocky16();
 	~Blocky16();
 	void init(int width, int height);
 	void deinit();
-	void decode(byte *dst, const byte *src);
+	void decode(byte *dst, byte *src, int size);
 };
 
 } // end of namespace Grim
