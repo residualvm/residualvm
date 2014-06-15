@@ -518,7 +518,7 @@ void SmushDecoder::SmushVideoTrack::handleBlocky16(Common::SeekableReadStream *s
 	byte *ptr = new byte[size];
 	stream->read(ptr, size);
 
-	_blocky16->decode((byte *)_surface.getPixels(), ptr);
+	_blocky16->decode((byte *)_surface.getPixels(), ptr, size);
 	delete[] ptr;
 }
 
