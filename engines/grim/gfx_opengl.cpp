@@ -49,11 +49,17 @@
 #include "engines/grim/emi/modelemi.h"
 #include "engines/grim/registry.h"
 
+#if defined (SDL_BACKEND) && (defined(GL_ARB_fragment_program) || defined(GL_ARB_vertex_buffer_object))
+#define USING_OPENGL_EXTENTIONS
+#endif
 
-#if defined (SDL_BACKEND) && defined(GL_ARB_fragment_program)
+
+#if defined(USING_OPENGL_EXTENTIONS)
 
 // We need SDL.h for SDL_GL_GetProcAddress.
 #include "backends/platform/sdl/sdl-sys.h"
+
+#if defined(GL_ARB_fragment_program)
 
 // Extension functions needed for fragment programs.
 PFNGLGENPROGRAMSARBPROC glGenProgramsARB;
@@ -61,6 +67,18 @@ PFNGLBINDPROGRAMARBPROC glBindProgramARB;
 PFNGLPROGRAMSTRINGARBPROC glProgramStringARB;
 PFNGLDELETEPROGRAMSARBPROC glDeleteProgramsARB;
 PFNGLPROGRAMLOCALPARAMETER4FARBPROC glProgramLocalParameter4fARB;
+
+#endif
+
+#if defined(GL_ARB_vertex_buffer_object)
+
+PFNGLBINDBUFFERARBPROC glBindBufferARB;
+PFNGLDELETEBUFFERSARBPROC glDeleteBuffersARB;
+PFNGLGENBUFFERSARBPROC glGenBuffersARB;
+PFNGLBUFFERDATAARBPROC glBufferDataARB;
+
+#endif
+
 
 #endif
 
@@ -135,6 +153,7 @@ byte *GfxOpenGL::setupScreen(int screenW, int screenH, bool fullscreen) {
 	_isFullscreen = g_system->getFeatureState(OSystem::kFeatureFullscreenMode);
 	_useDepthShader = false;
 	_useDimShader = false;
+	_useVBO = false;
 
 	g_system->showMouse(!fullscreen);
 
@@ -171,7 +190,7 @@ void GfxOpenGL::initExtensions() {
 		return;
 	}
 
-#if defined (SDL_BACKEND) && defined(GL_ARB_fragment_program)
+#if defined(USING_OPENGL_EXTENTIONS)
 	union {
 		void *obj_ptr;
 		void (APIENTRY *func_ptr)();
@@ -179,6 +198,9 @@ void GfxOpenGL::initExtensions() {
 	// We're casting from an object pointer to a function pointer, the
 	// sizes need to be the same for this to work.
 	assert(sizeof(u.obj_ptr) == sizeof(u.func_ptr));
+	const char *extensions = (const char *)glGetString(GL_EXTENSIONS);
+
+#if defined(GL_ARB_fragment_program)
 	u.obj_ptr = SDL_GL_GetProcAddress("glGenProgramsARB");
 	glGenProgramsARB = (PFNGLGENPROGRAMSARBPROC)u.func_ptr;
 	u.obj_ptr = SDL_GL_GetProcAddress("glBindProgramARB");
@@ -190,7 +212,6 @@ void GfxOpenGL::initExtensions() {
 	u.obj_ptr = SDL_GL_GetProcAddress("glProgramLocalParameter4fARB");
 	glProgramLocalParameter4fARB = (PFNGLPROGRAMLOCALPARAMETER4FARBPROC)u.func_ptr;
 
-	const char *extensions = (const char *)glGetString(GL_EXTENSIONS);
 	if (strstr(extensions, "ARB_fragment_program")) {
 		_useDepthShader = true;
 		_useDimShader = true;
@@ -219,6 +240,23 @@ void GfxOpenGL::initExtensions() {
 			_useDimShader = false;
 		}
 	}
+#endif
+
+#ifdef GL_ARB_vertex_buffer_object
+	u.obj_ptr = SDL_GL_GetProcAddress("glBindBufferARB");
+	glBindBufferARB = (PFNGLBINDBUFFERARBPROC)u.func_ptr;
+	u.obj_ptr = SDL_GL_GetProcAddress("glDeleteBuffersARB");
+	glDeleteBuffersARB = (PFNGLDELETEBUFFERSARBPROC)u.func_ptr;
+	u.obj_ptr = SDL_GL_GetProcAddress("glGenBuffersARB");
+	glGenBuffersARB = (PFNGLGENBUFFERSARBPROC)u.func_ptr;
+	u.obj_ptr = SDL_GL_GetProcAddress("glBufferDataARB");
+	glBufferDataARB = (PFNGLBUFFERDATAARBPROC)u.func_ptr;
+
+	if (strstr(extensions, "ARB_vertex_buffer_object")) {
+		_useVBO = true;
+	}
+#endif
+
 #endif
 }
 
@@ -658,6 +696,125 @@ void GfxOpenGL::set3DMode() {
 	glMatrixMode(GL_MODELVIEW);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(_depthFunc);
+}
+
+struct MatPlusNum {
+	MeshFace *_mat;
+	uint32 _num;
+};
+
+struct GLModelUserData {
+	Common::Array<MatPlusNum> _mats;
+	uint32 _meshVBO;
+	uint32 _num;
+};
+
+void GfxOpenGL::createModel(Mesh *mesh) {
+#if defined(USING_OPENGL_EXTENTIONS) && defined(GL_ARB_vertex_buffer_object)
+	if (!_useVBO)
+		return;
+
+	GLModelUserData *mud = new GLModelUserData;
+	mesh->_userData = mud;
+
+	static float zero_texVerts[] = { 0.0, 0.0 };
+	Common::Array<GrimVertex> meshInfo;
+	const Material *mat = nullptr;
+	meshInfo.reserve(mesh->_numVertices * 5);
+	MatPlusNum *curr = nullptr;
+	for (int i = 0; i < mesh->_numFaces; ++i) {
+		MeshFace *face = &mesh->_faces[i];
+
+		if (face->getMaterial() != mat || i == 0) {
+			mud->_mats.push_back(MatPlusNum());
+
+			curr = &mud->_mats[mud->_mats.size() - 1];
+			curr->_mat = face;
+			curr->_num = 0;
+			mat = face->getMaterial();
+		}
+
+		if (face->getNumVertices() < 3)
+			continue;
+
+#define VERT(j) (&mesh->_vertices[3 * face->getVertex(j)])
+#define TEXVERT(j) (face->hasTexture() ? &mesh->_textureVerts[2 * face->getTextureVertex(j)] : zero_texVerts)
+#define NORMAL(j) (&mesh->_vertNormals[3 * face->getVertex(j)])
+
+		for (int j = 2; j < face->getNumVertices(); ++j) {
+			meshInfo.push_back(GrimVertex(VERT(0), TEXVERT(0), NORMAL(0)));
+			meshInfo.push_back(GrimVertex(VERT(j-1), TEXVERT(j-1), NORMAL(j-1)));
+			meshInfo.push_back(GrimVertex(VERT(j), TEXVERT(j), NORMAL(j)));
+			curr->_num += 3;
+		}
+
+#undef VERT
+#undef TEXVERT
+#undef NORMAL
+
+	}
+
+	if (meshInfo.empty()) {
+		return;
+	}
+
+	mud->_num = meshInfo.size();
+	glGenBuffersARB(1, &mud->_meshVBO);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, mud->_meshVBO);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshInfo.size() * sizeof(GrimVertex), &meshInfo[0], GL_STATIC_DRAW);
+
+#endif
+}
+
+void GfxOpenGL::destroyMesh(Mesh *mesh) {
+#if defined(USING_OPENGL_EXTENTIONS) && defined(GL_ARB_vertex_buffer_object)
+	if (!_useVBO)
+		return;
+
+	GLModelUserData *mud = static_cast<GLModelUserData *>(mesh->_userData);
+	if (mud)
+		glDeleteBuffersARB(1, &mud->_meshVBO);
+	delete mud;
+#endif
+}
+
+void GfxOpenGL::drawMesh(const Mesh *mesh) {
+#if defined(USING_OPENGL_EXTENTIONS) && defined(GL_ARB_vertex_buffer_object)
+	if (_useVBO) {
+		GLModelUserData *mud = static_cast<GLModelUserData *>(mesh->_userData);
+		assert(mud);
+
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, mud->_meshVBO);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(3, GL_FLOAT, sizeof(GrimVertex), (void *)offsetof(GrimVertex, _position));
+
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glNormalPointer(GL_FLOAT, sizeof(GrimVertex), (void *)offsetof(GrimVertex, _normal));
+
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(GrimVertex), (void *)offsetof(GrimVertex, _texcoord));
+
+		int pos = 0;
+		int size = mud->_mats.size();
+		for (int i = 0; i < size; ++i) {
+			MatPlusNum *mat = &mud->_mats[i];
+			if (mat->_mat->hasTexture()) {
+				glEnable(GL_TEXTURE_2D);
+				mat->_mat->getMaterial()->select();
+			} else {
+				glDisable(GL_TEXTURE_2D);
+			}
+
+			glDrawArrays(GL_TRIANGLES, pos, mat->_num);
+			pos += mat->_num;
+		}
+
+		glDisable(GL_TEXTURE_2D);
+		return;
+	}
+#endif
+	GfxBase::drawMesh(mesh);
 }
 
 void GfxOpenGL::drawEMIModelFace(const EMIModel *model, const EMIMeshFace *face) {

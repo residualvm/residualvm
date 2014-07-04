@@ -85,6 +85,7 @@ public:
 	void drawEMIModelFace(const EMIModel *model, const EMIMeshFace *face) override;
 	void drawModelFace(const Mesh *mesh, const MeshFace *face) override;
 	void drawSprite(const Sprite *sprite) override;
+	void drawMesh(const Mesh *mesh) override;
 
 	void enableLights() override;
 	void disableLights() override;
@@ -126,6 +127,9 @@ public:
 
 	void createSpecialtyTextures() override;
 
+	void createModel(Mesh *mesh) override;
+	void destroyMesh(Mesh *mesh) override;
+
 protected:
 	void drawDepthBitmap(int x, int y, int w, int h, char *data);
 	void initExtensions();
@@ -140,6 +144,7 @@ private:
 	GLuint _fragmentProgram;
 	bool _useDimShader;
 	GLuint _dimFragProgram;
+	bool _useVBO;
 	GLint _maxLights;
 	float _alpha;
 	const Actor *_currentActor;

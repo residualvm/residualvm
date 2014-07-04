@@ -65,6 +65,17 @@ public:
 	Texture *_texture;
 };
 
+struct GrimVertex {
+	GrimVertex(const float *verts, const float *texVerts, const float *normals) {
+		memcpy(_position, verts, 3 * sizeof(float));
+		memcpy(_texcoord, texVerts, 2 * sizeof(float));
+		memcpy(_normal, normals, 3 * sizeof(float));
+	}
+	float _position[3];
+	float _texcoord[2];
+	float _normal[3];
+};
+
 /**
  * The Color-formats used for bitmaps in Grim Fandango/Escape From Monkey Island
  */
@@ -264,6 +275,7 @@ public:
 	virtual void createModel(Mesh *mesh) {}
 	virtual void createEMIModel(EMIModel *model) {}
 	virtual void updateEMIModel(const EMIModel *model) {}
+	virtual void destroyMesh(Mesh *mesh) {}
 
 	virtual int genBuffer() { return 0; }
 	virtual void delBuffer(int buffer) {}

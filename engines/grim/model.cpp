@@ -407,6 +407,7 @@ Mesh::Mesh() :
 
 
 Mesh::~Mesh() {
+	g_driver->destroyMesh(this);
 	delete[] _vertices;
 	delete[] _verticesI;
 	delete[] _vertNormals;

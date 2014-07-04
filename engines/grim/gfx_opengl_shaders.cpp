@@ -99,17 +99,6 @@ static float textured_quad_centered[] = {
 
 static float zero_texVerts[] = { 0.0, 0.0 };
 
-struct GrimVertex {
-	GrimVertex(const float *verts, const float *texVerts, const float *normals) {
-		memcpy(_position, verts, 3 * sizeof(float));
-		memcpy(_texcoord, texVerts, 2 * sizeof(float));
-		memcpy(_normal, normals, 3 * sizeof(float));
-	}
-	float _position[3];
-	float _texcoord[2];
-	float _normal[3];
-};
-
 struct TextUserData {
 	Graphics::Shader * shader;
 	uint32 characters;
