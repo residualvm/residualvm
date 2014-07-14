@@ -525,6 +525,10 @@ void LuaBase::setTextObjectParams(TextObjectCommon *textObject, lua_Object table
 			textObject->setFont(*Font::getPool().begin());
 		}
 	}
+	if (textObject->getFont() == nullptr) {
+		warning("No font set, using the first one!");
+		textObject->setFont(*Font::getPool().begin());
+	}
 
 	lua_pushobject(tableObj);
 	lua_pushobject(lua_getref(refTextObjectWidth));
