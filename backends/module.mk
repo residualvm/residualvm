@@ -63,10 +63,12 @@ MODULE_OBJS += \
 	plugins/sdl/sdl-provider.o \
 	timer/sdl/sdl-timer.o
 
-# SDL 1.3 removed audio CD support
+# SDL >= 2.0 removed audio CD support - ResidualVM now support SDL2
 ifndef USE_SDL13
+ifndef USE_SDL2
 MODULE_OBJS += \
 	audiocd/sdl/sdl-audiocd.o
+endif
 endif
 endif
 

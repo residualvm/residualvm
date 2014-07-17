@@ -69,6 +69,9 @@ public:
 	virtual Common::String getSystemLanguage() const;
 
 	virtual void setWindowCaption(const char *caption);
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	Common::String getWindowCaption() { return _windowCaption; }
+#endif
 	virtual void addSysArchivesToSearchSet(Common::SearchSet &s, int priority = 0);
 	virtual uint32 getMillis(bool skipRecord = false);
 	virtual void delayMillis(uint msecs);
@@ -79,6 +82,9 @@ public:
 protected:
 	bool _inited;
 	bool _initedSDL;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	Common::String _windowCaption;
+#endif
 
 	/**
 	 * Mixer manager that configures and setups SDL for
@@ -101,7 +107,9 @@ protected:
 	/**
 	 * Setup the window icon.
 	 */
+public: // ResidualVM make this method public for SDL2 support
 	virtual void setupIcon();
+protected:
 
 	// Logging
 	virtual Common::WriteStream *createLogFile() { return 0; }

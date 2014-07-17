@@ -52,6 +52,63 @@ typedef struct { int FAKE; } FAKE_FILE;
 #define strncasecmp FAKE_strncasecmp
 #endif
 
+// ResidualVM specific for SDL2 start here:
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_asctime)
+#undef asctime
+#define asctime    FAKE_asctime
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_time)
+#undef time
+#define time    FAKE_time
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_ctime)
+#undef ctime
+#define ctime    FAKE_ctime
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_mktime)
+#undef mktime
+#define mktime    FAKE_mktime
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_difftime)
+#undef difftime
+#define difftime    FAKE_difftime
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_getdate)
+#undef getdate
+#define getdate    FAKE_getdate
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_localtime)
+#undef localtime
+#define localtime    FAKE_localtime
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_gmtime)
+#undef gmtime
+#define gmtime    FAKE_gmtime
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_clock)
+#undef clock
+#define clock    FAKE_clock
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_longjmp)
+#undef longjmp
+#define longjmp    FAKE_longjmp
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_setjmp)
+#undef setjmp
+#define setjmp    FAKE_setjmp
+#endif
+// ResidualVM specific for SDL2 end here
+
 #if defined(__SYMBIAN32__)
 #include <esdl\SDL.h>
 #else
@@ -74,5 +131,62 @@ typedef struct { int FAKE; } FAKE_FILE;
 #define strncasecmp    FORBIDDEN_SYMBOL_REPLACEMENT
 #endif
 
+// ResidualVM specific for SDL2 start here:
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_asctime)
+#undef asctime
+#define asctime    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_time)
+#undef time
+// This define conflict with variable names, so 'time' is not forbidden again
+//#define time    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_ctime)
+#undef ctime
+#define ctime    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_mktime)
+#undef mktime
+#define mktime    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_difftime)
+#undef difftime
+#define difftime    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_getdate)
+#undef getdate
+#define getdate    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_localtime)
+#undef localtime
+#define localtime    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_gmtime)
+#undef gmtime
+#define gmtime    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_clock)
+#undef clock
+#define clock    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_longjmp)
+#undef longjmp
+#define longjmp    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+
+#if !defined(FORBIDDEN_SYMBOL_ALLOW_ALL) && !defined(FORBIDDEN_SYMBOL_EXCEPTION_setjmp)
+#undef setjmp
+#define setjmp    FORBIDDEN_SYMBOL_REPLACEMENT
+#endif
+// ResidualVM specific for SDL2 end here
 
 #endif

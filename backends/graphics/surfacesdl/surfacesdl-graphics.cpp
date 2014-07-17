@@ -50,6 +50,12 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	:
 	SdlGraphicsManager(sdlEventSource),
 	_screen(0),
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	_window(nullptr),
+	_renderer(nullptr),
+	_screenTexture(nullptr),
+	_glContext(nullptr),
+#endif
 	_overlayVisible(false),
 	_overlayscreen(0),
 	_overlayWidth(0), _overlayHeight(0),
@@ -66,6 +72,16 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 
 SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
 	closeOverlay();
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (_glContext)
+		SDL_GL_DeleteContext(_glContext);
+	if (_screenTexture)
+		SDL_DestroyTexture(_screenTexture);
+	if (_renderer)
+		SDL_DestroyRenderer(_renderer);
+	if (_window)
+		SDL_DestroyWindow(_window);
+#endif
 }
 
 void SurfaceSdlGraphicsManager::activateManager() {
@@ -159,6 +175,219 @@ void SurfaceSdlGraphicsManager::launcherInitSize(uint w, uint h) {
 	closeOverlay();
 	setupScreen(w, h, false, false);
 }
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+
+Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) {
+	uint32 sdlflags = 0, bpp;
+	uint32 rmask, gmask, bmask, amask;
+
+	closeOverlay();
+	if (_glContext)
+		SDL_GL_DeleteContext(_glContext);
+	if (_screenTexture)
+		SDL_DestroyTexture(_screenTexture);
+	if (_renderer)
+		SDL_DestroyRenderer(_renderer);
+	if (_window)
+		SDL_DestroyWindow(_window);
+
+#ifdef USE_OPENGL
+	_opengl = accel3d;
+	_antialiasing = 0;
+
+	if (_opengl) {
+		if (ConfMan.hasKey("antialiasing"))
+			_antialiasing = ConfMan.getInt("antialiasing");
+
+		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+		setAntialiasing(true);
+
+		sdlflags |= SDL_WINDOW_OPENGL;
+	}
+#endif
+	_fullscreen = fullscreen;
+
+	if (_fullscreen)
+		sdlflags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+	const char *caption = ((OSystem_SDL *)g_system)->getWindowCaption().c_str();
+	if (!caption)
+		caption = "ResidualVM";
+	_window = SDL_CreateWindow(caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+			_fullscreen ? 0 : screenW, _fullscreen ? 0 : screenH, sdlflags);
+	if (!_window) {
+		error("Could not create window: %s", SDL_GetError());
+	}
+
+	((OSystem_SDL *)g_system)->setupIcon();
+
+#ifdef USE_OPENGL
+	if (_opengl) {
+		bpp = 24;
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		rmask = 0x000000FF;
+		gmask = 0x0000FF00;
+		bmask = 0x00FF0000;
+		amask = 0x00000000;
+#else
+		rmask = 0x00FF0000;
+		gmask = 0x0000FF00;
+		bmask = 0x000000FF;
+		amask = 0x00000000;
+#endif
+
+#ifdef USE_OPENGL_SHADERS
+		// FIXME: setting version prevent set profile to 'core' on mac os x.
+		// Based on SDL2 source code that flags are ignored in setting profile version
+		// Note: Mac OS x has only compatibility 2.1 and core 3.2
+		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#endif
+		_glContext = SDL_GL_CreateContext(_window);
+		if (!_glContext) {
+			error("Could not create GL context: %s", SDL_GetError());
+		}
+		_screen = SDL_GetWindowSurface(_window);
+	} else
+#endif
+	{
+		bpp = 16;
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		rmask = 0x00001f00;
+		gmask = 0x000007e0;
+		bmask = 0x000000f8;
+		amask = 0x00000000;
+#else
+		rmask = 0x0000f800;
+		gmask = 0x000007e0;
+		bmask = 0x0000001f;
+		amask = 0x00000000;
+#endif
+
+		_renderer = SDL_CreateRenderer(_window, -1, 0);
+		if (!_renderer) {
+			error("Could not create renderer: %s", SDL_GetError());
+		}
+		_screen = SDL_CreateRGBSurface(0, screenW, screenH, bpp, rmask, gmask, bmask, amask);
+		if (!_screen) {
+			error("Could not create screen surface: %s", SDL_GetError());
+		}
+		_screenTexture = SDL_CreateTexture(_renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, screenW, screenH);
+		if (!_screenTexture) {
+			error("Could not create screen texture: %s", SDL_GetError());
+		}
+		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+		SDL_RenderSetLogicalSize(_renderer, screenW, screenH);
+	}
+
+	SDL_PixelFormat *f = _screen->format;
+	_screenFormat = Graphics::PixelFormat(f->BytesPerPixel, 8 - f->Rloss, 8 - f->Gloss, 8 - f->Bloss, 0,
+			f->Rshift, f->Gshift, f->Bshift, f->Ashift);
+
+#ifdef USE_OPENGL
+	if (_opengl) {
+		int glflag;
+		const GLubyte *str;
+
+		str = glGetString(GL_VENDOR);
+		debug("INFO: OpenGL Vendor: %s", str);
+		str = glGetString(GL_RENDERER);
+		debug("INFO: OpenGL Renderer: %s", str);
+		str = glGetString(GL_VERSION);
+		debug("INFO: OpenGL Version: %s", str);
+		SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &glflag);
+		debug("INFO: OpenGL Red bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &glflag);
+		debug("INFO: OpenGL Green bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &glflag);
+		debug("INFO: OpenGL Blue bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_ALPHA_SIZE, &glflag);
+		debug("INFO: OpenGL Alpha bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &glflag);
+		debug("INFO: OpenGL Z buffer depth bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &glflag);
+		debug("INFO: OpenGL Double Buffer: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, &glflag);
+		debug("INFO: OpenGL Stencil buffer bits: %d", glflag);
+
+#ifdef USE_OPENGL_SHADERS
+		debug("INFO: GLEW Version: %s", glewGetString(GLEW_VERSION));
+
+		// GLEW needs to be initialized to use shaders
+		GLenum err = glewInit();
+		if (err != GLEW_OK) {
+			error("Error: %s\n", glewGetErrorString(err));
+		}
+		assert(GLEW_OK == err);
+
+		debug("INFO: GLSL version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+		const GLfloat vertices[] = {
+			0.0, 0.0,
+			1.0, 0.0,
+			0.0, 1.0,
+			1.0, 1.0,
+		};
+
+		// Setup the box shader used to render the overlay
+		const char* attributes[] = { "position", "texcoord", NULL };
+		_boxShader = Graphics::Shader::fromStrings("box", Graphics::BuiltinShaders::boxVertex, Graphics::BuiltinShaders::boxFragment, attributes);
+		_boxVerticesVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, sizeof(vertices), vertices);
+		_boxShader->enableVertexAttribute("position", _boxVerticesVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
+		_boxShader->enableVertexAttribute("texcoord", _boxVerticesVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
+#endif
+
+	}
+#endif
+
+	_overlayWidth = screenW;
+	_overlayHeight = screenH;
+
+#ifdef USE_OPENGL
+	if (_opengl) {
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		rmask = 0x00001f00;
+		gmask = 0x000007e0;
+		bmask = 0x000000f8;
+		amask = 0x00000000;
+#else
+		rmask = 0x0000f800;
+		gmask = 0x000007e0;
+		bmask = 0x0000001f;
+		amask = 0x00000000;
+#endif
+
+		_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _overlayWidth, _overlayHeight, 16,
+				rmask, gmask, bmask, amask);
+		_overlayScreenGLFormat = GL_UNSIGNED_SHORT_5_6_5;
+	} else
+#endif
+	{
+		_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _overlayWidth, _overlayHeight, 16,
+				_screen->format->Rmask, _screen->format->Gmask, _screen->format->Bmask, _screen->format->Amask);
+	}
+
+	if (!_overlayscreen)
+		error("allocating _overlayscreen failed");
+
+	_overlayFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
+
+	_screenChangeCount++;
+
+	return Graphics::PixelBuffer(_screenFormat, (byte *)_screen->pixels);
+}
+
+#else
 
 Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) {
 	uint32 sdlflags;
@@ -346,6 +575,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	return Graphics::PixelBuffer(_screenFormat, (byte *)_screen->pixels);
 }
 
+#endif
+
 #ifdef USE_OPENGL
 
 #define BITMAP_TEXTURE_SIZE 256
@@ -520,14 +751,24 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 			drawOverlayOpenGLShaders();
 #endif
 		}
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		SDL_GL_SwapWindow(_window);
+#else
 		SDL_GL_SwapBuffers();
+#endif
 	} else
 #endif
 	{
 		if (_overlayVisible) {
 			drawOverlay();
 		}
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		SDL_UpdateTexture(_screenTexture, NULL, _screen->pixels, _screen->pitch);
+		SDL_RenderCopy(_renderer, _screenTexture, NULL, NULL);
+		SDL_RenderPresent(_renderer);
+#else
 		SDL_Flip(_screen);
+#endif
 	}
 }
 
@@ -754,16 +995,28 @@ bool SurfaceSdlGraphicsManager::showMouse(bool visible) {
 
 // ResidualVM specific method
 bool SurfaceSdlGraphicsManager::lockMouse(bool lock) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (lock)
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+	else
+		SDL_SetRelativeMouseMode(SDL_FALSE);
+#else
 	if (lock)
 		SDL_WM_GrabInput(SDL_GRAB_ON);
 	else
 		SDL_WM_GrabInput(SDL_GRAB_OFF);
+#endif
 	return true;
 }
 
 void SurfaceSdlGraphicsManager::warpMouse(int x, int y) {
 	//ResidualVM specific
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (_window)
+		SDL_WarpMouseInWindow(_window, x, y);
+#else
 	SDL_WarpMouse(x, y);
+#endif
 }
 
 void SurfaceSdlGraphicsManager::setMouseCursor(const void *buf, uint w, uint h, int hotspot_x, int hotspot_y, uint32 keycolor, bool dontScale, const Graphics::PixelFormat *format) {

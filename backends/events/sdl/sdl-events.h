@@ -28,6 +28,28 @@
 
 #include "common/events.h"
 
+// ResidualVM: this are compatibility defines to support SDL2 with SDL1 code
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+#define SDLKey            SDL_Keycode
+#define SDLMod            SDL_Keymod
+#define KMOD_META         KMOD_GUI
+#define SDLK_SCROLLOCK    SDLK_SCROLLLOCK
+#define SDLK_PRINT        SDLK_PRINTSCREEN
+#define SDLK_COMPOSE      SDLK_APPLICATION
+#define SDLK_LSUPER       SDLK_LGUI
+#define SDLK_RSUPER       SDLK_RGUI
+#define SDLK_NUMLOCK      SDLK_NUMLOCKCLEAR
+#define SDLK_KP0          SDLK_KP_0
+#define SDLK_KP1          SDLK_KP_1
+#define SDLK_KP2          SDLK_KP_2
+#define SDLK_KP3          SDLK_KP_3
+#define SDLK_KP4          SDLK_KP_4
+#define SDLK_KP5          SDLK_KP_5
+#define SDLK_KP6          SDLK_KP_6
+#define SDLK_KP7          SDLK_KP_7
+#define SDLK_KP8          SDLK_KP_8
+#define SDLK_KP9          SDLK_KP_9
+#endif
 
 /**
  * The SDL event source.

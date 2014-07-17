@@ -113,8 +113,10 @@ void OSystem_SDL::init() {
 	// Initialize SDL
 	initSDL();
 
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 	// Enable unicode support if possible
 	SDL_EnableUNICODE(1);
+#endif
 
 	// Disable OS cursor
 	SDL_ShowCursor(SDL_DISABLE);
@@ -145,10 +147,14 @@ void OSystem_SDL::initBackend() {
 	// Check if backend has not been initialized
 	assert(!_inited);
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	const char *sdlDriverName = SDL_GetCurrentVideoDriver();
+#else
 	const int maxNameLen = 20;
 	char sdlDriverName[maxNameLen];
 	sdlDriverName[0] = '\0';
 	SDL_VideoDriverName(sdlDriverName, maxNameLen);
+#endif
 	// Using printf rather than debug() here as debug()/logging
 	// is not active by this point.
 	debug(1, "Using SDL Video Driver \"%s\"", sdlDriverName);
@@ -269,7 +275,14 @@ void OSystem_SDL::setWindowCaption(const char *caption) {
 		}
 	}
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	_windowCaption = cap;
+	if (_graphicsManager) {
+		SDL_SetWindowTitle(dynamic_cast<SurfaceSdlGraphicsManager *>(_graphicsManager)->getWindowHandle(), cap.c_str());
+	}
+#else
 	SDL_WM_SetCaption(cap.c_str(), cap.c_str());
+#endif
 }
 
 void OSystem_SDL::quit() {
@@ -432,7 +445,13 @@ void OSystem_SDL::setupIcon() {
 	if (!sdl_surf) {
 		warning("SDL_CreateRGBSurfaceFrom(icon) failed");
 	}
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (_graphicsManager) {
+		SDL_SetWindowIcon(dynamic_cast<SurfaceSdlGraphicsManager *>(_graphicsManager)->getWindowHandle(), sdl_surf);
+	}
+#else
 	SDL_WM_SetIcon(sdl_surf, NULL);
+#endif
 	SDL_FreeSurface(sdl_surf);
 	free(icon);
 }

@@ -54,6 +54,8 @@
 #include "common/scummsys.h"
 
 #include "backends/taskbar/win32/win32-taskbar.h"
+#include "backends/graphics/surfacesdl/surfacesdl-graphics.h" // ResidualVM specific
+#include "backends/modular-backend.h" // ResidualVM specific
 
 #include "common/config-manager.h"
 #include "common/textconsole.h"
@@ -410,10 +412,15 @@ HWND Win32TaskbarManager::getHwnd() {
 	SDL_SysWMinfo wmi;
 	SDL_VERSION(&wmi.version);
 
-	if(!SDL_GetWMInfo(&wmi))
-		return NULL;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (SDL_GetWindowWMInfo(dynamic_cast<SurfaceSdlGraphicsManager *>(dynamic_cast<ModularBackend *>(g_system)->getGraphicsManager())->getWindowHandle(), &wmi))
+		return wmi.info.win.window;
+#else
+	if (SDL_GetWMInfo(&wmi))
+		return wmi.window;
+#endif
 
-	return wmi.window;
+	return NULL;
 }
 
 #endif

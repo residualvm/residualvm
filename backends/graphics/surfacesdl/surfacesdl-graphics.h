@@ -75,6 +75,9 @@ public:
 	virtual void initSize(uint w, uint h, const Graphics::PixelFormat *format = NULL);
 	virtual void launcherInitSize(uint w, uint h); // ResidualVM specific method
 	Graphics::PixelBuffer setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d); // ResidualVM specific method
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_Window *getWindowHandle() { return _window; } // ResidualVM specific method
+#endif
 	virtual int getScreenChangeID() const { return _screenChangeCount; }
 
 	virtual void beginGFXTransaction();
@@ -131,6 +134,12 @@ public:
 protected:
 
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_Window *_window;
+	SDL_Renderer *_renderer;
+	SDL_Texture *_screenTexture;
+	SDL_GLContext _glContext;
+#endif
 	SDL_Surface *_screen;
 #ifdef USE_RGB_COLOR
 	Graphics::PixelFormat _screenFormat;
