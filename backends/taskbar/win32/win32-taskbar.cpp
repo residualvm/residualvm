@@ -412,6 +412,7 @@ HWND Win32TaskbarManager::getHwnd() {
 	SDL_SysWMinfo wmi;
 	SDL_VERSION(&wmi.version);
 
+// ResidualVM specific change to allow handle SDL1 and SDL2 code
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	if (SDL_GetWindowWMInfo(dynamic_cast<SurfaceSdlGraphicsManager *>(dynamic_cast<ModularBackend *>(g_system)->getGraphicsManager())->getWindowHandle(), &wmi))
 		return wmi.info.win.window;
