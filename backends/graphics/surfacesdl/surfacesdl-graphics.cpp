@@ -217,7 +217,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	if (_fullscreen)
 		sdlflags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
-	const char *caption = ((OSystem_SDL *)g_system)->getWindowCaption().c_str();
+	const char *caption = dynamic_cast<OSystem_SDL *>(g_system)->getWindowCaption().c_str();
 	if (!caption)
 		caption = "ResidualVM";
 	_window = SDL_CreateWindow(caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -226,7 +226,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		error("Could not create window: %s", SDL_GetError());
 	}
 
-	((OSystem_SDL *)g_system)->setupIcon();
+	dynamic_cast<OSystem_SDL *>(g_system)->setupIcon();
 
 #ifdef USE_OPENGL
 	if (_opengl) {
