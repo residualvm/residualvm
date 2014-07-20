@@ -225,7 +225,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_window = SDL_CreateWindow(caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 			_fullscreen ? 0 : screenW, _fullscreen ? 0 : screenH, sdlflags);
 	if (!_window) {
-		error("Error: %s", SDL_GetError());
+		warning("Error: %s", SDL_GetError());
+		g_system->quit();
 	}
 
 	dynamic_cast<OSystem_SDL *>(g_system)->setupIcon();
@@ -253,7 +254,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		// Look into SDL_render_gl.c, function: GL_CreateRenderer()
 		_glContext = SDL_GL_CreateContext(_window);
 		if (!_glContext) {
-			error("Error: %s", SDL_GetError());
+			warning("Error: %s", SDL_GetError());
+			g_system->quit();
 		}
 
 #ifdef USE_OPENGL_SHADERS
@@ -274,7 +276,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 				SDL_GL_DeleteContext(_glContext);
 				_glContext = SDL_GL_CreateContext(_window);
 				if (!_glContext) {
-					error("Error: %s", SDL_GetError());
+					warning("Error: %s", SDL_GetError());
+					g_system->quit();
 				}
 			}
 		}
@@ -300,15 +303,18 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 
 		_renderer = SDL_CreateRenderer(_window, -1, 0);
 		if (!_renderer) {
-			error("Error: %s", SDL_GetError());
+			warning("Error: %s", SDL_GetError());
+			g_system->quit();
 		}
 		_screen = SDL_CreateRGBSurface(0, screenW, screenH, bpp, rmask, gmask, bmask, amask);
 		if (!_screen) {
-			error("Error: %s", SDL_GetError());
+			warning("Error: %s", SDL_GetError());
+			g_system->quit();
 		}
 		_screenTexture = SDL_CreateTexture(_renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, screenW, screenH);
 		if (!_screenTexture) {
-			error("Error: %s", SDL_GetError());
+			warning("Error: %s", SDL_GetError());
+			g_system->quit();
 		}
 		// set to "linear", we will see how it will affect on speed
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
@@ -352,9 +358,9 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		// GLEW needs to be initialized to use shaders
 		GLenum err = glewInit();
 		if (err != GLEW_OK) {
-			error("Error: %s\n", glewGetErrorString(err));
+			warning("Error: %s", glewGetErrorString(err));
+			g_system->quit();
 		}
-		assert(GLEW_OK == err);
 
 		debug("INFO: GLSL version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
@@ -403,8 +409,10 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 				_screen->format->Rmask, _screen->format->Gmask, _screen->format->Bmask, _screen->format->Amask);
 	}
 
-	if (!_overlayscreen)
-		error("allocating _overlayscreen failed");
+	if (!_overlayscreen) {
+		warning("Error: %s", SDL_GetError());
+		g_system->quit();
+	}
 
 	_overlayFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
 
