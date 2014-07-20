@@ -214,6 +214,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #endif
 	_fullscreen = fullscreen;
 
+	// NOTE: it would be nice if we could get dimensions for OpenGL to allow
+	// engine OpenGL renderers change resolution of drawing area.
 	if (_fullscreen)
 		sdlflags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
@@ -245,18 +247,23 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #endif
 
 #ifdef USE_OPENGL_SHADERS
-		// FIXME: setting version prevent set profile to 'core' on mac os x.
-		// Based on SDL2 source code that flags are ignored in setting profile version
-		// Note: Mac OS x has only compatibility 2.1 and core 3.2
+		// FIXME: setting version prevent set profile to 'core' on mac os x for me - aquadran
+		// NOTE: Mac OS x has only compatibility 2.1 and core 3.2
 		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
 		// make GL forward compatible
 		// FIXME: disabled for now, it seems not work for only GL >= 3.0,
 		// it fails create context, probably because not setting above major/minor version
 		// of GL context
 		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 #endif
+		// NOTE: we need use SDL_GL_CreateContext instead SDL_CreateRenderer because
+		// SDL code not allow switch to "core" profile, GL Renderer try first create
+		// Renderer with "compatibility" mode GL 2.1, flags are reverted to defaults.
+		// If this fail it will try with flags we set, but this aprouch is not for us.
+		// Look into SDL_render_gl.c, function: GL_CreateRenderer()
 		_glContext = SDL_GL_CreateContext(_window);
 		if (!_glContext) {
 			error("Error: %s", SDL_GetError());
@@ -291,7 +298,9 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		if (!_screenTexture) {
 			error("Error: %s", SDL_GetError());
 		}
+		// set to "linear", we will see how it will affect on speed
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+
 		SDL_RenderSetLogicalSize(_renderer, screenW, screenH);
 	}
 
