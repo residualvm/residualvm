@@ -223,7 +223,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_window = SDL_CreateWindow(caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 			_fullscreen ? 0 : screenW, _fullscreen ? 0 : screenH, sdlflags);
 	if (!_window) {
-		error("Could not create window: %s", SDL_GetError());
+		error("Error: %s", SDL_GetError());
 	}
 
 	dynamic_cast<OSystem_SDL *>(g_system)->setupIcon();
@@ -256,7 +256,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #endif
 		_glContext = SDL_GL_CreateContext(_window);
 		if (!_glContext) {
-			error("Could not create GL context: %s", SDL_GetError());
+			error("Error: %s", SDL_GetError());
 		}
 		_screen = SDL_GetWindowSurface(_window);
 	} else
@@ -278,15 +278,15 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 
 		_renderer = SDL_CreateRenderer(_window, -1, 0);
 		if (!_renderer) {
-			error("Could not create renderer: %s", SDL_GetError());
+			error("Error: %s", SDL_GetError());
 		}
 		_screen = SDL_CreateRGBSurface(0, screenW, screenH, bpp, rmask, gmask, bmask, amask);
 		if (!_screen) {
-			error("Could not create screen surface: %s", SDL_GetError());
+			error("Error: %s", SDL_GetError());
 		}
 		_screenTexture = SDL_CreateTexture(_renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, screenW, screenH);
 		if (!_screenTexture) {
-			error("Could not create screen texture: %s", SDL_GetError());
+			error("Error: %s", SDL_GetError());
 		}
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 		SDL_RenderSetLogicalSize(_renderer, screenW, screenH);
