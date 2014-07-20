@@ -246,19 +246,6 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		amask = 0x00000000;
 #endif
 
-#ifdef USE_OPENGL_SHADERS
-		// FIXME: setting version prevent set profile to 'core' on mac os x for me - aquadran
-		// NOTE: Mac OS x has only compatibility 2.1 and core 3.2
-		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-		// make GL forward compatible
-		// FIXME: disabled for now, it seems not work for only GL >= 3.0,
-		// it fails create context, probably because not setting above major/minor version
-		// of GL context
-		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-#endif
 		// NOTE: we need use SDL_GL_CreateContext instead SDL_CreateRenderer because
 		// SDL code not allow switch to "core" profile, GL Renderer try first create
 		// Renderer with "compatibility" mode GL 2.1, flags are reverted to defaults.
@@ -268,6 +255,31 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		if (!_glContext) {
 			error("Error: %s", SDL_GetError());
 		}
+
+#ifdef USE_OPENGL_SHADERS
+		const GLubyte *version = glGetString(GL_VERSION);
+		int major, minor;
+		if (version && sscanf((const char *)version, "%d.%d", &major, &minor) == 2) {
+			if (major < 3) {
+				// FIXME: setting version prevent set profile to 'core' GL 3.3 on Mac OX X for me - aquadran
+#ifndef MACOSX
+				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0); // 3.0, 3.1, 3.2 or 3.3 ?
+#endif
+				SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+				// make GL forward compatible
+				SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+
+				SDL_GL_DeleteContext(_glContext);
+				_glContext = SDL_GL_CreateContext(_window);
+				if (!_glContext) {
+					error("Error: %s", SDL_GetError());
+				}
+			}
+		}
+#endif
+
 		_screen = SDL_GetWindowSurface(_window);
 	} else
 #endif
