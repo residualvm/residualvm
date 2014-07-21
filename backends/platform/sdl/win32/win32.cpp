@@ -135,13 +135,10 @@ void OSystem_Win32::setupIcon() {
 		SDL_VERSION(&wminfo.version);
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 		if (SDL_GetWindowWMInfo(dynamic_cast<SurfaceSdlGraphicsManager *>(_graphicsManager)->getWindowHandle(), &wminfo)) {
+			SendMessage(wminfo.info.win.window, WM_SETICON, ICON_BIG, (LPARAM)ico);
 #else
 		if (SDL_GetWMInfo(&wminfo)) {
-#endif
 			// Replace the handle to the icon associated with the window class by our custom icon
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-			SetClassLongPtr(wminfo.info.win.window, GCLP_HICON, (ULONG_PTR)ico);
-#else
 			SetClassLongPtr(wminfo.window, GCLP_HICON, (ULONG_PTR)ico);
 #endif
 
