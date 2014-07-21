@@ -260,10 +260,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #endif
 
 		// NOTE: we need use SDL_GL_CreateContext instead SDL_CreateRenderer because
-		// SDL code not allow switch to "core" profile, GL Renderer try first create
-		// Renderer with "compatibility" mode GL 2.1, flags are reverted to defaults.
-		// If this fail it will try with flags we set, but this aprouch is not for us.
-		// Look into SDL_render_gl.c, function: GL_CreateRenderer()
+		// SDL code not allow switch to "core" profile.
 		_glContext = SDL_GL_CreateContext(_window);
 		if (!_glContext) {
 			warning("Error: %s", SDL_GetError());
@@ -274,23 +271,32 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		const GLubyte *version = glGetString(GL_VERSION);
 		int major, minor;
 		if (version && sscanf((const char *)version, "%d.%d", &major, &minor) == 2) {
-			if (major < 3) {
-				// FIXME: setting version prevent set profile to 'core' GL 3.3 on Mac OX X for me - aquadran
-#ifndef MACOSX
+			if (major >= 3) {
+				// NOTE: 3.0 seems only compatible with our shader renderers
 				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0); // 3.0, 3.1, 3.2 or 3.3 ?
+				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+			} else {
+#ifdef MACOSX
+				const GLubyte *vendor = glGetString(GL_VENDOR);
+				// NOTE: setting version prevent set profile to 'core' for me,
+				// Mac OS X 10.9 with Intel drivers - aquadran
+				if (scumm_stricmp((const char *)vendor, "Intel Inc.") != 0)
 #endif
+				{
+					// NOTE: 3.0 seems only compatible with our shader renderers
+					SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+					SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+				}
 				SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
 				// make GL forward compatible
 				SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 
-				SDL_GL_DeleteContext(_glContext);
-				_glContext = SDL_GL_CreateContext(_window);
-				if (!_glContext) {
-					warning("Error: %s", SDL_GetError());
-					g_system->quit();
-				}
+			}
+			SDL_GL_DeleteContext(_glContext);
+			_glContext = SDL_GL_CreateContext(_window);
+			if (!_glContext) {
+				warning("Error: %s", SDL_GetError());
+				g_system->quit();
 			}
 		}
 #endif
