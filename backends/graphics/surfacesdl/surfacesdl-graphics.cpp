@@ -73,8 +73,10 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
 	closeOverlay();
 #if SDL_VERSION_ATLEAST(2, 0, 0)
+#ifdef USE_OPENGL
 	if (_glContext)
 		SDL_GL_DeleteContext(_glContext);
+#endif
 	if (_screenTexture)
 		SDL_DestroyTexture(_screenTexture);
 	if (_renderer)
@@ -183,14 +185,24 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	uint32 rmask, gmask, bmask, amask;
 
 	closeOverlay();
-	if (_glContext)
+#ifdef USE_OPENGL
+	if (_glContext) {
 		SDL_GL_DeleteContext(_glContext);
-	if (_screenTexture)
+		_glContext = nullptr;
+	}
+#endif
+	if (_screenTexture) {
 		SDL_DestroyTexture(_screenTexture);
-	if (_renderer)
+		_screenTexture = nullptr;
+	}
+	if (_renderer) {
 		SDL_DestroyRenderer(_renderer);
-	if (_window)
+		_renderer = nullptr;
+	}
+	if (_window) {
 		SDL_DestroyWindow(_window);
+		_window = nullptr;
+	}
 
 #ifdef USE_OPENGL
 	_opengl = accel3d;
