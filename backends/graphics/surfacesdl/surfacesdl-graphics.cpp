@@ -383,6 +383,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #ifdef USE_OPENGL_SHADERS
 		debug("INFO: GLEW Version: %s", glewGetString(GLEW_VERSION));
 
+		glewExperimental = GL_TRUE;
+
 		// GLEW needs to be initialized to use shaders
 		GLenum err = glewInit();
 		if (err != GLEW_OK) {
