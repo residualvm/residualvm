@@ -177,7 +177,7 @@ _stagingpath="staging"
 _win32path="C:/residualvm"
 _aos4path="Games:ResidualVM"
 _staticlibpath=
-_sdlconfig=sdl2-config
+_sdlconfig=sdl2-config # TODO: reverted to SDL1 before merge
 _freetypeconfig=freetype-config
 _sdlpath="$PATH"
 _freetypepath="$PATH"
@@ -944,6 +944,8 @@ Optional Libraries:
   --with-sparkle-prefix=DIR   Prefix where sparkle is installed (Mac OS X only - optional)
   --disable-sparkle        disable sparkle automatic update support [Mac OS X only - autodetect]
 
+  --use-sdl1               force build with SDL1 (default)
+  --use-sdl2               force build with SDL2
   --with-sdl-prefix=DIR    Prefix where the sdl-config script is
                            installed (optional)
 
@@ -1182,6 +1184,12 @@ for ac_option in $@; do
 		;;
 	--enable-profiling)
 		_enable_prof=yes
+		;;
+	--use-sdl1) #ResidualVM specific option
+		_sdlconfig=sdl-config
+		;;
+	--use-sdl2) #ResidualVM specific option
+		_sdlconfig=sdl2-config
 		;;
 	--with-sdl-prefix=*)
 		arg=`echo $ac_option | cut -d '=' -f 2`
