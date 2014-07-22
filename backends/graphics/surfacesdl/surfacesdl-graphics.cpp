@@ -261,10 +261,14 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 
 #ifdef USE_OPENGL_SHADERS
 		// try first request for GLES context
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 		_glContext = SDL_GL_CreateContext(_window);
 		if (!_glContext) {
 			warning("GLES context not available");
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);
 #endif
 			_glContext = SDL_GL_CreateContext(_window);
