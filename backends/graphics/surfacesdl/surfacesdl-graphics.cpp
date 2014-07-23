@@ -83,6 +83,8 @@ SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
 		SDL_DestroyRenderer(_renderer);
 	if (_window)
 		SDL_DestroyWindow(_window);
+	if (_screen)
+		SDL_FreeSurface(_screen);
 #endif
 }
 
@@ -203,6 +205,10 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	if (_window) {
 		SDL_DestroyWindow(_window);
 		_window = nullptr;
+	}
+	if (_screen) {
+		SDL_FreeSurface(_screen);
+		_screen = nullptr;
 	}
 
 #ifdef USE_OPENGL
@@ -820,7 +826,12 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 			drawOverlay();
 		}
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-		SDL_UpdateTexture(_screenTexture, NULL, _screen->pixels, _screen->pitch);
+		void *pixels;
+		int pitch;
+		if (SDL_LockTexture(_screenTexture, NULL, &pixels, &pitch) < 0)
+			error("%s", SDL_GetError());
+		memcpy(pixels, _screen->pixels, pitch * _screen->h);
+		SDL_UnlockTexture(_screenTexture);
 		SDL_RenderCopy(_renderer, _screenTexture, NULL, NULL);
 		SDL_RenderPresent(_renderer);
 #else
@@ -847,12 +858,12 @@ void SurfaceSdlGraphicsManager::fillScreen(uint32 col) {
 
 int16 SurfaceSdlGraphicsManager::getHeight() {
 	// ResidualVM specific
-	return _screen->h;
+	return _overlayscreen->h;
 }
 
 int16 SurfaceSdlGraphicsManager::getWidth() {
 	// ResidualVM specific
-	return _screen->w;
+	return _overlayscreen->w;
 }
 
 void SurfaceSdlGraphicsManager::setPalette(const byte *colors, uint start, uint num) {
