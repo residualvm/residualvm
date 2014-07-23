@@ -183,6 +183,7 @@ void SurfaceSdlGraphicsManager::launcherInitSize(uint w, uint h) {
 Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) {
 	uint32 sdlflags = 0, bpp;
 	uint32 rmask, gmask, bmask, amask;
+	byte *pixPtr = nullptr;
 
 	closeOverlay();
 #ifdef USE_OPENGL
@@ -281,26 +282,13 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 			const GLubyte *version = glGetString(GL_VERSION);
 			int major, minor;
 			if (version && sscanf((const char *)version, "%d.%d", &major, &minor) == 2) {
-				if (major >= 3) {
-					// NOTE: 3.0 seems only compatible with our shader renderers
-					SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-					SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-				} else {
-#ifdef MACOSX
-					const GLubyte *vendor = glGetString(GL_VENDOR);
-					// NOTE: setting version prevent set profile to 'core' for me,
-					// Mac OS X 10.9 with Intel drivers - aquadran
-					if (scumm_stricmp((const char *)vendor, "Intel Inc.") != 0)
-#endif
-					{
-						// NOTE: 3.0 seems only compatible with our shader renderers
-						SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-						SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-					}
+				// NOTE: 3.0 seems only compatible with our shader renderers
+				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+				if (major < 3) {
 					SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 					// make GL forward compatible
 					SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-
 				}
 				SDL_GL_DeleteContext(_glContext);
 				_glContext = SDL_GL_CreateContext(_window);
@@ -311,8 +299,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 			}
 		}
 #endif
-
-		_screen = SDL_GetWindowSurface(_window);
+		_screenFormat = Graphics::PixelFormat(3, 8, 8, 8, 0, 16, 8, 0, 0);
 	} else
 #endif
 	{
@@ -349,11 +336,13 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
 		SDL_RenderSetLogicalSize(_renderer, screenW, screenH);
+
+		SDL_PixelFormat *f = _screen->format;
+		_screenFormat = Graphics::PixelFormat(f->BytesPerPixel, 8 - f->Rloss, 8 - f->Gloss, 8 - f->Bloss, 0,
+				f->Rshift, f->Gshift, f->Bshift, f->Ashift);
+		pixPtr = (byte *)_screen->pixels;
 	}
 
-	SDL_PixelFormat *f = _screen->format;
-	_screenFormat = Graphics::PixelFormat(f->BytesPerPixel, 8 - f->Rloss, 8 - f->Gloss, 8 - f->Bloss, 0,
-			f->Rshift, f->Gshift, f->Bshift, f->Ashift);
 
 #ifdef USE_OPENGL
 	if (_opengl) {
@@ -366,6 +355,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		debug("INFO: OpenGL Renderer: %s", str);
 		str = glGetString(GL_VERSION);
 		debug("INFO: OpenGL Version: %s", str);
+// SDL2 is broken for core context: https://bugzilla.libsdl.org/show_bug.cgi?id=2060
+#ifndef USE_OPENGL_SHADERS
 		SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &glflag);
 		debug("INFO: OpenGL Red bits: %d", glflag);
 		SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &glflag);
@@ -376,10 +367,11 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		debug("INFO: OpenGL Alpha bits: %d", glflag);
 		SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &glflag);
 		debug("INFO: OpenGL Z buffer depth bits: %d", glflag);
-		SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &glflag);
-		debug("INFO: OpenGL Double Buffer: %d", glflag);
 		SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, &glflag);
 		debug("INFO: OpenGL Stencil buffer bits: %d", glflag);
+#endif
+		SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &glflag);
+		debug("INFO: OpenGL Double Buffer: %d", glflag);
 
 #ifdef USE_OPENGL_SHADERS
 		debug("INFO: GLEW Version: %s", glewGetString(GLEW_VERSION));
@@ -449,7 +441,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 
 	_screenChangeCount++;
 
-	return Graphics::PixelBuffer(_screenFormat, (byte *)_screen->pixels);
+	return Graphics::PixelBuffer(_screenFormat, pixPtr);
 }
 
 #else
