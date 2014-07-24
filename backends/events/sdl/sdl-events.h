@@ -125,6 +125,7 @@ protected:
 	 */
 	//@{
 
+	virtual bool handleTextInput(SDL_Event &ev, Common::Event &event); // ResidualVM specific method
 	virtual bool handleKeyDown(SDL_Event &ev, Common::Event &event);
 	virtual bool handleKeyUp(SDL_Event &ev, Common::Event &event);
 	virtual bool handleMouseMotion(SDL_Event &ev, Common::Event &event);

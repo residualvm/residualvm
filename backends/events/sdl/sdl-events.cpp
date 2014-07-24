@@ -77,29 +77,25 @@ SdlEventSource::SdlEventSource()
 			_joystick = SDL_JoystickOpen(joystick_num);
 		}
 	}
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_StartTextInput();
+#endif
 }
 
 SdlEventSource::~SdlEventSource() {
 	if (_joystick)
 		SDL_JoystickClose(_joystick);
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_StopTextInput();
+#endif
 }
 
 int SdlEventSource::mapKey(SDLKey key, SDLMod mod, Uint16 unicode) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	if (key == SDLK_KP_0) {
-		return '0';
-	} else if (key >= SDLK_KP_1 && key <= SDLK_KP_9) {
-		return key - SDLK_KP_1 + '1';
-	} else if (key >= SDLK_RETURN && key <= SDLK_BACKQUOTE) {
+	if (key >= SDLK_RETURN && key <= SDLK_z && (mod & KMOD_CTRL || mod & KMOD_ALT)) {
 		return key;
-	} else if (key >= 'a' && key <= 'z') {
-		if (mod & KMOD_SHIFT)
-			return key & ~0x20;
-		else
-			return key;
-	} else {
-		return 0;
 	}
+	return 0;
 #else
 	if (key >= SDLK_F1 && key <= SDLK_F9) {
 		return key - SDLK_F1 + Common::ASCII_F1;
@@ -401,6 +397,10 @@ bool SdlEventSource::pollEvent(Common::Event &event) {
 
 bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 	switch (ev.type) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	case SDL_TEXTINPUT:
+		return handleTextInput(ev, event);
+#endif
 	case SDL_KEYDOWN:
 		return handleKeyDown(ev, event);
 	case SDL_KEYUP:
@@ -475,6 +475,14 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 	return false;
 }
 
+// ResidualVM specific method
+bool SdlEventSource::handleTextInput(SDL_Event &ev, Common::Event &event) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	event.type = Common::EVENT_KEYDOWN;
+	event.kbd.ascii = ev.text.text[0];
+#endif
+	return true;
+}
 
 bool SdlEventSource::handleKeyDown(SDL_Event &ev, Common::Event &event) {
 
