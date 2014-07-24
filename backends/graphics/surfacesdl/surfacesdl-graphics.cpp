@@ -233,16 +233,14 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #endif
 	_fullscreen = fullscreen;
 
-	// NOTE: it would be nice if we could get dimensions for OpenGL to allow
-	// engine OpenGL renderers change resolution of drawing area.
 	if (_fullscreen)
-		sdlflags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		sdlflags |= SDL_WINDOW_FULLSCREEN;
 
 	const char *caption = dynamic_cast<OSystem_SDL *>(g_system)->getWindowCaption().c_str();
 	if (!caption)
 		caption = "ResidualVM";
 	_window = SDL_CreateWindow(caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-			_fullscreen ? 0 : screenW, _fullscreen ? 0 : screenH, sdlflags);
+			screenW, screenH, sdlflags);
 	if (!_window) {
 		warning("Error: %s", SDL_GetError());
 		g_system->quit();
