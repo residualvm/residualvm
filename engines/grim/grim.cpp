@@ -669,15 +669,18 @@ void GrimEngine::mainLoop() {
 			savegameSave();
 		}
 
-		if (_changeHardwareState || _changeFullscreenState) {
+		if (_changeFullscreenState) {
+			bool fullscreen = g_system->getFeatureState(OSystem::kFeatureFullscreenMode);
+			fullscreen = !fullscreen;
+			g_system->setFeatureState(OSystem::kFeatureFullscreenMode, fullscreen);
+			ConfMan.setBool("fullscreen", fullscreen);
+			_changeFullscreenState = false;
+		}
+
+		if (_changeHardwareState) {
 			_changeHardwareState = false;
 
 			bool fullscreen = g_driver->isFullscreen();
-			if (_changeFullscreenState) {
-				fullscreen = !fullscreen;
-			}
-			g_system->setFeatureState(OSystem::kFeatureFullscreenMode, fullscreen);
-			ConfMan.setBool("fullscreen", fullscreen);
 
 			uint screenWidth = g_driver->getScreenWidth();
 			uint screenHeight = g_driver->getScreenHeight();
@@ -700,7 +703,6 @@ void GrimEngine::mainLoop() {
 				g_driver->dimScreen();
 			}
 			setMode(mode);
-			_changeFullscreenState = false;
 		}
 
 		g_imuse->flushTracks();

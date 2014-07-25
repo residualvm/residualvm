@@ -121,6 +121,14 @@ bool SurfaceSdlGraphicsManager::hasFeature(OSystem::Feature f) {
 void SurfaceSdlGraphicsManager::setFeatureState(OSystem::Feature f, bool enable) {
 	switch (f) {
 	case OSystem::kFeatureFullscreenMode:
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		// NOTE: OS X has a bug introduced in SDL 2.0.2 which prevent back from fullscreen.
+		// see bug report:  https://bugzilla.libsdl.org/show_bug.cgi?id=2479
+		// it's fixed here: http://hg.libsdl.org/SDL/rev/2703c0c19f45
+		// so in next SDL release 2.0.4 the issue should be fixed
+		if (SDL_SetWindowFullscreen(_window, (enable == true) ? SDL_WINDOW_FULLSCREEN : 0) < 0)
+			error("%s", SDL_GetError());
+#endif
 		_fullscreen = enable;
 		break;
 	default:
