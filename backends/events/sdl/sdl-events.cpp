@@ -92,9 +92,6 @@ SdlEventSource::~SdlEventSource() {
 
 int SdlEventSource::mapKey(SDLKey key, SDLMod mod, Uint16 unicode) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	if (key >= SDLK_RETURN && key <= SDLK_z && (mod & KMOD_CTRL || mod & KMOD_ALT)) {
-		return key;
-	}
 	return 0;
 #else
 	if (key >= SDLK_F1 && key <= SDLK_F9) {
@@ -479,7 +476,13 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 bool SdlEventSource::handleTextInput(SDL_Event &ev, Common::Event &event) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	event.type = Common::EVENT_KEYDOWN;
-	event.kbd.ascii = ev.text.text[0];
+	if (ev.text.text[0] && ev.text.text[1] == 0)
+		event.kbd.ascii = ev.text.text[0];
+	else {
+		uint16 *str = (uint16 *)SDL_iconv_string("UCS-2", "UTF-8", ev.text.text, SDL_strlen(ev.text.text) + 1);
+		event.kbd.ascii = *str;
+		SDL_free(str);
+	}
 #endif
 	return true;
 }
@@ -540,9 +543,7 @@ bool SdlEventSource::handleKeyDown(SDL_Event &ev, Common::Event &event) {
 
 	event.type = Common::EVENT_KEYDOWN;
 	event.kbd.keycode = SDLToOSystemKeycode(ev.key.keysym.sym);
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	event.kbd.ascii = mapKey(ev.key.keysym.sym, (SDLMod)ev.key.keysym.mod, 0);
-#else
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 	event.kbd.ascii = mapKey(ev.key.keysym.sym, (SDLMod)ev.key.keysym.mod, (Uint16)ev.key.keysym.unicode);
 #endif
 
@@ -588,9 +589,7 @@ bool SdlEventSource::handleKeyUp(SDL_Event &ev, Common::Event &event) {
 
 	event.type = Common::EVENT_KEYUP;
 	event.kbd.keycode = SDLToOSystemKeycode(ev.key.keysym.sym);
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	event.kbd.ascii = mapKey(ev.key.keysym.sym, (SDLMod)ev.key.keysym.mod, 0);
-#else
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 	event.kbd.ascii = mapKey(ev.key.keysym.sym, (SDLMod)ev.key.keysym.mod, (Uint16)ev.key.keysym.unicode);
 #endif
 
