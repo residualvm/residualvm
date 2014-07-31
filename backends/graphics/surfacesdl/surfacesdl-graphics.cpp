@@ -126,6 +126,8 @@ void SurfaceSdlGraphicsManager::setFeatureState(OSystem::Feature f, bool enable)
 		// see bug report:  https://bugzilla.libsdl.org/show_bug.cgi?id=2479
 		// it's fixed here: http://hg.libsdl.org/SDL/rev/2703c0c19f45
 		// so in next SDL release 2.0.4 the issue should be fixed
+		// NOTE2: SDL2 Linux switching to fullscreen not working properly and
+		// there is no fix for the issue.
 		if (SDL_SetWindowFullscreen(_window, (enable == true) ? SDL_WINDOW_FULLSCREEN : 0) < 0)
 			error("%s", SDL_GetError());
 #endif
