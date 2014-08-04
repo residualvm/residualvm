@@ -568,18 +568,12 @@ void Lua_V2::SetActorRestChore() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 	Costume *costume = nullptr;
+	Actor *actor = nullptr;
 	int chore;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			(!lua_isstring(choreObj) && !lua_isnil(choreObj))) {
-		return;
+	if (setChoreAndCostume(choreObj, costumeObj, actorObj, actor, costume, chore)) {
+		actor->setRestChore(chore, costume);
 	}
-
-	Actor *actor = getactor(actorObj);
-
-	setChoreAndCostume(choreObj, costumeObj, actor, costume, chore);
-
-	actor->setRestChore(chore, costume);
 }
 
 void Lua_V2::SetActorWalkChore() {
@@ -587,18 +581,12 @@ void Lua_V2::SetActorWalkChore() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 	Costume *costume = nullptr;
+	Actor *actor = nullptr;
 	int chore;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			(!lua_isstring(choreObj) && !lua_isnil(choreObj))) {
-		return;
+	if (setChoreAndCostume(choreObj, costumeObj, actorObj, actor, costume, chore)) {
+		actor->setWalkChore(chore, costume);
 	}
-
-	Actor *actor = getactor(actorObj);
-
-	setChoreAndCostume(choreObj, costumeObj, actor, costume, chore);
-
-	actor->setWalkChore(chore, costume);
 }
 
 void Lua_V2::SetActorTurnChores() {
@@ -639,11 +627,10 @@ void Lua_V2::SetActorTalkChore() {
 	lua_Object choreObj = lua_getparam(3);
 	lua_Object costumeObj = lua_getparam(4);
 	Costume *costume = nullptr;
+	Actor *actor = nullptr;
 	int chore;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			!lua_isnumber(indexObj) ||
-			(!lua_isstring(choreObj) && !lua_isnil(choreObj))) {
+	if (!lua_isnumber(indexObj)) {
 		return;
 	}
 
@@ -651,11 +638,9 @@ void Lua_V2::SetActorTalkChore() {
 	if (index < 0 || index >= 16)
 		return;
 
-	Actor *actor = getactor(actorObj);
-
-	setChoreAndCostume(choreObj, costumeObj, actor, costume, chore);
-
-	actor->setTalkChore(index + 1, chore, costume);
+	if (setChoreAndCostume(choreObj, costumeObj, actorObj, actor, costume, chore)) {
+		actor->setTalkChore(index + 1, chore, costume);
+	}
 }
 
 void Lua_V2::SetActorMumblechore() {
@@ -663,18 +648,12 @@ void Lua_V2::SetActorMumblechore() {
 	lua_Object choreObj = lua_getparam(2);
 	lua_Object costumeObj = lua_getparam(3);
 	Costume *costume = nullptr;
+	Actor *actor = nullptr;
 	int chore;
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
-			(!lua_isstring(choreObj) && !lua_isnil(choreObj))) {
-		return;
+	if (setChoreAndCostume(choreObj, costumeObj, actorObj, actor, costume, chore)) {
+		actor->setMumbleChore(chore, costume);
 	}
-
-	Actor *actor = getactor(actorObj);
-
-	setChoreAndCostume(choreObj, costumeObj, actor, costume, chore);
-
-	actor->setMumbleChore(chore, costume);
 }
 
 void Lua_V2::GetActorChores() {
@@ -1115,20 +1094,28 @@ void Lua_V2::EnableActorPuck() {
 	warning("Lua_V2::EnableActorPuck: stub, actor: %s enable: %s", actor->getName().c_str(), enable ? "TRUE" : "FALSE");
 }
 
-void Lua_V2::setChoreAndCostume(lua_Object choreObj, lua_Object costumeObj, Actor *actor, Costume *&costume, int &chore) {
-	if (lua_isnil(choreObj)) {
-		chore = -1;
-	} else {
-		if (!findCostume(costumeObj, actor, &costume))
-			return;
-
-		if (!costume) {
-			costume = actor->getCurrentCostume();
-		}
-
-		const char *choreStr = lua_getstring(choreObj);
-		chore = costume->getChoreId(choreStr);
+bool Lua_V2::setChoreAndCostume(lua_Object choreObj, lua_Object costumeObj, lua_Object actorObj, Actor *&actor, Costume *&costume, int &chore) {
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R') ||
+			!lua_isstring(choreObj)) {
+		return false;
 	}
+
+	actor = getactor(actorObj);
+
+	if (!findCostume(costumeObj, actor, &costume))
+		return false;
+
+	if (!costume) {
+		costume = actor->getCurrentCostume();
+		if (!costume) {
+			return false;
+		}
+	}
+
+	const char *choreStr = lua_getstring(choreObj);
+	chore = costume->getChoreId(choreStr);
+
+	return true;
 }
 
 } // end of namespace Grim
