@@ -31,10 +31,12 @@
 
 #include "common/util.h"
 #include "common/textconsole.h"
+#include "common/array.h"
 
 #include "graphics/tinygl/gl.h"
 #include "graphics/tinygl/zbuffer.h"
 #include "graphics/tinygl/zmath.h"
+#include "graphics/tinygl/zblit.h"
 
 namespace TinyGL {
 
@@ -303,6 +305,9 @@ struct GLContext {
 	// depth test
 	int depth_test;
 	int color_mask;
+
+	// blit test
+	Common::Array<Graphics::BlitImage *> blitImages;
 
 	// alpha test
 	bool _alphaTestEnabled;
