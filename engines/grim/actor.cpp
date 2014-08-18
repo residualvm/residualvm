@@ -1426,6 +1426,21 @@ void Actor::updateWalk() {
 
 	dir = destPos - _pos;
 	dir.normalize();
+
+	// If we're not in a collision mode an walking, turn it on...
+	CollisionMode mode = _collisionMode;
+	if (_collisionMode == CollisionOff) {
+		mode = CollisionSphere;
+	}
+
+	// Find the amount we're walking
+	Math::Vector3d newWalkAmt = dir * walkAmt;
+	foreach (Actor *a, g_grim->getActiveActors()) {
+		// Don't move if we've collided
+		if(handleCollisionWith(a, mode, &newWalkAmt)) {
+			return;
+		}
+	}
 	_pos += dir * walkAmt;
 }
 
