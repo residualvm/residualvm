@@ -30,6 +30,7 @@
 
 #ifdef USE_OPENGL_SHADERS
 #include "graphics/opengles2/shader.h"
+#include "graphics/opengles2/framebuffer.h"
 #endif
 
 #include "backends/graphics/graphics.h"
@@ -166,8 +167,17 @@ protected:
 	// Overlay
 	Graphics::Shader *_boxShader;
 	GLuint _boxVerticesVBO;
+	uint _desktopW, _desktopH;
 
 	void drawOverlayOpenGLShaders();
+	void drawFramebufferOpenGLShaders();
+	Graphics::FrameBuffer *_frameBuffer;
+	enum {
+		kFullscreenNative  = 1,
+		kFullscreenCenter  = 2,
+		kFullscreenScale   = 3,
+		kFullscreenStretch = 4
+	} _fullscreenMode;
 #endif
 #endif
 

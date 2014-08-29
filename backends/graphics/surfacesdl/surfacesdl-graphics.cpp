@@ -60,12 +60,21 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 #endif
 #ifdef USE_OPENGL_SHADERS
 	, _boxShader(nullptr), _boxVerticesVBO(0)
+	, _frameBuffer(nullptr), _fullscreenMode(kFullscreenNative)
 #endif
 	{
+#ifdef USE_OPENGL_SHADERS
+		const SDL_VideoInfo *vi = SDL_GetVideoInfo();
+		_desktopW = vi->current_w;
+		_desktopH = vi->current_h;
+#endif
 }
 
 SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
 	closeOverlay();
+#ifdef USE_OPENGL_SHADERS
+	delete _frameBuffer;
+#endif
 }
 
 void SurfaceSdlGraphicsManager::activateManager() {
@@ -171,6 +180,32 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_antialiasing = 0;
 #endif
 	_fullscreen = fullscreen;
+
+#ifdef USE_OPENGL_SHADERS
+	uint fbW = screenW;
+	uint fbH = screenH;
+
+	if (_opengl && _fullscreen && ConfMan.hasKey("fullscreen_mode")) {
+		const Common::String &fmode = ConfMan.get("fullscreen_mode");
+		if (fmode == "stretch") {
+			_fullscreenMode = kFullscreenStretch;
+			screenW = _desktopW;
+			screenH = _desktopH;
+		} else if (fmode == "scale") {
+			_fullscreenMode = kFullscreenScale;
+			screenW = _desktopW;
+			screenH = _desktopH;
+		} else if (fmode == "center") {
+			_fullscreenMode = kFullscreenCenter;
+			screenW = _desktopW;
+			screenH = _desktopH;
+		} else { // fmode == "native" or unknown
+			_fullscreenMode = kFullscreenNative;
+			screenW = screenW;
+			screenH = screenH;
+		}
+	}
+#endif
 
 #ifdef USE_OPENGL
 	if (_opengl) {
@@ -343,6 +378,13 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_screenFormat = Graphics::PixelFormat(f->BytesPerPixel, 8 - f->Rloss, 8 - f->Gloss, 8 - f->Bloss, 0,
 										f->Rshift, f->Gshift, f->Bshift, f->Ashift);
 
+#ifdef USE_OPENGL_SHADERS
+	if (_opengl && _fullscreen && _fullscreenMode != kFullscreenNative) {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		_frameBuffer = new Graphics::FrameBuffer(fbW, fbH);
+		_frameBuffer->attach();
+	}
+#endif
 	return Graphics::PixelBuffer(_screenFormat, (byte *)_screen->pixels);
 }
 
@@ -483,6 +525,32 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGLShaders() {
 		}
 	}
 }
+
+void SurfaceSdlGraphicsManager::drawFramebufferOpenGLShaders() {
+	glBindTexture(GL_TEXTURE_2D, _frameBuffer->getColorTextureName());
+
+	_boxShader->use();
+	float texcropX = _frameBuffer->getWidth() / float(_frameBuffer->getTexWidth());
+	float texcropY = _frameBuffer->getHeight() / float(_frameBuffer->getTexHeight());
+	_boxShader->setUniform("texcrop", Math::Vector2d(texcropX, texcropY));
+	_boxShader->setUniform("flipY", false);
+
+	if (_fullscreenMode == kFullscreenScale || _fullscreenMode == kFullscreenCenter) {
+		uint scale = _fullscreenMode == kFullscreenCenter ? 1 : (_screen->h / _frameBuffer->getHeight());
+		float width = scale * _frameBuffer->getWidth() / float(_screen->w);
+		float height = scale * _frameBuffer->getHeight() / float(_screen->h);
+
+		_boxShader->setUniform("offsetXY", Math::Vector2d(0.5 - width / 2, 0.5 - height / 2));
+		_boxShader->setUniform("sizeWH",   Math::Vector2d(width, height));
+	} else { // _fullscreenMode == kFullscreenStretch
+		_boxShader->setUniform("offsetXY", Math::Vector2d(0.0, 0.0));
+		_boxShader->setUniform("sizeWH",   Math::Vector2d(1.0, 1.0));
+	}
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 #endif
 #endif
 
@@ -509,6 +577,13 @@ void SurfaceSdlGraphicsManager::drawOverlay() {
 void SurfaceSdlGraphicsManager::updateScreen() {
 #ifdef USE_OPENGL
 	if (_opengl) {
+#ifdef USE_OPENGL_SHADERS
+		if (_frameBuffer) {
+			_frameBuffer->detach();
+			glViewport(0, 0, _screen->w, _screen->h);
+		}
+#endif
+
 		if (_overlayVisible) {
 			if (_overlayDirty) {
 				updateOverlayTextures();
@@ -520,7 +595,16 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 			drawOverlayOpenGLShaders();
 #endif
 		}
-		SDL_GL_SwapBuffers();
+#ifdef USE_OPENGL_SHADERS
+		if (_frameBuffer) {
+			drawFramebufferOpenGLShaders();
+			SDL_GL_SwapBuffers();
+			_frameBuffer->attach();
+		} else
+#endif
+		{
+			SDL_GL_SwapBuffers();
+		}
 	} else
 #endif
 	{
