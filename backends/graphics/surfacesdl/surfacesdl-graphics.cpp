@@ -50,6 +50,12 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	:
 	SdlGraphicsManager(sdlEventSource),
 	_screen(0),
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	_window(nullptr),
+	_renderer(nullptr),
+	_screenTexture(nullptr),
+	_glContext(nullptr),
+#endif
 	_overlayVisible(false),
 	_overlayscreen(0),
 	_overlayWidth(0), _overlayHeight(0),
@@ -66,6 +72,20 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 
 SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
 	closeOverlay();
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+#ifdef USE_OPENGL
+	if (_glContext)
+		SDL_GL_DeleteContext(_glContext);
+#endif
+	if (_screenTexture)
+		SDL_DestroyTexture(_screenTexture);
+	if (_renderer)
+		SDL_DestroyRenderer(_renderer);
+	if (_window)
+		SDL_DestroyWindow(_window);
+	if (_screen)
+		SDL_FreeSurface(_screen);
+#endif
 }
 
 void SurfaceSdlGraphicsManager::activateManager() {
@@ -101,6 +121,16 @@ bool SurfaceSdlGraphicsManager::hasFeature(OSystem::Feature f) {
 void SurfaceSdlGraphicsManager::setFeatureState(OSystem::Feature f, bool enable) {
 	switch (f) {
 	case OSystem::kFeatureFullscreenMode:
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		// NOTE: OS X has a bug introduced in SDL 2.0.2 which prevent back from fullscreen.
+		// see bug report:  https://bugzilla.libsdl.org/show_bug.cgi?id=2479
+		// it's fixed here: http://hg.libsdl.org/SDL/rev/2703c0c19f45
+		// so in next SDL release 2.0.4 the issue should be fixed
+		// NOTE2: SDL2 Linux switching to fullscreen not working properly and
+		// there is no fix for the issue.
+		if (SDL_SetWindowFullscreen(_window, (enable == true) ? SDL_WINDOW_FULLSCREEN : 0) < 0)
+			error("%s", SDL_GetError());
+#endif
 		_fullscreen = enable;
 		break;
 	default:
@@ -159,6 +189,276 @@ void SurfaceSdlGraphicsManager::launcherInitSize(uint w, uint h) {
 	closeOverlay();
 	setupScreen(w, h, false, false);
 }
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+
+Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) {
+	uint32 sdlflags = 0, bpp;
+	uint32 rmask, gmask, bmask, amask;
+	byte *pixPtr = nullptr;
+
+	closeOverlay();
+#ifdef USE_OPENGL
+	if (_glContext) {
+		SDL_GL_DeleteContext(_glContext);
+		_glContext = nullptr;
+	}
+#endif
+	if (_screenTexture) {
+		SDL_DestroyTexture(_screenTexture);
+		_screenTexture = nullptr;
+	}
+	if (_renderer) {
+		SDL_DestroyRenderer(_renderer);
+		_renderer = nullptr;
+	}
+	if (_window) {
+		SDL_DestroyWindow(_window);
+		_window = nullptr;
+	}
+	if (_screen) {
+		SDL_FreeSurface(_screen);
+		_screen = nullptr;
+	}
+
+#ifdef USE_OPENGL
+	_opengl = accel3d;
+	_antialiasing = 0;
+
+	if (_opengl) {
+		if (ConfMan.hasKey("antialiasing"))
+			_antialiasing = ConfMan.getInt("antialiasing");
+
+		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+		setAntialiasing(true);
+
+		sdlflags |= SDL_WINDOW_OPENGL;
+	}
+#endif
+	_fullscreen = fullscreen;
+
+	if (_fullscreen)
+		sdlflags |= SDL_WINDOW_FULLSCREEN;
+
+	const char *caption = dynamic_cast<OSystem_SDL *>(g_system)->getWindowCaption().c_str();
+	if (!caption)
+		caption = "ResidualVM";
+	_window = SDL_CreateWindow(caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+			screenW, screenH, sdlflags);
+	if (!_window) {
+		warning("Error: %s", SDL_GetError());
+		g_system->quit();
+	}
+
+	dynamic_cast<OSystem_SDL *>(g_system)->setupIcon();
+
+#ifdef USE_OPENGL
+	if (_opengl) {
+		bpp = 24;
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		rmask = 0x000000FF;
+		gmask = 0x0000FF00;
+		bmask = 0x00FF0000;
+		amask = 0x00000000;
+#else
+		rmask = 0x00FF0000;
+		gmask = 0x0000FF00;
+		bmask = 0x000000FF;
+		amask = 0x00000000;
+#endif
+
+#ifdef USE_OPENGL_SHADERS
+		// try first request for GLES context
+		// FIXME: turn off GLES until we get runtime GLES renderer code enabled
+/*		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+		_glContext = SDL_GL_CreateContext(_window);
+		if (!_glContext) */{
+//			warning("GLES context not available");
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);
+#endif
+			_glContext = SDL_GL_CreateContext(_window);
+			if (!_glContext) {
+				warning("Error: %s", SDL_GetError());
+				g_system->quit();
+			}
+#ifdef USE_OPENGL_SHADERS
+			const GLubyte *version = glGetString(GL_VERSION);
+			int major, minor;
+			if (version && sscanf((const char *)version, "%d.%d", &major, &minor) == 2) {
+				// NOTE: 3.0 seems only compatible with our shader renderers
+				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+				if (major < 3) {
+					SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+					// make GL forward compatible
+					SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+				}
+				SDL_GL_DeleteContext(_glContext);
+				_glContext = SDL_GL_CreateContext(_window);
+				if (!_glContext) {
+					warning("Error: %s", SDL_GetError());
+					g_system->quit();
+				}
+			}
+		}
+#endif
+		_screenFormat = Graphics::PixelFormat(3, 8, 8, 8, 0, 16, 8, 0, 0);
+	} else
+#endif
+	{
+		bpp = 16;
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		rmask = 0x00001f00;
+		gmask = 0x000007e0;
+		bmask = 0x000000f8;
+		amask = 0x00000000;
+#else
+		rmask = 0x0000f800;
+		gmask = 0x000007e0;
+		bmask = 0x0000001f;
+		amask = 0x00000000;
+#endif
+
+		_renderer = SDL_CreateRenderer(_window, -1, 0);
+		if (!_renderer) {
+			warning("Error: %s", SDL_GetError());
+			g_system->quit();
+		}
+		_screen = SDL_CreateRGBSurface(0, screenW, screenH, bpp, rmask, gmask, bmask, amask);
+		if (!_screen) {
+			warning("Error: %s", SDL_GetError());
+			g_system->quit();
+		}
+		_screenTexture = SDL_CreateTexture(_renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, screenW, screenH);
+		if (!_screenTexture) {
+			warning("Error: %s", SDL_GetError());
+			g_system->quit();
+		}
+		// set to "linear", we will see how it will affect on speed
+		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+
+		SDL_RenderSetLogicalSize(_renderer, screenW, screenH);
+
+		SDL_PixelFormat *f = _screen->format;
+		_screenFormat = Graphics::PixelFormat(f->BytesPerPixel, 8 - f->Rloss, 8 - f->Gloss, 8 - f->Bloss, 0,
+				f->Rshift, f->Gshift, f->Bshift, f->Ashift);
+		pixPtr = (byte *)_screen->pixels;
+	}
+
+
+#ifdef USE_OPENGL
+	if (_opengl) {
+		int glflag;
+		const GLubyte *str;
+
+		str = glGetString(GL_VENDOR);
+		debug("INFO: OpenGL Vendor: %s", str);
+		str = glGetString(GL_RENDERER);
+		debug("INFO: OpenGL Renderer: %s", str);
+		str = glGetString(GL_VERSION);
+		debug("INFO: OpenGL Version: %s", str);
+// SDL2 is broken for core context: https://bugzilla.libsdl.org/show_bug.cgi?id=2060
+#ifndef USE_OPENGL_SHADERS
+		SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &glflag);
+		debug("INFO: OpenGL Red bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &glflag);
+		debug("INFO: OpenGL Green bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &glflag);
+		debug("INFO: OpenGL Blue bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_ALPHA_SIZE, &glflag);
+		debug("INFO: OpenGL Alpha bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &glflag);
+		debug("INFO: OpenGL Z buffer depth bits: %d", glflag);
+		SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, &glflag);
+		debug("INFO: OpenGL Stencil buffer bits: %d", glflag);
+#endif
+		SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &glflag);
+		debug("INFO: OpenGL Double Buffer: %d", glflag);
+
+#ifdef USE_OPENGL_SHADERS
+		debug("INFO: GLEW Version: %s", glewGetString(GLEW_VERSION));
+
+		glewExperimental = GL_TRUE;
+
+		// GLEW needs to be initialized to use shaders
+		GLenum err = glewInit();
+		if (err != GLEW_OK) {
+			warning("Error: %s", glewGetErrorString(err));
+			g_system->quit();
+		}
+
+		debug("INFO: GLSL version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+		const GLfloat vertices[] = {
+			0.0, 0.0,
+			1.0, 0.0,
+			0.0, 1.0,
+			1.0, 1.0,
+		};
+
+		// Setup the box shader used to render the overlay
+		const char* attributes[] = { "position", "texcoord", NULL };
+		_boxShader = Graphics::Shader::fromStrings("box", Graphics::BuiltinShaders::boxVertex, Graphics::BuiltinShaders::boxFragment, attributes);
+		_boxVerticesVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, sizeof(vertices), vertices);
+		_boxShader->enableVertexAttribute("position", _boxVerticesVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
+		_boxShader->enableVertexAttribute("texcoord", _boxVerticesVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
+#endif
+
+	}
+#endif
+
+	_overlayWidth = screenW;
+	_overlayHeight = screenH;
+
+#ifdef USE_OPENGL
+	if (_opengl) {
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		rmask = 0x00001f00;
+		gmask = 0x000007e0;
+		bmask = 0x000000f8;
+		amask = 0x00000000;
+#else
+		rmask = 0x0000f800;
+		gmask = 0x000007e0;
+		bmask = 0x0000001f;
+		amask = 0x00000000;
+#endif
+
+		_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _overlayWidth, _overlayHeight, 16,
+				rmask, gmask, bmask, amask);
+		_overlayScreenGLFormat = GL_UNSIGNED_SHORT_5_6_5;
+	} else
+#endif
+	{
+		_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _overlayWidth, _overlayHeight, 16,
+				_screen->format->Rmask, _screen->format->Gmask, _screen->format->Bmask, _screen->format->Amask);
+	}
+
+	if (!_overlayscreen) {
+		warning("Error: %s", SDL_GetError());
+		g_system->quit();
+	}
+
+	_overlayFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
+
+	_screenChangeCount++;
+
+	return Graphics::PixelBuffer(_screenFormat, pixPtr);
+}
+
+#else
 
 Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) {
 	uint32 sdlflags;
@@ -346,6 +646,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	return Graphics::PixelBuffer(_screenFormat, (byte *)_screen->pixels);
 }
 
+#endif
+
 #ifdef USE_OPENGL
 
 #define BITMAP_TEXTURE_SIZE 256
@@ -520,14 +822,29 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 			drawOverlayOpenGLShaders();
 #endif
 		}
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		SDL_GL_SwapWindow(_window);
+#else
 		SDL_GL_SwapBuffers();
+#endif
 	} else
 #endif
 	{
 		if (_overlayVisible) {
 			drawOverlay();
 		}
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		void *pixels;
+		int pitch;
+		if (SDL_LockTexture(_screenTexture, NULL, &pixels, &pitch) < 0)
+			error("%s", SDL_GetError());
+		memcpy(pixels, _screen->pixels, pitch * _screen->h);
+		SDL_UnlockTexture(_screenTexture);
+		SDL_RenderCopy(_renderer, _screenTexture, NULL, NULL);
+		SDL_RenderPresent(_renderer);
+#else
 		SDL_Flip(_screen);
+#endif
 	}
 }
 
@@ -549,12 +866,12 @@ void SurfaceSdlGraphicsManager::fillScreen(uint32 col) {
 
 int16 SurfaceSdlGraphicsManager::getHeight() {
 	// ResidualVM specific
-	return _screen->h;
+	return _overlayscreen->h;
 }
 
 int16 SurfaceSdlGraphicsManager::getWidth() {
 	// ResidualVM specific
-	return _screen->w;
+	return _overlayscreen->w;
 }
 
 void SurfaceSdlGraphicsManager::setPalette(const byte *colors, uint start, uint num) {
@@ -754,16 +1071,28 @@ bool SurfaceSdlGraphicsManager::showMouse(bool visible) {
 
 // ResidualVM specific method
 bool SurfaceSdlGraphicsManager::lockMouse(bool lock) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (lock)
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+	else
+		SDL_SetRelativeMouseMode(SDL_FALSE);
+#else
 	if (lock)
 		SDL_WM_GrabInput(SDL_GRAB_ON);
 	else
 		SDL_WM_GrabInput(SDL_GRAB_OFF);
+#endif
 	return true;
 }
 
 void SurfaceSdlGraphicsManager::warpMouse(int x, int y) {
 	//ResidualVM specific
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (_window)
+		SDL_WarpMouseInWindow(_window, x, y);
+#else
 	SDL_WarpMouse(x, y);
+#endif
 }
 
 void SurfaceSdlGraphicsManager::setMouseCursor(const void *buf, uint w, uint h, int hotspot_x, int hotspot_y, uint32 keycolor, bool dontScale, const Graphics::PixelFormat *format) {

@@ -52,6 +52,19 @@ typedef struct { int FAKE; } FAKE_FILE;
 #define strncasecmp FAKE_strncasecmp
 #endif
 
+// ResidualVM specific undefs for SDL2:
+#undef asctime
+#undef time
+#undef ctime
+#undef mktime
+#undef difftime
+#undef getdate
+#undef localtime
+#undef gmtime
+#undef clock
+#undef longjmp
+#undef setjmp
+
 #if defined(__SYMBIAN32__)
 #include <esdl\SDL.h>
 #else

@@ -23,9 +23,11 @@
 #ifndef BACKENDS_AUDIOCD_SDL_H
 #define BACKENDS_AUDIOCD_SDL_H
 
+#include "backends/platform/sdl/sdl-sys.h" // ResidualVM: reorder as first to able use SDL defines
+
 #include "backends/audiocd/default/default-audiocd.h"
 
-#include "backends/platform/sdl/sdl-sys.h"
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 
 /**
  * The SDL audio cd manager. Implements real audio cd playback.
@@ -46,5 +48,7 @@ protected:
 	int _cdTrack, _cdNumLoops, _cdStartFrame, _cdDuration;
 	uint32 _cdEndTime, _cdStopTime;
 };
+
+#endif
 
 #endif

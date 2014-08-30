@@ -41,6 +41,7 @@
 #include "backends/saves/windows/windows-saves.h"
 #include "backends/fs/windows/windows-fs-factory.h"
 #include "backends/taskbar/win32/win32-taskbar.h"
+#include "backends/graphics/surfacesdl/surfacesdl-graphics.h" // ResidualVM specific
 
 #include "common/memstream.h"
 
@@ -132,9 +133,14 @@ void OSystem_Win32::setupIcon() {
 	if (ico) {
 		SDL_SysWMinfo  wminfo;
 		SDL_VERSION(&wminfo.version);
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		if (SDL_GetWindowWMInfo(dynamic_cast<SurfaceSdlGraphicsManager *>(_graphicsManager)->getWindowHandle(), &wminfo)) {
+			SendMessage(wminfo.info.win.window, WM_SETICON, ICON_BIG, (LPARAM)ico);
+#else
 		if (SDL_GetWMInfo(&wminfo)) {
 			// Replace the handle to the icon associated with the window class by our custom icon
 			SetClassLongPtr(wminfo.window, GCLP_HICON, (ULONG_PTR)ico);
+#endif
 
 			// Since there wasn't any default icon, we can't use the return value from SetClassLong
 			// to check for errors (it would be 0 in both cases: error or no previous value for the

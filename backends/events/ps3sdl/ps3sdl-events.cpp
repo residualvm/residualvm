@@ -126,8 +126,16 @@ bool PS3SdlEventSource::handleJoyButtonUp(SDL_Event &ev, Common::Event &event) {
  * This pauses execution and keeps redrawing the screen until the XMB is closed.
  */
 void PS3SdlEventSource::preprocessEvents(SDL_Event *event) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (event->type == SDL_WINDOWEVENT) {
+#else
 	if (event->type == SDL_ACTIVEEVENT) {
+#endif
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		if (event->window.event == SDL_WINDOWEVENT_LEAVE) {
+#else
 		if (event->active.state == SDL_APPMOUSEFOCUS && !event->active.gain) {
+#endif
 			// XMB opened
 			if (g_engine)
 				g_engine->pauseEngine(true);
@@ -145,9 +153,17 @@ void PS3SdlEventSource::preprocessEvents(SDL_Event *event) {
 				}
 				if (event->type == SDL_QUIT)
 					return;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+				if (event->type != SDL_WINDOWEVENT)
+#else
 				if (event->type != SDL_ACTIVEEVENT)
+#endif
 					continue;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+				if (event->window.event == SDL_WINDOWEVENT_ENTER) {
+#else
 				if (event->active.state == SDL_APPMOUSEFOCUS && event->active.gain) {
+#endif
 					// XMB closed
 					if (g_engine)
 						g_engine->pauseEngine(false);

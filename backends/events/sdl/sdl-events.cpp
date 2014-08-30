@@ -77,14 +77,23 @@ SdlEventSource::SdlEventSource()
 			_joystick = SDL_JoystickOpen(joystick_num);
 		}
 	}
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_StartTextInput();
+#endif
 }
 
 SdlEventSource::~SdlEventSource() {
 	if (_joystick)
 		SDL_JoystickClose(_joystick);
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_StopTextInput();
+#endif
 }
 
 int SdlEventSource::mapKey(SDLKey key, SDLMod mod, Uint16 unicode) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	return 0;
+#else
 	if (key >= SDLK_F1 && key <= SDLK_F9) {
 		return key - SDLK_F1 + Common::ASCII_F1;
 	} else if (key >= SDLK_KP0 && key <= SDLK_KP9) {
@@ -99,6 +108,7 @@ int SdlEventSource::mapKey(SDLKey key, SDLMod mod, Uint16 unicode) {
 		return 0;
 	}
 	return key;
+#endif
 }
 
 // ResidualVM specific relMouse x,y
@@ -352,7 +362,9 @@ Common::KeyCode SdlEventSource::SDLToOSystemKeycode(const SDLKey key) {
 	case SDLK_HELP: return Common::KEYCODE_HELP;
 	case SDLK_PRINT: return Common::KEYCODE_PRINT;
 	case SDLK_SYSREQ: return Common::KEYCODE_SYSREQ;
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 	case SDLK_BREAK: return Common::KEYCODE_BREAK;
+#endif
 	case SDLK_MENU: return Common::KEYCODE_MENU;
 	case SDLK_POWER: return Common::KEYCODE_POWER;
 	case SDLK_UNDO: return Common::KEYCODE_UNDO;
@@ -382,6 +394,10 @@ bool SdlEventSource::pollEvent(Common::Event &event) {
 
 bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 	switch (ev.type) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	case SDL_TEXTINPUT:
+		return handleTextInput(ev, event);
+#endif
 	case SDL_KEYDOWN:
 		return handleKeyDown(ev, event);
 	case SDL_KEYUP:
@@ -399,6 +415,34 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 	case SDL_JOYAXISMOTION:
 		return handleJoyAxisMotion(ev, event);
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	case SDL_WINDOWEVENT:
+		switch (ev.window.event) {
+		case SDL_WINDOWEVENT_EXPOSED:
+			if (_graphicsManager)
+				_graphicsManager->notifyVideoExpose();
+			break;
+
+		case SDL_WINDOWEVENT_RESIZED:
+			if (_graphicsManager) {
+				_graphicsManager->notifyResize(ev.window.data1, ev.window.data1);
+
+				// If the screen changed, send an Common::EVENT_SCREEN_CHANGED
+				int screenID = ((OSystem_SDL *)g_system)->getGraphicsManager()->getScreenChangeID();
+				if (screenID != _lastScreenID) {
+					_lastScreenID = screenID;
+					event.type = Common::EVENT_SCREEN_CHANGED;
+					return true;
+				}
+			}
+			return false;
+
+		case SDL_WINDOWEVENT_CLOSE:
+			event.type = Common::EVENT_QUIT;
+			return true;
+		}
+		break;
+#else
 	case SDL_VIDEOEXPOSE:
 		if (_graphicsManager)
 			_graphicsManager->notifyVideoExpose();
@@ -418,6 +462,7 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 		}
 		return false;
 
+#endif
 	case SDL_QUIT:
 		event.type = Common::EVENT_QUIT;
 		return true;
@@ -427,6 +472,20 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 	return false;
 }
 
+// ResidualVM specific method
+bool SdlEventSource::handleTextInput(SDL_Event &ev, Common::Event &event) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	event.type = Common::EVENT_KEYDOWN;
+	if (ev.text.text[0] && ev.text.text[1] == 0)
+		event.kbd.ascii = ev.text.text[0];
+	else {
+		uint16 *str = (uint16 *)SDL_iconv_string("UCS-2", "UTF-8", ev.text.text, SDL_strlen(ev.text.text) + 1);
+		event.kbd.ascii = *str;
+		SDL_free(str);
+	}
+#endif
+	return true;
+}
 
 bool SdlEventSource::handleKeyDown(SDL_Event &ev, Common::Event &event) {
 
@@ -484,7 +543,9 @@ bool SdlEventSource::handleKeyDown(SDL_Event &ev, Common::Event &event) {
 
 	event.type = Common::EVENT_KEYDOWN;
 	event.kbd.keycode = SDLToOSystemKeycode(ev.key.keysym.sym);
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 	event.kbd.ascii = mapKey(ev.key.keysym.sym, (SDLMod)ev.key.keysym.mod, (Uint16)ev.key.keysym.unicode);
+#endif
 
 	return true;
 }
@@ -528,7 +589,9 @@ bool SdlEventSource::handleKeyUp(SDL_Event &ev, Common::Event &event) {
 
 	event.type = Common::EVENT_KEYUP;
 	event.kbd.keycode = SDLToOSystemKeycode(ev.key.keysym.sym);
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 	event.kbd.ascii = mapKey(ev.key.keysym.sym, (SDLMod)ev.key.keysym.mod, (Uint16)ev.key.keysym.unicode);
+#endif
 
 	// Ctrl-Alt-<key> will change the GFX mode
 	SDLModToOSystemKeyFlags(mod, event);
@@ -765,10 +828,17 @@ bool SdlEventSource::remapKey(SDL_Event &ev, Common::Event &event) {
 }
 
 void SdlEventSource::toggleMouseGrab() {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (SDL_GetRelativeMouseMode())
+		SDL_SetRelativeMouseMode(SDL_FALSE);
+	else
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+#else
 	if (SDL_WM_GrabInput(SDL_GRAB_QUERY) == SDL_GRAB_OFF)
 		SDL_WM_GrabInput(SDL_GRAB_ON);
 	else
 		SDL_WM_GrabInput(SDL_GRAB_OFF);
+#endif
 }
 
 void SdlEventSource::resetKeyboadEmulation(int16 x_max, int16 y_max) {

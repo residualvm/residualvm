@@ -177,7 +177,7 @@ _stagingpath="staging"
 _win32path="C:/residualvm"
 _amigaospath="Games:ResidualVM"
 _staticlibpath=
-_sdlconfig=sdl-config
+_sdlconfig=sdl2-config # TODO: reverted to SDL1 before merge
 _freetypeconfig=freetype-config
 _sdlpath="$PATH"
 _freetypepath="$PATH"
@@ -360,7 +360,7 @@ define_in_config_if_yes() {
 # TODO: small bit of code to test sdl usability
 find_sdlconfig() {
 	echo_n "Looking for sdl-config... "
-	sdlconfigs="$_sdlconfig:sdl-config:sdl11-config:sdl12-config"
+	sdlconfigs="$_sdlconfig:sdl2-config:sdl-config:sdl11-config:sdl12-config"
 	_sdlconfig=
 
 	IFS="${IFS=   }"; ac_save_ifs="$IFS"; IFS="$SEPARATOR"
@@ -944,6 +944,8 @@ Optional Libraries:
   --with-sparkle-prefix=DIR   Prefix where sparkle is installed (Mac OS X only - optional)
   --disable-sparkle        disable sparkle automatic update support [Mac OS X only - autodetect]
 
+  --use-sdl1               force build with SDL1 (default)
+  --use-sdl2               force build with SDL2
   --with-sdl-prefix=DIR    Prefix where the sdl-config script is
                            installed (optional)
 
@@ -1182,6 +1184,12 @@ for ac_option in $@; do
 		;;
 	--enable-profiling)
 		_enable_prof=yes
+		;;
+	--use-sdl1) #ResidualVM specific option
+		_sdlconfig=sdl-config
+		;;
+	--use-sdl2) #ResidualVM specific option
+		_sdlconfig=sdl2-config
 		;;
 	--with-sdl-prefix=*)
 		arg=`echo $ac_option | cut -d '=' -f 2`
@@ -2169,7 +2177,8 @@ case $_host_os in
 		;;
 	darwin*)
 		DEFINES="$DEFINES -DMACOSX"
-		LIBS="$LIBS -framework AudioUnit -framework AudioToolbox -framework Carbon -framework CoreMIDI"
+		#ResidualVM: added Cocoa, it's defined in SDL1, but missing in SDL2
+		LIBS="$LIBS -framework Cocoa -framework AudioUnit -framework AudioToolbox -framework Carbon -framework CoreMIDI"
 		add_line_to_config_mk 'MACOSX = 1'
 
 		# Now we may have MacPorts or Fink installed
@@ -3022,6 +3031,9 @@ case $_backend in
 		case $_sdlversion in
 			1.3.*)
 				add_line_to_config_mk "USE_SDL13 = 1"
+				;;
+			2.*)
+				add_line_to_config_mk "USE_SDL2 = 1"
 				;;
 			*)
 				;;
