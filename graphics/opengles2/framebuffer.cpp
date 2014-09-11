@@ -22,7 +22,7 @@
 
 #include "common/textconsole.h"
 
-#if defined(USE_GLES2) || defined(USE_OPENGL_SHADERS)
+#ifdef USE_OPENGL
 
 #include "graphics/opengles2/framebuffer.h"
 #include "graphics/opengles2/extensions.h"
@@ -56,6 +56,11 @@ static bool usePackedBuffer() {
 FrameBuffer::FrameBuffer(uint width, uint height)
 	: _managedTexture(true), _width(width), _height(height),
 	  _texWidth(nextHigher2(width)), _texHeight(nextHigher2(height)) {
+#ifndef USE_OPENGL_SHADERS
+	if (!Graphics::isExtensionSupported("GL_ARB_framebuffer_object")) {
+		error("GL_ARB_framebuffer_object extension is not supported!");
+	}
+#endif
 	glGenTextures(1, &_colorTexture);
 	glBindTexture(GL_TEXTURE_2D, _colorTexture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
