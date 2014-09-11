@@ -534,7 +534,10 @@ void SurfaceSdlGraphicsManager::drawFramebufferOpenGL() {
 	float sizeX, sizeY;
 
 	if (_fullscreenMode == kFullscreenScale || _fullscreenMode == kFullscreenCenter) {
-		uint scale = _fullscreenMode == kFullscreenCenter ? 1 : (_screen->h / _frameBuffer->getHeight());
+		float scale = 1.0;
+		if (_fullscreenMode == kFullscreenScale)
+			scale = MIN(_screen->h / float(_frameBuffer->getHeight()),
+			            _screen->w / float(_frameBuffer->getWidth()));
 		float width = scale * _frameBuffer->getWidth() / float(_screen->w);
 		float height = scale * _frameBuffer->getHeight() / float(_screen->h);
 
@@ -616,7 +619,10 @@ void SurfaceSdlGraphicsManager::drawFramebufferOpenGLShaders() {
 	_boxShader->setUniform("flipY", false);
 
 	if (_fullscreenMode == kFullscreenScale || _fullscreenMode == kFullscreenCenter) {
-		uint scale = _fullscreenMode == kFullscreenCenter ? 1 : (_screen->h / _frameBuffer->getHeight());
+		float scale = 1.0;
+		if (_fullscreenMode == kFullscreenScale)
+			scale = MIN(_screen->h / float(_frameBuffer->getHeight()),
+			            _screen->w / float(_frameBuffer->getWidth()));
 		float width = scale * _frameBuffer->getWidth() / float(_screen->w);
 		float height = scale * _frameBuffer->getHeight() / float(_screen->h);
 
