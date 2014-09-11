@@ -25,12 +25,13 @@
 
 #ifdef USE_OPENGL
 #include "graphics/opengles2/system_headers.h"
+#include "graphics/opengles2/framebuffer.h"
 #endif
+
 #undef ARRAYSIZE
 
 #ifdef USE_OPENGL_SHADERS
 #include "graphics/opengles2/shader.h"
-#include "graphics/opengles2/framebuffer.h"
 #endif
 
 #include "backends/graphics/graphics.h"
@@ -162,15 +163,9 @@ protected:
 
 	void updateOverlayTextures();
 	void drawOverlayOpenGL();
+	void drawFramebufferOpenGL();
 
-#ifdef USE_OPENGL_SHADERS
-	// Overlay
-	Graphics::Shader *_boxShader;
-	GLuint _boxVerticesVBO;
 	uint _desktopW, _desktopH;
-
-	void drawOverlayOpenGLShaders();
-	void drawFramebufferOpenGLShaders();
 	Graphics::FrameBuffer *_frameBuffer;
 	enum {
 		kFullscreenNative  = 1,
@@ -178,6 +173,14 @@ protected:
 		kFullscreenScale   = 3,
 		kFullscreenStretch = 4
 	} _fullscreenMode;
+
+#ifdef USE_OPENGL_SHADERS
+	// Overlay
+	Graphics::Shader *_boxShader;
+	GLuint _boxVerticesVBO;
+
+	void drawOverlayOpenGLShaders();
+	void drawFramebufferOpenGLShaders();
 #endif
 #endif
 

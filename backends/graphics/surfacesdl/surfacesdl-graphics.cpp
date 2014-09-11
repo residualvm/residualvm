@@ -42,6 +42,10 @@
 #include "graphics/pixelbuffer.h"
 #include "gui/EventRecorder.h"
 
+#ifdef USE_OPENGL
+#include "graphics/opengles2/extensions.h"
+#endif
+
 static const OSystem::GraphicsMode s_supportedGraphicsModes[] = {
 	{0, 0, 0}
 };
@@ -57,13 +61,13 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	_screenChangeCount(0)
 #ifdef USE_OPENGL
 	, _opengl(false), _overlayNumTex(0), _overlayTexIds(0)
+	, _frameBuffer(nullptr), _fullscreenMode(kFullscreenNative)
 #endif
 #ifdef USE_OPENGL_SHADERS
 	, _boxShader(nullptr), _boxVerticesVBO(0)
-	, _frameBuffer(nullptr), _fullscreenMode(kFullscreenNative)
 #endif
 	{
-#ifdef USE_OPENGL_SHADERS
+#ifdef USE_OPENGL
 		const SDL_VideoInfo *vi = SDL_GetVideoInfo();
 		_desktopW = vi->current_w;
 		_desktopH = vi->current_h;
@@ -72,7 +76,7 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 
 SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
 	closeOverlay();
-#ifdef USE_OPENGL_SHADERS
+#ifdef USE_OPENGL
 	delete _frameBuffer;
 #endif
 }
@@ -181,7 +185,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #endif
 	_fullscreen = fullscreen;
 
-#ifdef USE_OPENGL_SHADERS
+#ifdef USE_OPENGL
 	uint fbW = screenW;
 	uint fbH = screenH;
 
@@ -295,17 +299,17 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, &glflag);
 		debug("INFO: OpenGL Stencil buffer bits: %d", glflag);
 
-#ifdef USE_OPENGL_SHADERS
-		debug("INFO: GLSL version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
 		debug("INFO: GLEW Version: %s", glewGetString(GLEW_VERSION));
-
-		// GLEW needs to be initialized to use shaders
 		GLenum err = glewInit();
 		if (err != GLEW_OK) {
 			warning("Error: %s", glewGetErrorString(err));
 			g_system->quit();
 		}
+		Graphics::initExtensions();
+
+#ifdef USE_OPENGL_SHADERS
+		debug("INFO: GLSL version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
 
 		const GLfloat vertices[] = {
 			0.0, 0.0,
@@ -378,7 +382,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_screenFormat = Graphics::PixelFormat(f->BytesPerPixel, 8 - f->Rloss, 8 - f->Gloss, 8 - f->Bloss, 0,
 										f->Rshift, f->Gshift, f->Bshift, f->Ashift);
 
-#ifdef USE_OPENGL_SHADERS
+#ifdef USE_OPENGL
 	if (_opengl && _fullscreen && _fullscreenMode != kFullscreenNative) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		_frameBuffer = new Graphics::FrameBuffer(fbW, fbH);
@@ -496,6 +500,82 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGL() {
 	glPopAttrib();
 }
 
+void SurfaceSdlGraphicsManager::drawFramebufferOpenGL() {
+	// Save current state
+	glPushAttrib(GL_TRANSFORM_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_SCISSOR_BIT);
+
+	// prepare view
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(0, 1.0, 1.0, 0, 0, 1);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glMatrixMode(GL_TEXTURE);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glDisable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	glEnable(GL_SCISSOR_TEST);
+
+	glScissor(0, 0, _desktopW, _desktopH);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	float texcropX = _frameBuffer->getWidth() / float(_frameBuffer->getTexWidth());
+	float texcropY = _frameBuffer->getHeight() / float(_frameBuffer->getTexHeight());
+
+	float offsetX, offsetY;
+	float sizeX, sizeY;
+
+	if (_fullscreenMode == kFullscreenScale || _fullscreenMode == kFullscreenCenter) {
+		uint scale = _fullscreenMode == kFullscreenCenter ? 1 : (_screen->h / _frameBuffer->getHeight());
+		float width = scale * _frameBuffer->getWidth() / float(_screen->w);
+		float height = scale * _frameBuffer->getHeight() / float(_screen->h);
+
+		offsetX = 0.5 - width / 2;
+		offsetY = 0.5 - height / 2;
+		sizeX = width;
+		sizeY = height;
+	} else { // _fullscreenMode == kFullscreenStretch
+		offsetX = 0.0;
+		offsetY = 0.0;
+		sizeX = 1.0;
+		sizeY = 1.0;
+	}
+
+	glColor4f(1.0, 1.0, 1.0, 1.0);
+
+	glBindTexture(GL_TEXTURE_2D, _frameBuffer->getColorTextureName());
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, texcropY);
+	glVertex2f(offsetX, offsetY);
+	glTexCoord2f(texcropX, texcropY);
+	glVertex2f(offsetX + sizeX, offsetY);
+	glTexCoord2f(texcropX, 0.0);
+	glVertex2f(offsetX + sizeX, offsetY + sizeY);
+	glTexCoord2f(0.0, 0.0);
+	glVertex2f(offsetX, offsetY + sizeY);
+	glEnd();
+
+	// Restore previous state
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+
+	glMatrixMode(GL_TEXTURE);
+	glPopMatrix();
+
+	glPopAttrib();
+}
+
 #ifdef USE_OPENGL_SHADERS
 void SurfaceSdlGraphicsManager::drawOverlayOpenGLShaders() {
 	if (!_overlayscreen)
@@ -577,7 +657,7 @@ void SurfaceSdlGraphicsManager::drawOverlay() {
 void SurfaceSdlGraphicsManager::updateScreen() {
 #ifdef USE_OPENGL
 	if (_opengl) {
-#ifdef USE_OPENGL_SHADERS
+#ifdef USE_OPENGL
 		if (_frameBuffer) {
 			_frameBuffer->detach();
 			glViewport(0, 0, _screen->w, _screen->h);
@@ -595,9 +675,13 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 			drawOverlayOpenGLShaders();
 #endif
 		}
-#ifdef USE_OPENGL_SHADERS
+#ifdef USE_OPENGL
 		if (_frameBuffer) {
+#ifndef USE_OPENGL_SHADERS
+			drawFramebufferOpenGL();
+#else
 			drawFramebufferOpenGLShaders();
+#endif
 			SDL_GL_SwapBuffers();
 			_frameBuffer->attach();
 		} else
