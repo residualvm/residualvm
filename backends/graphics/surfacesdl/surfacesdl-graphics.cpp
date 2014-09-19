@@ -209,9 +209,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 			screenH = screenH;
 		}
 	}
-#endif
 
-#ifdef USE_OPENGL
 	if (_opengl) {
 		if (ConfMan.hasKey("antialiasing"))
 			_antialiasing = ConfMan.getInt("antialiasing");
@@ -663,12 +661,10 @@ void SurfaceSdlGraphicsManager::drawOverlay() {
 void SurfaceSdlGraphicsManager::updateScreen() {
 #ifdef USE_OPENGL
 	if (_opengl) {
-#ifdef USE_OPENGL
 		if (_frameBuffer) {
 			_frameBuffer->detach();
 			glViewport(0, 0, _screen->w, _screen->h);
 		}
-#endif
 
 		if (_overlayVisible) {
 			if (_overlayDirty) {
@@ -681,7 +677,6 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 			drawOverlayOpenGLShaders();
 #endif
 		}
-#ifdef USE_OPENGL
 		if (_frameBuffer) {
 #ifndef USE_OPENGL_SHADERS
 			drawFramebufferOpenGL();
@@ -691,7 +686,6 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 			SDL_GL_SwapBuffers();
 			_frameBuffer->attach();
 		} else
-#endif
 		{
 			SDL_GL_SwapBuffers();
 		}
