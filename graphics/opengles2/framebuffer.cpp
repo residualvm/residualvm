@@ -53,9 +53,9 @@ static bool usePackedBuffer() {
 	return true;
 }
 
-FrameBuffer::FrameBuffer(uint width, uint height)
-	: _managedTexture(true), _width(width), _height(height),
-	  _texWidth(nextHigher2(width)), _texHeight(nextHigher2(height)) {
+FrameBuffer::FrameBuffer(uint width, uint height) :
+		_managedTexture(true), _width(width), _height(height),
+		_texWidth(nextHigher2(width)), _texHeight(nextHigher2(height)) {
 #ifndef USE_OPENGL_SHADERS
 	if (!Graphics::isExtensionSupported("GL_ARB_framebuffer_object")) {
 		error("GL_ARB_framebuffer_object extension is not supported!");
@@ -72,9 +72,9 @@ FrameBuffer::FrameBuffer(uint width, uint height)
 	init();
 }
 
-FrameBuffer::FrameBuffer(GLuint texture_name, uint width, uint height, uint texture_width, uint texture_height)
-	: _managedTexture(false), _colorTexture(texture_name), _width(width), _height(height),
-	  _texWidth(texture_width), _texHeight(texture_height) {
+FrameBuffer::FrameBuffer(GLuint texture_name, uint width, uint height, uint texture_width, uint texture_height) :
+		_managedTexture(false), _colorTexture(texture_name), _width(width), _height(height),
+		_texWidth(texture_width), _texHeight(texture_height) {
 	init();
 }
 
