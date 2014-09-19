@@ -61,7 +61,7 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	_screenChangeCount(0)
 #ifdef USE_OPENGL
 	, _opengl(false), _overlayNumTex(0), _overlayTexIds(0)
-	, _frameBuffer(nullptr), _fullscreenMode(kFullscreenNative)
+	, _frameBuffer(nullptr), _gameRect()
 #endif
 #ifdef USE_OPENGL_SHADERS
 	, _boxShader(nullptr), _boxVerticesVBO(0)
@@ -186,27 +186,26 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_fullscreen = fullscreen;
 
 #ifdef USE_OPENGL
+	ConfMan.registerDefault("aspect_ratio", true);
+
 	uint fbW = screenW;
 	uint fbH = screenH;
 
-	if (_opengl && _fullscreen && ConfMan.hasKey("fullscreen_mode")) {
-		const Common::String &fmode = ConfMan.get("fullscreen_mode");
-		if (fmode == "stretch") {
-			_fullscreenMode = kFullscreenStretch;
+	if (_opengl) {
+		bool keepAR = ConfMan.getBool("aspect_ratio");
+		if (_fullscreen && keepAR) {
 			screenW = _desktopW;
 			screenH = _desktopH;
-		} else if (fmode == "scale") {
-			_fullscreenMode = kFullscreenScale;
-			screenW = _desktopW;
-			screenH = _desktopH;
-		} else if (fmode == "center") {
-			_fullscreenMode = kFullscreenCenter;
-			screenW = _desktopW;
-			screenH = _desktopH;
-		} else { // fmode == "native" or unknown
-			_fullscreenMode = kFullscreenNative;
-			screenW = screenW;
-			screenH = screenH;
+
+			float scale   = MIN(_desktopH / float(fbH), _desktopW / float(fbW));
+			float scaledW = scale * (fbW / float(_desktopW));
+			float scaledH = scale * (fbH / float(_desktopH));
+			_gameRect = Math::Rect2d(
+				Math::Vector2d(0.5 - (0.5 * scaledW), 0.5 - (0.5 * scaledH)),
+				Math::Vector2d(0.5 + (0.5 * scaledW), 0.5 + (0.5 * scaledH))
+			);
+		} else {
+			_gameRect = Math::Rect2d(Math::Vector2d(0,0), Math::Vector2d(1,1));
 		}
 	}
 
@@ -381,7 +380,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 										f->Rshift, f->Gshift, f->Bshift, f->Ashift);
 
 #ifdef USE_OPENGL
-	if (_opengl && _fullscreen && _fullscreenMode != kFullscreenNative) {
+	if (_opengl && _fullscreen) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		_frameBuffer = new Graphics::FrameBuffer(fbW, fbH);
 		_frameBuffer->attach();
@@ -528,27 +527,10 @@ void SurfaceSdlGraphicsManager::drawFramebufferOpenGL() {
 	float texcropX = _frameBuffer->getWidth() / float(_frameBuffer->getTexWidth());
 	float texcropY = _frameBuffer->getHeight() / float(_frameBuffer->getTexHeight());
 
-	float offsetX, offsetY;
-	float sizeX, sizeY;
-
-	if (_fullscreenMode == kFullscreenScale || _fullscreenMode == kFullscreenCenter) {
-		float scale = 1.0;
-		if (_fullscreenMode == kFullscreenScale)
-			scale = MIN(_screen->h / float(_frameBuffer->getHeight()),
-			            _screen->w / float(_frameBuffer->getWidth()));
-		float width = scale * _frameBuffer->getWidth() / float(_screen->w);
-		float height = scale * _frameBuffer->getHeight() / float(_screen->h);
-
-		offsetX = 0.5 - width / 2;
-		offsetY = 0.5 - height / 2;
-		sizeX = width;
-		sizeY = height;
-	} else { // _fullscreenMode == kFullscreenStretch
-		offsetX = 0.0;
-		offsetY = 0.0;
-		sizeX = 1.0;
-		sizeY = 1.0;
-	}
+	float offsetX = _gameRect.getTopLeft().getX();
+	float offsetY = _gameRect.getTopLeft().getY();
+	float sizeX   = _gameRect.getWidth();
+	float sizeY   = _gameRect.getHeight();
 
 	glColor4f(1.0, 1.0, 1.0, 1.0);
 
@@ -616,20 +598,8 @@ void SurfaceSdlGraphicsManager::drawFramebufferOpenGLShaders() {
 	_boxShader->setUniform("texcrop", Math::Vector2d(texcropX, texcropY));
 	_boxShader->setUniform("flipY", false);
 
-	if (_fullscreenMode == kFullscreenScale || _fullscreenMode == kFullscreenCenter) {
-		float scale = 1.0;
-		if (_fullscreenMode == kFullscreenScale)
-			scale = MIN(_screen->h / float(_frameBuffer->getHeight()),
-			            _screen->w / float(_frameBuffer->getWidth()));
-		float width = scale * _frameBuffer->getWidth() / float(_screen->w);
-		float height = scale * _frameBuffer->getHeight() / float(_screen->h);
-
-		_boxShader->setUniform("offsetXY", Math::Vector2d(0.5 - width / 2, 0.5 - height / 2));
-		_boxShader->setUniform("sizeWH",   Math::Vector2d(width, height));
-	} else { // _fullscreenMode == kFullscreenStretch
-		_boxShader->setUniform("offsetXY", Math::Vector2d(0.0, 0.0));
-		_boxShader->setUniform("sizeWH",   Math::Vector2d(1.0, 1.0));
-	}
+	_boxShader->setUniform("offsetXY", _gameRect.getTopLeft());
+	_boxShader->setUniform("sizeWH",   Math::Vector2d(_gameRect.getWidth(), _gameRect.getHeight()));
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -664,6 +634,7 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 		if (_frameBuffer) {
 			_frameBuffer->detach();
 			glViewport(0, 0, _screen->w, _screen->h);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		}
 
 		if (_overlayVisible) {

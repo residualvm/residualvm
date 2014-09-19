@@ -40,6 +40,7 @@
 #include "graphics/scaler.h"
 #include "common/events.h"
 #include "common/system.h"
+#include "math/rect2d.h"
 
 #include "backends/events/sdl/sdl-events.h"
 
@@ -167,12 +168,7 @@ protected:
 
 	uint _desktopW, _desktopH;
 	Graphics::FrameBuffer *_frameBuffer;
-	enum {
-		kFullscreenNative  = 1,
-		kFullscreenCenter  = 2,
-		kFullscreenScale   = 3,
-		kFullscreenStretch = 4
-	} _fullscreenMode;
+	Math::Rect2d _gameRect;
 
 #ifdef USE_OPENGL_SHADERS
 	// Overlay
