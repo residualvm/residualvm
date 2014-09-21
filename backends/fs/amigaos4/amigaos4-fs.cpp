@@ -335,7 +335,7 @@ bool AmigaOSFilesystemNode::isReadable() const {
 	// Regular RWED protection flags are low-active or inverted, thus the negation.
 	// moreover pseudo root filesystem (null _pFileLock) is readable whatever the
 	// protection says
-	bool readable = !(_nProt & EXDF_READ) || _pFileLock == 0;
+	bool readable = !(_nProt & EXDF_OTR_READ) || _pFileLock == 0;
 
 	return readable;
 }
@@ -344,7 +344,7 @@ bool AmigaOSFilesystemNode::isWritable() const {
 	// Regular RWED protection flags are low-active or inverted, thus the negation.
 	// moreover pseudo root filesystem (null _pFileLock) is never writable whatever
 	// the protection says (because of the pseudo nature)
-	bool writable = !(_nProt & EXDF_WRITE) && _pFileLock !=0;
+	bool writable = !(_nProt & EXDF_OTR_WRITE) && _pFileLock !=0;
 
 	return writable;
 }
@@ -367,8 +367,7 @@ AbstractFSList AmigaOSFilesystemNode::listVolumes() const {
 	dosList = IDOS->NextDosEntry(dosList, LDF_VOLUMES);
 	while (dosList) {
 		if (dosList->dol_Type == DLT_VOLUME &&
-			dosList->dol_Name &&
-			dosList->dol_Task) {
+			dosList->dol_Name) {
 
 			// Copy name to buffer
 			IDOS->CopyStringBSTRToC(dosList->dol_Name, buffer, MAXPATHLEN);
