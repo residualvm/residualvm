@@ -41,12 +41,12 @@
 #	define GL_BGRA GL_BGRA_EXT
 #endif
 
-#elif defined(USE_OPENGL)
+#elif defined(USE_OPENGL_SHADERS)
 #include <GL/glew.h>
-#if defined(SDL_BACKEND)
-#define NO_SDL_GLEXT
+#elif defined(SDL_BACKEND) && defined(USE_OPENGL)
 #include <SDL_opengl.h>
-#endif
+#elif defined(USE_OPENGL)
+#include <GL/gl.h>
 #endif
 
 #endif
