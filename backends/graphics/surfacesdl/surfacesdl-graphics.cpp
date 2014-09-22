@@ -600,7 +600,7 @@ void SurfaceSdlGraphicsManager::drawFramebufferOpenGLShaders() {
 	_boxShader->setUniform("flipY", false);
 
 	_boxShader->setUniform("offsetXY", _gameRect.getTopLeft());
-	_boxShader->setUniform("sizeWH",   Math::Vector2d(_gameRect.getWidth(), _gameRect.getHeight()));
+	_boxShader->setUniform("sizeWH", Math::Vector2d(_gameRect.getWidth(), _gameRect.getHeight()));
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindTexture(GL_TEXTURE_2D, 0);
