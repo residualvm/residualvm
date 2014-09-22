@@ -24,7 +24,31 @@
 
 #ifdef USE_OPENGL
 
+#ifdef USE_OPENGL_SHADERS
 #include "graphics/opengles2/framebuffer.h"
+#else
+#define GL_GLEXT_PROTOTYPES // For the GL_EXT_framebuffer_object extension
+#include "graphics/opengles2/framebuffer.h"
+#define glBindFramebuffer glBindFramebufferEXT
+#define glBindRenderbuffer glBindRenderbufferEXT
+#define glCheckFramebufferStatus glCheckFramebufferStatusEXT
+#define glDeleteFramebuffers glDeleteFramebuffersEXT
+#define glDeleteRenderbuffers glDeleteRenderbuffersEXT
+#define glFramebufferRenderbuffer glFramebufferRenderbufferEXT
+#define glFramebufferTexture2D glFramebufferTexture2DEXT
+#define glGenFramebuffers glGenFramebuffersEXT
+#define glGenRenderbuffers glGenRenderbuffersEXT
+#define glRenderbufferStorage glRenderbufferStorageEXT
+#define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#define GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
+#define GL_FRAMEBUFFER GL_FRAMEBUFFER_EXT
+#define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_EXT
+#define GL_RENDERBUFFER GL_RENDERBUFFER_EXT
+#define GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT_EXT
+#define GL_STENCIL_INDEX8 GL_STENCIL_INDEX8_EXT
+#define GL_DEPTH24_STENCIL8 0x88F0
+#endif
+
 #include "graphics/opengles2/extensions.h"
 
 #ifdef USE_GLES2
@@ -50,6 +74,9 @@ static bool usePackedBuffer() {
 #ifdef USE_GLES2
 	return Graphics::isExtensionSupported("GL_OES_packed_depth_stencil");
 #endif
+#ifndef USE_OPENGL_SHADERS
+	return Graphics::isExtensionSupported("GL_EXT_packed_depth_stencil");
+#endif
 	return true;
 }
 
@@ -57,8 +84,8 @@ FrameBuffer::FrameBuffer(uint width, uint height) :
 		_managedTexture(true), _width(width), _height(height),
 		_texWidth(nextHigher2(width)), _texHeight(nextHigher2(height)) {
 #ifndef USE_OPENGL_SHADERS
-	if (!Graphics::isExtensionSupported("GL_ARB_framebuffer_object")) {
-		error("GL_ARB_framebuffer_object extension is not supported!");
+	if (!Graphics::isExtensionSupported("GL_EXT_framebuffer_object")) {
+		error("GL_EXT_framebuffer_object extension is not supported!");
 	}
 #endif
 	glGenTextures(1, &_colorTexture);
