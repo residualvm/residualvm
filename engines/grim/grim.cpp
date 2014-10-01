@@ -69,6 +69,10 @@
 
 #include "engines/grim/lua/lua.h"
 
+#if defined(__GLIBC__) && (__GLIBC__ >= 2 && __GLIBC_MINOR__ >= 2) && !defined(RELEASE_BUILD)
+# include <fenv.h>
+#endif
+
 namespace Grim {
 
 GrimEngine *g_grim = nullptr;
@@ -79,6 +83,14 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 		Engine(syst), _currSet(nullptr), _selectedActor(nullptr), _pauseStartTime(0) {
 	g_grim = this;
 
+	/* Enable reporting of floating point exception for non-release builds
+	 * in order to quickly identify unexpected or unwanted results for
+	 * various floating point operations (e.g. results of NaN or +/-INF)
+	 */
+#if defined(__GLIBC__) && (__GLIBC__ >= 2 && __GLIBC_MINOR__ >= 2) && !defined(RELEASE_BUILD)
+	feenableexcept(FE_INVALID | FE_DIVBYZERO);
+	warning("Enabled reporting of floating point exceptions.");
+#endif
 	_debugger = new Debugger();
 	_gameType = gameType;
 	_gameFlags = gameFlags;
