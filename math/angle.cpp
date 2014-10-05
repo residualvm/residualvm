@@ -20,6 +20,8 @@
  *
  */
 
+#include "engines/grim/debug.h"
+
 #include "common/streamdebug.h"
 #include "common/math.h"
 
@@ -148,12 +150,14 @@ Angle Angle::fromRadians(float radians) {
 }
 
 Angle Angle::arcCosine(float x) {
+	DBGASSERT(-1.0f <= x && x <= 1.0f);
 	Angle a;
 	a.setRadians(acosf(x));
 	return a;
 }
 
 Angle Angle::arcSine(float x) {
+	DBGASSERT(-1.0f <= x && x <= 1.0f);
 	Angle a;
 	a.setRadians(asinf(x));
 	return a;

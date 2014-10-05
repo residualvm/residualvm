@@ -23,6 +23,8 @@
 #ifndef MATH_VECTOR3D_H
 #define MATH_VECTOR3D_H
 
+#include "engines/grim/debug.h"
+
 #include "common/scummsys.h"
 #include "common/endian.h"
 
@@ -82,7 +84,8 @@ public:
 	 * @return	The computed angle
 	 */
 	inline static Angle angle(const Vector3d& v1, const Vector3d& v2) {
-		return Angle::arcCosine(dotProduct(v1, v2) / (v1.getMagnitude() * v2.getMagnitude()));
+		DBGASSERT(v1 != Vector3d() && v2 != Vector3d());
+		return Angle::arcCosine(fminf(fmaxf(dotProduct(v1, v2) / (v1.getMagnitude() * v2.getMagnitude()), -1.0f), 1.0f));
 	}
 
 	/**
