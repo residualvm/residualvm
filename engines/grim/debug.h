@@ -26,6 +26,12 @@
 #include "common/debug.h"
 #include "common/streamdebug.h"
 
+#ifdef RELEASE_BUILD
+# define DBGASSERT(x)
+#else
+# define DBGASSERT(x) assert(x)
+#endif
+
 namespace Grim {
 
 class Debug {

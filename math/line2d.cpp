@@ -20,6 +20,7 @@
  *
  */
 
+#include "engines/grim/debug.h"
 #include "math/line2d.h"
 #include "math/rect2d.h"
 
@@ -124,7 +125,7 @@ Segment2d::Segment2d() {
 
 Segment2d::Segment2d(const Vector2d &b, const Vector2d &e) :
 	_begin(b), _end(e) {
-
+	DBGASSERT(_begin.getDistanceTo(_end) > epsilon);
 }
 
 Segment2d::Segment2d(const Segment2d &other) {
@@ -144,6 +145,7 @@ Vector2d Segment2d::middle() const {
 }
 
 Line2d Segment2d::getLine() const {
+	DBGASSERT(_begin.getDistanceTo(_end) > epsilon);
 	float y = _end.getY() - _begin.getY();
 	float x = _end.getX() - _begin.getX();
 	Vector2d v(x, y);
@@ -156,6 +158,7 @@ Line2d Segment2d::getPerpendicular(const Vector2d &point) const {
 }
 
 bool Segment2d::intersectsSegment(const Segment2d &other, Vector2d *pos) {
+	DBGASSERT(_begin.getDistanceTo(_end) > epsilon);
 	float denom = ((other._end.getY() - other._begin.getY()) * (_end.getX() - _begin.getX())) -
 	((other._end.getX() - other._begin.getX()) * (_end.getY() - _begin.getY()));
 
@@ -169,14 +172,14 @@ bool Segment2d::intersectsSegment(const Segment2d &other, Vector2d *pos) {
 	float nume_b = ((_end.getX() - _begin.getX()) * (other._begin.getY() - _begin.getY())) -
 	((_end.getY() - _begin.getY()) * (other._begin.getX() - _begin.getX()));
 
-	if (denom == 0.0f) {
+	if (denom == 0.0f || d == 0.0f ) {
 		return false;
 	}
 
 	float ua = nume_a / denom;
 	float ub = nume_b / d;
 
-	if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
+	if (ua < 0.0f || ua > 1.0f || ub < 0.0f || ub > 1.0f) {
 		return false;
 	}
 
@@ -207,6 +210,7 @@ bool Segment2d::containsPoint(const Vector2d &point) const {
 }
 
 Segment2d &Segment2d::operator=(const Segment2d &other) {
+	DBGASSERT(other._begin.getDistanceTo(other._end) > epsilon);
 	_begin = other._begin;
 	_end = other._end;
 
