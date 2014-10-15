@@ -64,7 +64,7 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 #ifdef USE_OPENGL
 	, _opengl(false), _overlayNumTex(0), _overlayTexIds(0)
 	, _frameBuffer(nullptr), _gameRect()
-	, _aspect_ratio(true)
+	, _lockAspectRatio(true)
 #endif
 #ifdef USE_OPENGL_SHADERS
 	, _boxShader(nullptr), _boxVerticesVBO(0)
@@ -121,7 +121,7 @@ void SurfaceSdlGraphicsManager::setFeatureState(OSystem::Feature f, bool enable)
 		_fullscreen = enable;
 		break;
 	case OSystem::kFeatureAspectRatioCorrection:
-		_aspect_ratio = enable;
+		_lockAspectRatio = enable;
 		break;
 	default:
 		break;
@@ -133,7 +133,7 @@ bool SurfaceSdlGraphicsManager::getFeatureState(OSystem::Feature f) {
 		case OSystem::kFeatureFullscreenMode:
 			return _fullscreen;
 		case OSystem::kFeatureAspectRatioCorrection:
-			return _aspect_ratio;
+			return _lockAspectRatio;
 		break;
 		default:
 			return false;
@@ -194,7 +194,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_opengl = accel3d;
 	_antialiasing = 0;
 	ConfMan.registerDefault("aspect_ratio", true);
-	_aspect_ratio = ConfMan.getBool("aspect_ratio");
+	_lockAspectRatio = ConfMan.getBool("aspect_ratio");
 #endif
 	_fullscreen = fullscreen;
 
@@ -204,7 +204,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	bool framebufferSupported = false;
 
 	if (_opengl) {
-		_gameRect = Math::Rect2d(Math::Vector2d(0,0), Math::Vector2d(1,1));
+		_gameRect = Math::Rect2d(Math::Vector2d(0, 0), Math::Vector2d(1, 1));
 #ifndef AMIGAOS
 		// Spawn a 32x32 window off-screen
 		SDL_putenv("SDL_VIDEO_WINDOW_POS=9000,9000");
@@ -216,8 +216,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 			screenW = _desktopW;
 			screenH = _desktopH;
 
-			if (_aspect_ratio) {
-				float scale   = MIN(_desktopH / float(fbH), _desktopW / float(fbW));
+			if (_lockAspectRatio) {
+				float scale = MIN(_desktopH / float(fbH), _desktopW / float(fbW));
 				float scaledW = scale * (fbW / float(_desktopW));
 				float scaledH = scale * (fbH / float(_desktopH));
 				_gameRect = Math::Rect2d(
@@ -677,8 +677,7 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 #endif
 			SDL_GL_SwapBuffers();
 			_frameBuffer->attach();
-		} else
-		{
+		} else {
 			SDL_GL_SwapBuffers();
 		}
 	} else
