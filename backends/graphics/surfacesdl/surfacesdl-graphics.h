@@ -139,6 +139,7 @@ protected:
 
 #ifdef USE_OPENGL
 	bool _opengl;
+	bool _tinygl;
 #endif
 	bool _fullscreen;
 
@@ -161,6 +162,20 @@ protected:
 
 	void updateOverlayTextures();
 	void drawOverlayOpenGL();
+	
+	// For TinyGL-on-OpenGL
+	SDL_Surface *_gameScreen;
+	bool _gameScreenVisible;
+	Graphics::PixelFormat _gameScreenFormat;
+	int _gameScreenWidth, _gameScreenHeight;
+	bool _gameScreenDirty;
+	
+	int _gameScreenNumTex;
+	GLuint *_gameScreenTexIds;
+	GLenum _gameScreenGLFormat;
+
+	void updateGameScreenTextures();
+	void drawGameScreenOpenGL();
 
 #ifdef USE_OPENGL_SHADERS
 	// Overlay

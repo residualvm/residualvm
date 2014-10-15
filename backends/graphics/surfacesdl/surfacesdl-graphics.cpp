@@ -56,7 +56,9 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	_overlayDirty(true),
 	_screenChangeCount(0)
 #ifdef USE_OPENGL
-	, _opengl(false), _overlayNumTex(0), _overlayTexIds(0)
+	, _opengl(false), _overlayNumTex(0), _overlayTexIds(0),
+	_gameScreen(0), _gameScreenWidth(0), _gameScreenHeight(0),
+	_gameScreenDirty(true)
 #endif
 #ifdef USE_OPENGL_SHADERS
 	, _boxShader(nullptr), _boxVerticesVBO(0)
@@ -167,7 +169,9 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	closeOverlay();
 
 #ifdef USE_OPENGL
-	_opengl = accel3d;
+	_tinygl = !accel3d;
+	// This should be decided based on some way to test if OpenGL is at all available
+	_opengl = true;
 	_antialiasing = 0;
 #endif
 	_fullscreen = fullscreen;
@@ -308,8 +312,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	}
 #endif
 
-	_overlayWidth = screenW;
-	_overlayHeight = screenH;
+	_overlayWidth = _gameScreenWidth = screenW;
+	_overlayHeight = _gameScreenHeight = screenH;
 
 #ifdef USE_OPENGL
 	if (_opengl) {
@@ -327,6 +331,11 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #endif
 		_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _overlayWidth, _overlayHeight, 16,
 						rmask, gmask, bmask, amask);
+		if (_tinygl) {
+			_gameScreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _gameScreenWidth, _gameScreenHeight, 16,
+						rmask, gmask, bmask, amask);
+			_gameScreenGLFormat = GL_UNSIGNED_SHORT_5_6_5;
+		}
 		_overlayScreenGLFormat = GL_UNSIGNED_SHORT_5_6_5;
 	} else
 #endif
@@ -353,13 +362,18 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_overlayFormat.bShift = _overlayscreen->format->Bshift;
 	_overlayFormat.aShift = _overlayscreen->format->Ashift;*/
 
-	_overlayFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
+	_overlayFormat = _gameScreenFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
 
 	_screenChangeCount++;
 
 	SDL_PixelFormat *f = _screen->format;
 	_screenFormat = Graphics::PixelFormat(f->BytesPerPixel, 8 - f->Rloss, 8 - f->Gloss, 8 - f->Bloss, 0,
 										f->Rshift, f->Gshift, f->Bshift, f->Ashift);
+
+	if (_tinygl) {
+		_gameScreenFormat = _gameScreenFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
+		return Graphics::PixelBuffer(_gameScreenFormat, (byte *)_gameScreen->pixels);
+	}
 
 	return Graphics::PixelBuffer(_screenFormat, (byte *)_screen->pixels);
 }
@@ -472,6 +486,111 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGL() {
 	glPopAttrib();
 }
 
+void SurfaceSdlGraphicsManager::updateGameScreenTextures() {
+	if (!_gameScreen)
+		return;
+
+	// remove if already exist
+	if (_gameScreenNumTex > 0) {
+		glDeleteTextures(_gameScreenNumTex, _gameScreenTexIds);
+		delete[] _gameScreenTexIds;
+		_gameScreenNumTex = 0;
+	}
+
+	_gameScreenNumTex = ((_gameScreenWidth + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
+					((_gameScreenHeight + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
+	_gameScreenTexIds = new GLuint[_gameScreenNumTex];
+	glGenTextures(_gameScreenNumTex, _gameScreenTexIds);
+	for (int i = 0; i < _gameScreenNumTex; i++) {
+		glBindTexture(GL_TEXTURE_2D, _gameScreenTexIds[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, BITMAP_TEXTURE_SIZE, BITMAP_TEXTURE_SIZE, 0, GL_RGB, _gameScreenGLFormat, NULL);
+	}
+
+	int bpp = _gameScreen->format->BytesPerPixel;
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, bpp);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, _gameScreenWidth);
+
+	int curTexIdx = 0;
+	for (int y = 0; y < _gameScreenHeight; y += BITMAP_TEXTURE_SIZE) {
+		for (int x = 0; x < _gameScreenWidth; x += BITMAP_TEXTURE_SIZE) {
+			int t_width = (x + BITMAP_TEXTURE_SIZE >= _gameScreenWidth) ? (_gameScreenWidth - x) : BITMAP_TEXTURE_SIZE;
+			int t_height = (y + BITMAP_TEXTURE_SIZE >= _gameScreenHeight) ? (_gameScreenHeight - y) : BITMAP_TEXTURE_SIZE;
+			glBindTexture(GL_TEXTURE_2D, _gameScreenTexIds[curTexIdx]);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t_width, t_height, GL_RGB, _gameScreenGLFormat,
+				(byte *)_gameScreen->pixels + (y * _gameScreen->pitch) + (bpp * x));
+			curTexIdx++;
+		}
+	}
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+}
+
+void SurfaceSdlGraphicsManager::drawGameScreenOpenGL() {
+	if (!_overlayscreen)
+		return;
+
+	// Save current state
+	glPushAttrib(GL_TRANSFORM_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_SCISSOR_BIT);
+
+	// prepare view
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(0, _gameScreenWidth, _gameScreenHeight, 0, 0, 1);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glMatrixMode(GL_TEXTURE);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glDisable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	glEnable(GL_SCISSOR_TEST);
+
+	glScissor(0, 0, _gameScreenWidth, _gameScreenHeight);
+
+	int curTexIdx = 0;
+	for (int y = 0; y < _gameScreenHeight; y += BITMAP_TEXTURE_SIZE) {
+		for (int x = 0; x < _gameScreenWidth; x += BITMAP_TEXTURE_SIZE) {
+			glBindTexture(GL_TEXTURE_2D, _gameScreenTexIds[curTexIdx]);
+			glBegin(GL_QUADS);
+			glTexCoord2f(0, 0);
+			glVertex2i(x, y);
+			glTexCoord2f(1.0f, 0.0f);
+			glVertex2i(x + BITMAP_TEXTURE_SIZE, y);
+			glTexCoord2f(1.0f, 1.0f);
+			glVertex2i(x + BITMAP_TEXTURE_SIZE, y + BITMAP_TEXTURE_SIZE);
+			glTexCoord2f(0.0f, 1.0f);
+			glVertex2i(x, y + BITMAP_TEXTURE_SIZE);
+			glEnd();
+			curTexIdx++;
+		}
+	}
+
+	// Restore previous state
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+
+	glMatrixMode(GL_TEXTURE);
+	glPopMatrix();
+
+	glPopAttrib();
+}
+
+
 #ifdef USE_OPENGL_SHADERS
 void SurfaceSdlGraphicsManager::drawOverlayOpenGLShaders() {
 	if (!_overlayscreen)
@@ -527,6 +646,10 @@ void SurfaceSdlGraphicsManager::drawOverlay() {
 void SurfaceSdlGraphicsManager::updateScreen() {
 #ifdef USE_OPENGL
 	if (_opengl) {
+		if (_tinygl) {
+			updateGameScreenTextures();
+			drawGameScreenOpenGL();
+		}
 		if (_overlayVisible) {
 			if (_overlayDirty) {
 				updateOverlayTextures();
