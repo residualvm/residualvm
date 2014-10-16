@@ -50,15 +50,9 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	:
 	SdlGraphicsManager(sdlEventSource),
 	_screen(0),
-	_overlayVisible(false),
-	_overlayscreen(0),
-	_overlayWidth(0), _overlayHeight(0),
-	_overlayDirty(true),
 	_screenChangeCount(0)
 #ifdef USE_OPENGL
-	, _opengl(false), _overlayNumTex(0), _overlayTexIds(0),
-	_gameScreen(0), _gameScreenWidth(0), _gameScreenHeight(0),
-	_gameScreenDirty(true)
+	, _opengl(false)
 #endif
 #ifdef USE_OPENGL_SHADERS
 	, _boxShader(nullptr), _boxVerticesVBO(0)
@@ -160,6 +154,33 @@ void SurfaceSdlGraphicsManager::initSize(uint w, uint h, const Graphics::PixelFo
 void SurfaceSdlGraphicsManager::launcherInitSize(uint w, uint h) {
 	closeOverlay();
 	setupScreen(w, h, false, false);
+}
+
+Drawable2DScreen::Drawable2DScreen() :
+	_visible(false),
+	_screen(0),
+	_width(0),
+	_height(0),
+	_dirty(true)
+#ifdef USE_OPENGL
+	, _numTex(0), _texIds(0)
+#endif
+	  {
+}
+
+void Drawable2DScreen::initialize(int width, int height, int rmask, int gmask, int bmask, int amask) {
+	_width = width;
+	_height = height;
+	_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, _width, _height, 16,
+						rmask, gmask, bmask, amask);
+	_GLFormat = GL_UNSIGNED_SHORT_5_6_5;
+	
+	if (!_screen) {
+		warning("Error: %s", SDL_GetError());
+		g_system->quit();
+	}
+	
+	_format = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
 }
 
 Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) {
@@ -312,9 +333,6 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	}
 #endif
 
-	_overlayWidth = _gameScreenWidth = screenW;
-	_overlayHeight = _gameScreenHeight = screenH;
-
 #ifdef USE_OPENGL
 	if (_opengl) {
 		uint32 rmask, gmask, bmask, amask;
@@ -329,24 +347,16 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		bmask = 0x0000001f;
 		amask = 0x00000000;
 #endif
-		_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _overlayWidth, _overlayHeight, 16,
-						rmask, gmask, bmask, amask);
+		_overlayScreen.initialize(screenW, screenH, rmask, gmask, bmask, amask);
+
 		if (_tinygl) {
-			_gameScreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _gameScreenWidth, _gameScreenHeight, 16,
-						rmask, gmask, bmask, amask);
-			_gameScreenGLFormat = GL_UNSIGNED_SHORT_5_6_5;
+			_gameScreen.initialize(screenW, screenH, rmask, gmask, bmask, amask);
 		}
-		_overlayScreenGLFormat = GL_UNSIGNED_SHORT_5_6_5;
 	} else
 #endif
 	{
-		_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _overlayWidth, _overlayHeight, 16,
-					_screen->format->Rmask, _screen->format->Gmask, _screen->format->Bmask, _screen->format->Amask);
-	}
-
-	if (!_overlayscreen) {
-		warning("Error: %s", SDL_GetError());
-		g_system->quit();
+		_overlayScreen.initialize(screenW, screenH,	_screen->format->Rmask,
+				_screen->format->Gmask, _screen->format->Bmask, _screen->format->Amask);
 	}
 
 	/*_overlayFormat.bytesPerPixel = _overlayscreen->format->BytesPerPixel;
@@ -362,8 +372,6 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_overlayFormat.bShift = _overlayscreen->format->Bshift;
 	_overlayFormat.aShift = _overlayscreen->format->Ashift;*/
 
-	_overlayFormat = _gameScreenFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
-
 	_screenChangeCount++;
 
 	SDL_PixelFormat *f = _screen->format;
@@ -371,8 +379,7 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 										f->Rshift, f->Gshift, f->Bshift, f->Ashift);
 
 	if (_tinygl) {
-		_gameScreenFormat = _gameScreenFormat = Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
-		return Graphics::PixelBuffer(_gameScreenFormat, (byte *)_gameScreen->pixels);
+		return Graphics::PixelBuffer(_gameScreen._format, (byte *)_gameScreen._screen->pixels);
 	}
 
 	return Graphics::PixelBuffer(_screenFormat, (byte *)_screen->pixels);
@@ -382,43 +389,43 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 
 #define BITMAP_TEXTURE_SIZE 256
 
-void SurfaceSdlGraphicsManager::updateOverlayTextures() {
-	if (!_overlayscreen)
+void SurfaceSdlGraphicsManager::update2DScreenTextures(Drawable2DScreen &screen) {
+	if (!screen._screen)
 		return;
 
 	// remove if already exist
-	if (_overlayNumTex > 0) {
-		glDeleteTextures(_overlayNumTex, _overlayTexIds);
-		delete[] _overlayTexIds;
-		_overlayNumTex = 0;
+	if (screen._numTex > 0) {
+		glDeleteTextures(screen._numTex, screen._texIds);
+		delete[] screen._texIds;
+		screen._numTex = 0;
 	}
 
-	_overlayNumTex = ((_overlayWidth + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
-					((_overlayHeight + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
-	_overlayTexIds = new GLuint[_overlayNumTex];
-	glGenTextures(_overlayNumTex, _overlayTexIds);
-	for (int i = 0; i < _overlayNumTex; i++) {
-		glBindTexture(GL_TEXTURE_2D, _overlayTexIds[i]);
+	screen._numTex = ((screen._width + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
+					((screen._height + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
+	screen._texIds = new GLuint[screen._numTex];
+	glGenTextures(screen._numTex, screen._texIds);
+	for (int i = 0; i < screen._numTex; i++) {
+		glBindTexture(GL_TEXTURE_2D, screen._texIds[i]);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, BITMAP_TEXTURE_SIZE, BITMAP_TEXTURE_SIZE, 0, GL_RGB, _overlayScreenGLFormat, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, BITMAP_TEXTURE_SIZE, BITMAP_TEXTURE_SIZE, 0, GL_RGB, screen._GLFormat, NULL);
 	}
 
-	int bpp = _overlayscreen->format->BytesPerPixel;
+	int bpp = screen._screen->format->BytesPerPixel;
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, bpp);
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, _overlayWidth);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, screen._width);
 
 	int curTexIdx = 0;
-	for (int y = 0; y < _overlayHeight; y += BITMAP_TEXTURE_SIZE) {
-		for (int x = 0; x < _overlayWidth; x += BITMAP_TEXTURE_SIZE) {
-			int t_width = (x + BITMAP_TEXTURE_SIZE >= _overlayWidth) ? (_overlayWidth - x) : BITMAP_TEXTURE_SIZE;
-			int t_height = (y + BITMAP_TEXTURE_SIZE >= _overlayHeight) ? (_overlayHeight - y) : BITMAP_TEXTURE_SIZE;
-			glBindTexture(GL_TEXTURE_2D, _overlayTexIds[curTexIdx]);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t_width, t_height, GL_RGB, _overlayScreenGLFormat,
-				(byte *)_overlayscreen->pixels + (y * _overlayscreen->pitch) + (bpp * x));
+	for (int y = 0; y < screen._height; y += BITMAP_TEXTURE_SIZE) {
+		for (int x = 0; x < screen._width; x += BITMAP_TEXTURE_SIZE) {
+			int t_width = (x + BITMAP_TEXTURE_SIZE >= screen._width) ? (screen._width - x) : BITMAP_TEXTURE_SIZE;
+			int t_height = (y + BITMAP_TEXTURE_SIZE >= screen._height) ? (screen._height - y) : BITMAP_TEXTURE_SIZE;
+			glBindTexture(GL_TEXTURE_2D, screen._texIds[curTexIdx]);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t_width, t_height, GL_RGB, screen._GLFormat,
+				(byte *)screen._screen->pixels + (y * screen._screen->pitch) + (bpp * x));
 			curTexIdx++;
 		}
 	}
@@ -426,8 +433,8 @@ void SurfaceSdlGraphicsManager::updateOverlayTextures() {
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }
 
-void SurfaceSdlGraphicsManager::drawOverlayOpenGL() {
-	if (!_overlayscreen)
+void SurfaceSdlGraphicsManager::draw2DScreenOpenGL(Drawable2DScreen &screen) {
+	if (!screen._screen)
 		return;
 
 	// Save current state
@@ -437,7 +444,7 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGL() {
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	glOrtho(0, _overlayWidth, _overlayHeight, 0, 0, 1);
+	glOrtho(0, screen._width, screen._height, 0, 0, 1);
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -453,116 +460,12 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGL() {
 	glDepthMask(GL_FALSE);
 	glEnable(GL_SCISSOR_TEST);
 
-	glScissor(0, 0, _overlayWidth, _overlayHeight);
+	glScissor(0, 0, screen._width, screen._height);
 
 	int curTexIdx = 0;
-	for (int y = 0; y < _overlayHeight; y += BITMAP_TEXTURE_SIZE) {
-		for (int x = 0; x < _overlayWidth; x += BITMAP_TEXTURE_SIZE) {
-			glBindTexture(GL_TEXTURE_2D, _overlayTexIds[curTexIdx]);
-			glBegin(GL_QUADS);
-			glTexCoord2f(0, 0);
-			glVertex2i(x, y);
-			glTexCoord2f(1.0f, 0.0f);
-			glVertex2i(x + BITMAP_TEXTURE_SIZE, y);
-			glTexCoord2f(1.0f, 1.0f);
-			glVertex2i(x + BITMAP_TEXTURE_SIZE, y + BITMAP_TEXTURE_SIZE);
-			glTexCoord2f(0.0f, 1.0f);
-			glVertex2i(x, y + BITMAP_TEXTURE_SIZE);
-			glEnd();
-			curTexIdx++;
-		}
-	}
-
-	// Restore previous state
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-
-	glMatrixMode(GL_TEXTURE);
-	glPopMatrix();
-
-	glPopAttrib();
-}
-
-void SurfaceSdlGraphicsManager::updateGameScreenTextures() {
-	if (!_gameScreen)
-		return;
-
-	// remove if already exist
-	if (_gameScreenNumTex > 0) {
-		glDeleteTextures(_gameScreenNumTex, _gameScreenTexIds);
-		delete[] _gameScreenTexIds;
-		_gameScreenNumTex = 0;
-	}
-
-	_gameScreenNumTex = ((_gameScreenWidth + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE) *
-					((_gameScreenHeight + (BITMAP_TEXTURE_SIZE - 1)) / BITMAP_TEXTURE_SIZE);
-	_gameScreenTexIds = new GLuint[_gameScreenNumTex];
-	glGenTextures(_gameScreenNumTex, _gameScreenTexIds);
-	for (int i = 0; i < _gameScreenNumTex; i++) {
-		glBindTexture(GL_TEXTURE_2D, _gameScreenTexIds[i]);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, BITMAP_TEXTURE_SIZE, BITMAP_TEXTURE_SIZE, 0, GL_RGB, _gameScreenGLFormat, NULL);
-	}
-
-	int bpp = _gameScreen->format->BytesPerPixel;
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, bpp);
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, _gameScreenWidth);
-
-	int curTexIdx = 0;
-	for (int y = 0; y < _gameScreenHeight; y += BITMAP_TEXTURE_SIZE) {
-		for (int x = 0; x < _gameScreenWidth; x += BITMAP_TEXTURE_SIZE) {
-			int t_width = (x + BITMAP_TEXTURE_SIZE >= _gameScreenWidth) ? (_gameScreenWidth - x) : BITMAP_TEXTURE_SIZE;
-			int t_height = (y + BITMAP_TEXTURE_SIZE >= _gameScreenHeight) ? (_gameScreenHeight - y) : BITMAP_TEXTURE_SIZE;
-			glBindTexture(GL_TEXTURE_2D, _gameScreenTexIds[curTexIdx]);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t_width, t_height, GL_RGB, _gameScreenGLFormat,
-				(byte *)_gameScreen->pixels + (y * _gameScreen->pitch) + (bpp * x));
-			curTexIdx++;
-		}
-	}
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-}
-
-void SurfaceSdlGraphicsManager::drawGameScreenOpenGL() {
-	if (!_overlayscreen)
-		return;
-
-	// Save current state
-	glPushAttrib(GL_TRANSFORM_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_SCISSOR_BIT);
-
-	// prepare view
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	glOrtho(0, _gameScreenWidth, _gameScreenHeight, 0, 0, 1);
-
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	glMatrixMode(GL_TEXTURE);
-	glPushMatrix();
-	glLoadIdentity();
-
-	glDisable(GL_LIGHTING);
-	glEnable(GL_TEXTURE_2D);
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	glEnable(GL_SCISSOR_TEST);
-
-	glScissor(0, 0, _gameScreenWidth, _gameScreenHeight);
-
-	int curTexIdx = 0;
-	for (int y = 0; y < _gameScreenHeight; y += BITMAP_TEXTURE_SIZE) {
-		for (int x = 0; x < _gameScreenWidth; x += BITMAP_TEXTURE_SIZE) {
-			glBindTexture(GL_TEXTURE_2D, _gameScreenTexIds[curTexIdx]);
+	for (int y = 0; y < screen._height; y += BITMAP_TEXTURE_SIZE) {
+		for (int x = 0; x < screen._width; x += BITMAP_TEXTURE_SIZE) {
+			glBindTexture(GL_TEXTURE_2D, screen._texIds[curTexIdx]);
 			glBegin(GL_QUADS);
 			glTexCoord2f(0, 0);
 			glVertex2i(x, y);
@@ -624,39 +527,39 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGLShaders() {
 #endif
 
 void SurfaceSdlGraphicsManager::drawOverlay() {
-	if (!_overlayscreen)
+	if (!_overlayScreen._screen)
 		return;
 
 	SDL_LockSurface(_screen);
-	SDL_LockSurface(_overlayscreen);
-	Graphics::PixelBuffer srcBuf(_overlayFormat, (byte *)_overlayscreen->pixels);
+	SDL_LockSurface(_overlayScreen._screen);
+	Graphics::PixelBuffer srcBuf(_overlayScreen._format, (byte *)_overlayScreen._screen->pixels);
 	Graphics::PixelBuffer dstBuf(_screenFormat, (byte *)_screen->pixels);
-	int h = _overlayHeight;
+	int h = _overlayScreen._height;
 
 	do {
-		dstBuf.copyBuffer(0, _overlayWidth, srcBuf);
+		dstBuf.copyBuffer(0, _overlayScreen._width, srcBuf);
 
-		srcBuf.shiftBy(_overlayWidth);
-		dstBuf.shiftBy(_overlayWidth);
+		srcBuf.shiftBy(_overlayScreen._width);
+		dstBuf.shiftBy(_overlayScreen._width);
 	} while (--h);
 	SDL_UnlockSurface(_screen);
-	SDL_UnlockSurface(_overlayscreen);
+	SDL_UnlockSurface(_overlayScreen._screen);
 }
 
 void SurfaceSdlGraphicsManager::updateScreen() {
 #ifdef USE_OPENGL
 	if (_opengl) {
 		if (_tinygl) {
-			updateGameScreenTextures();
-			drawGameScreenOpenGL();
+			update2DScreenTextures(_gameScreen);
+			draw2DScreenOpenGL(_gameScreen);
 		}
-		if (_overlayVisible) {
-			if (_overlayDirty) {
-				updateOverlayTextures();
+		if (_overlayScreen._visible) {
+			if (_overlayScreen._dirty) {
+				update2DScreenTextures(_overlayScreen);
 			}
 
 #ifndef USE_OPENGL_SHADERS
-			drawOverlayOpenGL();
+			draw2DScreenOpenGL(_overlayScreen);
 #else
 			drawOverlayOpenGLShaders();
 #endif
@@ -665,7 +568,7 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 	} else
 #endif
 	{
-		if (_overlayVisible) {
+		if (_overlayScreen._visible) {
 			drawOverlay();
 		}
 		SDL_Flip(_screen);
@@ -727,53 +630,53 @@ void SurfaceSdlGraphicsManager::clearFocusRectangle() {
 #pragma mark -
 
 void SurfaceSdlGraphicsManager::showOverlay() {
-	if (_overlayVisible)
+	if (_overlayScreen._visible)
 		return;
 
-	_overlayVisible = true;
+	_overlayScreen._visible = true;
 
 	clearOverlay();
 }
 
 void SurfaceSdlGraphicsManager::hideOverlay() {
-	if (!_overlayVisible)
+	if (!_overlayScreen._visible)
 		return;
 
-	_overlayVisible = false;
+	_overlayScreen._visible = false;
 
 	clearOverlay();
 }
 
 void SurfaceSdlGraphicsManager::clearOverlay() {
-	if (!_overlayscreen)
+	if (!_overlayScreen._screen)
 		return;
 
-	if (!_overlayVisible)
+	if (!_overlayScreen._visible)
 		return;
 
 #ifdef USE_OPENGL
 	if (_opengl) {
-		SDL_Surface *tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, _overlayWidth, _overlayHeight,
-				_overlayscreen->format->BytesPerPixel * 8,
-				_overlayscreen->format->Rmask, _overlayscreen->format->Gmask,
-				_overlayscreen->format->Bmask, _overlayscreen->format->Amask);
+		SDL_Surface *tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, _overlayScreen._width, _overlayScreen._width,
+				_overlayScreen._screen->format->BytesPerPixel * 8,
+				_overlayScreen._screen->format->Rmask, _overlayScreen._screen->format->Gmask,
+				_overlayScreen._screen->format->Bmask, _overlayScreen._screen->format->Amask);
 
 		SDL_LockSurface(tmp);
-		SDL_LockSurface(_overlayscreen);
+		SDL_LockSurface(_overlayScreen._screen);
 
-		glReadPixels(0, 0, _overlayWidth, _overlayHeight, GL_RGB, _overlayScreenGLFormat, tmp->pixels);
+		glReadPixels(0, 0, _overlayScreen._width, _overlayScreen._height, GL_RGB, _overlayScreen._GLFormat, tmp->pixels);
 
 		// Flip pixels vertically
 		byte *src = (byte *)tmp->pixels;
-		byte *buf = (byte *)_overlayscreen->pixels + (_overlayHeight - 1) * _overlayscreen->pitch;
-		int h = _overlayHeight;
+		byte *buf = (byte *)_overlayScreen._screen->pixels + (_overlayScreen._height - 1) * _overlayScreen._screen->pitch;
+		int h = _overlayScreen._height;
 		do {
-			memcpy(buf, src, _overlayWidth * _overlayscreen->format->BytesPerPixel);
+			memcpy(buf, src, _overlayScreen._width * _overlayScreen._screen->format->BytesPerPixel);
 			src += tmp->pitch;
-			buf -= _overlayscreen->pitch;
+			buf -= _overlayScreen._screen->pitch;
 		} while (--h);
 
-		SDL_UnlockSurface(_overlayscreen);
+		SDL_UnlockSurface(_overlayScreen._screen);
 		SDL_UnlockSurface(tmp);
 
 		SDL_FreeSurface(tmp);
@@ -781,44 +684,44 @@ void SurfaceSdlGraphicsManager::clearOverlay() {
 #endif
 	{
 		SDL_LockSurface(_screen);
-		SDL_LockSurface(_overlayscreen);
+		SDL_LockSurface(_overlayScreen._screen);
 		Graphics::PixelBuffer srcBuf(_screenFormat, (byte *)_screen->pixels);
-		Graphics::PixelBuffer dstBuf(_overlayFormat, (byte *)_overlayscreen->pixels);
-		int h = _overlayHeight;
+		Graphics::PixelBuffer dstBuf(_overlayScreen._format, (byte *)_overlayScreen._screen->pixels);
+		int h = _overlayScreen._height;
 
 		do {
-			dstBuf.copyBuffer(0, _overlayWidth, srcBuf);
+			dstBuf.copyBuffer(0, _overlayScreen._width, srcBuf);
 
-			srcBuf.shiftBy(_overlayWidth);
-			dstBuf.shiftBy(_overlayWidth);
+			srcBuf.shiftBy(_overlayScreen._width);
+			dstBuf.shiftBy(_overlayScreen._width);
 		} while (--h);
 		SDL_UnlockSurface(_screen);
-		SDL_UnlockSurface(_overlayscreen);
+		SDL_UnlockSurface(_overlayScreen._screen);
 	}
-	_overlayDirty = true;
+	_overlayScreen._dirty = true;
 }
 
 void SurfaceSdlGraphicsManager::grabOverlay(void *buf, int pitch) {
-	if (_overlayscreen == NULL)
+	if (_overlayScreen._screen == NULL)
 		return;
 
-	if (SDL_LockSurface(_overlayscreen) == -1)
+	if (SDL_LockSurface(_overlayScreen._screen) == -1)
 		error("SDL_LockSurface failed: %s", SDL_GetError());
 
-	byte *src = (byte *)_overlayscreen->pixels;
+	byte *src = (byte *)_overlayScreen._screen->pixels;
 	byte *dst = (byte *)buf;
-	int h = _overlayHeight;
+	int h = _overlayScreen._height;
 	do {
-		memcpy(dst, src, _overlayWidth * _overlayscreen->format->BytesPerPixel);
-		src += _overlayscreen->pitch;
+		memcpy(dst, src, _overlayScreen._width * _overlayScreen._screen->format->BytesPerPixel);
+		src += _overlayScreen._screen->pitch;
 		dst += pitch;
 	} while (--h);
 
-	SDL_UnlockSurface(_overlayscreen);
+	SDL_UnlockSurface(_overlayScreen._screen);
 }
 
 void SurfaceSdlGraphicsManager::copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h) {
-	if (_overlayscreen == NULL)
+	if (_overlayScreen._screen == NULL)
 		return;
 
 	const byte *src = (const byte *)buf;
@@ -826,7 +729,7 @@ void SurfaceSdlGraphicsManager::copyRectToOverlay(const void *buf, int pitch, in
 	// Clip the coordinates
 	if (x < 0) {
 		w += x;
-		src -= x * _overlayscreen->format->BytesPerPixel;
+		src -= x * _overlayScreen._screen->format->BytesPerPixel;
 		x = 0;
 	}
 
@@ -836,40 +739,40 @@ void SurfaceSdlGraphicsManager::copyRectToOverlay(const void *buf, int pitch, in
 		y = 0;
 	}
 
-	if (w > _overlayWidth - x) {
-		w = _overlayWidth - x;
+	if (w > _overlayScreen._width - x) {
+		w = _overlayScreen._width - x;
 	}
 
-	if (h > _overlayHeight - y) {
-		h = _overlayHeight - y;
+	if (h > _overlayScreen._height - y) {
+		h = _overlayScreen._height - y;
 	}
 
 	if (w <= 0 || h <= 0)
 		return;
 
-	if (SDL_LockSurface(_overlayscreen) == -1)
+	if (SDL_LockSurface(_overlayScreen._screen) == -1)
 		error("SDL_LockSurface failed: %s", SDL_GetError());
 
-	byte *dst = (byte *)_overlayscreen->pixels + y * _overlayscreen->pitch + x * _overlayscreen->format->BytesPerPixel;
+	byte *dst = (byte *)_overlayScreen._screen->pixels + y * _overlayScreen._screen->pitch + x * _overlayScreen._screen->format->BytesPerPixel;
 	do {
-		memcpy(dst, src, w * _overlayscreen->format->BytesPerPixel);
-		dst += _overlayscreen->pitch;
+		memcpy(dst, src, w * _overlayScreen._screen->format->BytesPerPixel);
+		dst += _overlayScreen._screen->pitch;
 		src += pitch;
 	} while (--h);
 
-	SDL_UnlockSurface(_overlayscreen);
+	SDL_UnlockSurface(_overlayScreen._screen);
 }
 
 void SurfaceSdlGraphicsManager::closeOverlay() {
-	if (_overlayscreen) {
-		SDL_FreeSurface(_overlayscreen);
-		_overlayscreen = NULL;
+	if (_overlayScreen._screen) {
+		SDL_FreeSurface(_overlayScreen._screen);
+		_overlayScreen._screen = NULL;
 #ifdef USE_OPENGL
 		if (_opengl) {
-			if (_overlayNumTex > 0) {
-				glDeleteTextures(_overlayNumTex, _overlayTexIds);
-				delete[] _overlayTexIds;
-				_overlayNumTex = 0;
+			if (_overlayScreen._numTex > 0) {
+				glDeleteTextures(_overlayScreen._numTex, _overlayScreen._texIds);
+				delete[] _overlayScreen._texIds;
+				_overlayScreen._numTex = 0;
 			}
 
 #ifdef USE_OPENGL_SHADERS

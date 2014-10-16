@@ -48,6 +48,24 @@
 #define USE_SDL_DEBUG_FOCUSRECT
 #endif
 
+struct Drawable2DScreen {
+	// For TinyGL-on-OpenGL
+	SDL_Surface *_screen;
+	bool _visible;
+	Graphics::PixelFormat _format;
+	int _width, _height;
+	bool _dirty;
+	
+#ifdef USE_OPENGL
+	int _numTex;
+	GLuint *_texIds;
+	GLenum _GLFormat;
+#endif
+
+	Drawable2DScreen();
+	void initialize(int width, int height, int rmask, int gmask, int bmask, int amask);
+};
+
 /**
  * SDL graphics manager
  */
@@ -100,14 +118,14 @@ public:
 
 	virtual void showOverlay();
 	virtual void hideOverlay();
-	virtual Graphics::PixelFormat getOverlayFormat() const { return _overlayFormat; }
+	virtual Graphics::PixelFormat getOverlayFormat() const { return _overlayScreen._format; }
 	virtual void clearOverlay();
 	virtual void grabOverlay(void *buf, int pitch);
 	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h);
 
 	//ResidualVM specific implementions:
-	virtual int16 getOverlayHeight() { return _overlayHeight; }
-	virtual int16 getOverlayWidth() { return _overlayWidth; }
+	virtual int16 getOverlayHeight() { return _overlayScreen._height; }
+	virtual int16 getOverlayWidth() { return _overlayScreen._width; }
 	void closeOverlay(); // ResidualVM specific method
 
 	virtual bool showMouse(bool visible);
@@ -144,38 +162,18 @@ protected:
 	bool _fullscreen;
 
 	// overlay
-	SDL_Surface *_overlayscreen;
-	bool _overlayVisible;
-	Graphics::PixelFormat _overlayFormat;
-	int _overlayWidth, _overlayHeight;
-	bool _overlayDirty;
+	Drawable2DScreen _overlayScreen;
 
 #ifdef USE_OPENGL
 	// Antialiasing
 	int _antialiasing;
 	void setAntialiasing(bool enable);
-
-	// Overlay
-	int _overlayNumTex;
-	GLuint *_overlayTexIds;
-	GLenum _overlayScreenGLFormat;
-
-	void updateOverlayTextures();
-	void drawOverlayOpenGL();
 	
 	// For TinyGL-on-OpenGL
-	SDL_Surface *_gameScreen;
-	bool _gameScreenVisible;
-	Graphics::PixelFormat _gameScreenFormat;
-	int _gameScreenWidth, _gameScreenHeight;
-	bool _gameScreenDirty;
-	
-	int _gameScreenNumTex;
-	GLuint *_gameScreenTexIds;
-	GLenum _gameScreenGLFormat;
+	Drawable2DScreen _gameScreen;
 
-	void updateGameScreenTextures();
-	void drawGameScreenOpenGL();
+	void update2DScreenTextures(Drawable2DScreen &screen);
+	void draw2DScreenOpenGL(Drawable2DScreen &screen);
 
 #ifdef USE_OPENGL_SHADERS
 	// Overlay
