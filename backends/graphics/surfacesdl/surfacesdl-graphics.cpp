@@ -695,12 +695,14 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 	} else
 #endif
 	{
-		SDL_Rect dstrect;
-		dstrect.x = _gameRect.getTopLeft().getX();
-		dstrect.y = _gameRect.getTopLeft().getY();
-		dstrect.w = _gameRect.getWidth();
-		dstrect.h = _gameRect.getHeight();
-		SDL_BlitSurface(_subScreen, NULL, _screen, &dstrect);
+		if (_subScreen) {
+			SDL_Rect dstrect;
+			dstrect.x = _gameRect.getTopLeft().getX();
+			dstrect.y = _gameRect.getTopLeft().getY();
+			dstrect.w = _gameRect.getWidth();
+			dstrect.h = _gameRect.getHeight();
+			SDL_BlitSurface(_subScreen, NULL, _screen, &dstrect);
+		}
 		if (_overlayVisible) {
 			drawOverlay();
 		}
@@ -900,12 +902,23 @@ void SurfaceSdlGraphicsManager::closeOverlay() {
 	if (_overlayscreen) {
 		SDL_FreeSurface(_overlayscreen);
 		_overlayscreen = NULL;
+
+		if (_subScreen) {
+			SDL_FreeSurface(_subScreen);
+			_subScreen = nullptr;
+		}
+
 #ifdef USE_OPENGL
 		if (_opengl) {
 			if (_overlayNumTex > 0) {
 				glDeleteTextures(_overlayNumTex, _overlayTexIds);
 				delete[] _overlayTexIds;
 				_overlayNumTex = 0;
+			}
+
+			if (_frameBuffer) {
+				delete _frameBuffer;
+				_frameBuffer = nullptr;
 			}
 
 #ifdef USE_OPENGL_SHADERS
