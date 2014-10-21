@@ -20,6 +20,8 @@
  *
  */
 
+#define FORBIDDEN_SYMBOL_EXCEPTION_putenv
+
 #include "common/scummsys.h"
 
 #if defined(SDL_BACKEND)
@@ -42,6 +44,10 @@
 #include "graphics/pixelbuffer.h"
 #include "gui/EventRecorder.h"
 
+#ifdef USE_OPENGL
+#include "graphics/opengles2/extensions.h"
+#endif
+
 static const OSystem::GraphicsMode s_supportedGraphicsModes[] = {
 	{0, 0, 0}
 };
@@ -50,6 +56,7 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	:
 	SdlGraphicsManager(sdlEventSource),
 	_screen(0),
+	_subScreen(0),
 	_overlayVisible(false),
 	_overlayscreen(0),
 	_overlayWidth(0), _overlayHeight(0),
@@ -57,15 +64,23 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	_screenChangeCount(0)
 #ifdef USE_OPENGL
 	, _opengl(false), _overlayNumTex(0), _overlayTexIds(0)
+	, _frameBuffer(nullptr), _gameRect()
+	, _lockAspectRatio(true)
 #endif
 #ifdef USE_OPENGL_SHADERS
 	, _boxShader(nullptr), _boxVerticesVBO(0)
 #endif
 	{
+		const SDL_VideoInfo *vi = SDL_GetVideoInfo();
+		_desktopW = vi->current_w;
+		_desktopH = vi->current_h;
 }
 
 SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
 	closeOverlay();
+#ifdef USE_OPENGL
+	delete _frameBuffer;
+#endif
 }
 
 void SurfaceSdlGraphicsManager::activateManager() {
@@ -92,7 +107,8 @@ bool SurfaceSdlGraphicsManager::hasFeature(OSystem::Feature f) {
 	return
 		(f == OSystem::kFeatureFullscreenMode) ||
 #ifdef USE_OPENGL
-		(f == OSystem::kFeatureOpenGL);
+		(f == OSystem::kFeatureOpenGL) ||
+		(f == OSystem::kFeatureAspectRatioCorrection);
 #else
 	false;
 #endif
@@ -103,6 +119,9 @@ void SurfaceSdlGraphicsManager::setFeatureState(OSystem::Feature f, bool enable)
 	case OSystem::kFeatureFullscreenMode:
 		_fullscreen = enable;
 		break;
+	case OSystem::kFeatureAspectRatioCorrection:
+		_lockAspectRatio = enable;
+		break;
 	default:
 		break;
 	}
@@ -112,6 +131,9 @@ bool SurfaceSdlGraphicsManager::getFeatureState(OSystem::Feature f) {
 	switch (f) {
 		case OSystem::kFeatureFullscreenMode:
 			return _fullscreen;
+		case OSystem::kFeatureAspectRatioCorrection:
+			return _lockAspectRatio;
+		break;
 		default:
 			return false;
 	}
@@ -169,10 +191,43 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #ifdef USE_OPENGL
 	_opengl = accel3d;
 	_antialiasing = 0;
+	ConfMan.registerDefault("aspect_ratio", true);
+	_lockAspectRatio = ConfMan.getBool("aspect_ratio");
 #endif
 	_fullscreen = fullscreen;
 
+	uint fbW = screenW;
+	uint fbH = screenH;
+	_gameRect = Math::Rect2d(Math::Vector2d(0, 0), Math::Vector2d(1, 1));
+
 #ifdef USE_OPENGL
+	bool framebufferSupported = false;
+
+	if (_opengl) {
+#ifndef AMIGAOS
+		// Spawn a 32x32 window off-screen
+		SDL_putenv("SDL_VIDEO_WINDOW_POS=9000,9000");
+		SDL_SetVideoMode(32, 32, 0, SDL_OPENGL);
+		SDL_putenv("SDL_VIDEO_WINDOW_POS=centered");
+		Graphics::initExtensions();
+		framebufferSupported = Graphics::isExtensionSupported("GL_EXT_framebuffer_object");
+		if (_fullscreen && framebufferSupported) {
+			screenW = _desktopW;
+			screenH = _desktopH;
+
+			if (_lockAspectRatio) {
+				float scale = MIN(_desktopH / float(fbH), _desktopW / float(fbW));
+				float scaledW = scale * (fbW / float(_desktopW));
+				float scaledH = scale * (fbH / float(_desktopH));
+				_gameRect = Math::Rect2d(
+					Math::Vector2d(0.5 - (0.5 * scaledW), 0.5 - (0.5 * scaledH)),
+					Math::Vector2d(0.5 + (0.5 * scaledW), 0.5 + (0.5 * scaledH))
+				);
+			}
+		}
+#endif
+	}
+
 	if (_opengl) {
 		if (ConfMan.hasKey("antialiasing"))
 			_antialiasing = ConfMan.getInt("antialiasing");
@@ -193,6 +248,15 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	{
 		bpp = 16;
 		sdlflags = SDL_SWSURFACE;
+	}
+
+	if (_fullscreen && !accel3d) {
+		screenW = _desktopW;
+		screenH = _desktopH;
+		_gameRect = Math::Rect2d(
+			Math::Vector2d((_desktopW - fbW) / 2, (_desktopH - fbH) / 2),
+			Math::Vector2d((_desktopW + fbW) / 2, (_desktopH + fbH) / 2)
+		);
 	}
 
 	if (_fullscreen)
@@ -281,9 +345,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 #ifdef USE_OPENGL_SHADERS
 		debug("INFO: GLSL version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-		debug("INFO: GLEW Version: %s", glewGetString(GLEW_VERSION));
-
 		// GLEW needs to be initialized to use shaders
+		debug("INFO: GLEW Version: %s", glewGetString(GLEW_VERSION));
 		GLenum err = glewInit();
 		if (err != GLEW_OK) {
 			warning("Error: %s", glewGetErrorString(err));
@@ -304,6 +367,8 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		_boxShader->enableVertexAttribute("position", _boxVerticesVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
 		_boxShader->enableVertexAttribute("texcoord", _boxVerticesVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
 #endif
+
+		Graphics::initExtensions();
 
 	}
 #endif
@@ -361,6 +426,17 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 	_screenFormat = Graphics::PixelFormat(f->BytesPerPixel, 8 - f->Rloss, 8 - f->Gloss, 8 - f->Bloss, 0,
 										f->Rshift, f->Gshift, f->Bshift, f->Ashift);
 
+#if defined(USE_OPENGL) && !defined(AMIGAOS)
+	if (_opengl && _fullscreen && framebufferSupported) {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		_frameBuffer = new Graphics::FrameBuffer(fbW, fbH);
+		_frameBuffer->attach();
+	}
+#endif
+	if (_fullscreen && !accel3d) {
+		_subScreen = SDL_CreateRGBSurface(SDL_SWSURFACE, fbW, fbH, bpp, _screen->format->Rmask, _screen->format->Gmask, _screen->format->Bmask, _screen->format->Amask);
+		return Graphics::PixelBuffer(_screenFormat, (byte *)_subScreen->pixels);
+	}
 	return Graphics::PixelBuffer(_screenFormat, (byte *)_screen->pixels);
 }
 
@@ -472,6 +548,68 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGL() {
 	glPopAttrib();
 }
 
+void SurfaceSdlGraphicsManager::drawFramebufferOpenGL() {
+	// Save current state
+	glPushAttrib(GL_TRANSFORM_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_SCISSOR_BIT);
+
+	// prepare view
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(0, 1.0, 1.0, 0, 0, 1);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glMatrixMode(GL_TEXTURE);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glDisable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	glEnable(GL_SCISSOR_TEST);
+
+	glScissor(0, 0, _desktopW, _desktopH);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	float texcropX = _frameBuffer->getWidth() / float(_frameBuffer->getTexWidth());
+	float texcropY = _frameBuffer->getHeight() / float(_frameBuffer->getTexHeight());
+
+	float offsetX = _gameRect.getTopLeft().getX();
+	float offsetY = _gameRect.getTopLeft().getY();
+	float sizeX   = _gameRect.getWidth();
+	float sizeY   = _gameRect.getHeight();
+
+	glColor4f(1.0, 1.0, 1.0, 1.0);
+
+	glBindTexture(GL_TEXTURE_2D, _frameBuffer->getColorTextureName());
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, texcropY);
+	glVertex2f(offsetX, offsetY);
+	glTexCoord2f(texcropX, texcropY);
+	glVertex2f(offsetX + sizeX, offsetY);
+	glTexCoord2f(texcropX, 0.0);
+	glVertex2f(offsetX + sizeX, offsetY + sizeY);
+	glTexCoord2f(0.0, 0.0);
+	glVertex2f(offsetX, offsetY + sizeY);
+	glEnd();
+
+	// Restore previous state
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+
+	glMatrixMode(GL_TEXTURE);
+	glPopMatrix();
+
+	glPopAttrib();
+}
+
 #ifdef USE_OPENGL_SHADERS
 void SurfaceSdlGraphicsManager::drawOverlayOpenGLShaders() {
 	if (!_overlayscreen)
@@ -501,6 +639,23 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGLShaders() {
 		}
 	}
 }
+
+void SurfaceSdlGraphicsManager::drawFramebufferOpenGLShaders() {
+	glBindTexture(GL_TEXTURE_2D, _frameBuffer->getColorTextureName());
+
+	_boxShader->use();
+	float texcropX = _frameBuffer->getWidth() / float(_frameBuffer->getTexWidth());
+	float texcropY = _frameBuffer->getHeight() / float(_frameBuffer->getTexHeight());
+	_boxShader->setUniform("texcrop", Math::Vector2d(texcropX, texcropY));
+	_boxShader->setUniform("flipY", false);
+
+	_boxShader->setUniform("offsetXY", _gameRect.getTopLeft());
+	_boxShader->setUniform("sizeWH", Math::Vector2d(_gameRect.getWidth(), _gameRect.getHeight()));
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 #endif
 #endif
 
@@ -527,6 +682,12 @@ void SurfaceSdlGraphicsManager::drawOverlay() {
 void SurfaceSdlGraphicsManager::updateScreen() {
 #ifdef USE_OPENGL
 	if (_opengl) {
+		if (_frameBuffer) {
+			_frameBuffer->detach();
+			glViewport(0, 0, _screen->w, _screen->h);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		}
+
 		if (_overlayVisible) {
 			if (_overlayDirty) {
 				updateOverlayTextures();
@@ -538,10 +699,28 @@ void SurfaceSdlGraphicsManager::updateScreen() {
 			drawOverlayOpenGLShaders();
 #endif
 		}
-		SDL_GL_SwapBuffers();
+		if (_frameBuffer) {
+#ifndef USE_OPENGL_SHADERS
+			drawFramebufferOpenGL();
+#else
+			drawFramebufferOpenGLShaders();
+#endif
+			SDL_GL_SwapBuffers();
+			_frameBuffer->attach();
+		} else {
+			SDL_GL_SwapBuffers();
+		}
 	} else
 #endif
 	{
+		if (_subScreen) {
+			SDL_Rect dstrect;
+			dstrect.x = _gameRect.getTopLeft().getX();
+			dstrect.y = _gameRect.getTopLeft().getY();
+			dstrect.w = _gameRect.getWidth();
+			dstrect.h = _gameRect.getHeight();
+			SDL_BlitSurface(_subScreen, NULL, _screen, &dstrect);
+		}
 		if (_overlayVisible) {
 			drawOverlay();
 		}
@@ -741,12 +920,23 @@ void SurfaceSdlGraphicsManager::closeOverlay() {
 	if (_overlayscreen) {
 		SDL_FreeSurface(_overlayscreen);
 		_overlayscreen = NULL;
+
+		if (_subScreen) {
+			SDL_FreeSurface(_subScreen);
+			_subScreen = nullptr;
+		}
+
 #ifdef USE_OPENGL
 		if (_opengl) {
 			if (_overlayNumTex > 0) {
 				glDeleteTextures(_overlayNumTex, _overlayTexIds);
 				delete[] _overlayTexIds;
 				_overlayNumTex = 0;
+			}
+
+			if (_frameBuffer) {
+				delete _frameBuffer;
+				_frameBuffer = nullptr;
 			}
 
 #ifdef USE_OPENGL_SHADERS
