@@ -96,15 +96,12 @@ GrimEngine::GrimEngine(OSystem *syst, uint32 gameFlags, GrimGameType gameType, C
 	g_imuse = nullptr;
 
 	//Set default settings
-	ConfMan.registerDefault("soft_renderer", false);
 	ConfMan.registerDefault("engine_speed", 60);
 	ConfMan.registerDefault("fullscreen", false);
 	ConfMan.registerDefault("show_fps", false);
 	ConfMan.registerDefault("use_arb_shaders", true);
 
 	_showFps = ConfMan.getBool("show_fps");
-
-	_softRenderer = true;
 
 	_mixer->setVolumeForSoundType(Audio::Mixer::kPlainSoundType, 192);
 	_mixer->setVolumeForSoundType(Audio::Mixer::kSFXSoundType, ConfMan.getInt("sfx_volume"));
@@ -220,22 +217,21 @@ LuaBase *GrimEngine::createLua() {
 }
 
 void GrimEngine::createRenderer() {
-#ifdef USE_OPENGL
-	_softRenderer = ConfMan.getBool("soft_renderer");
-#endif
+	Common::String type = ConfMan.get("renderer");
+	if (type == "opengl") {
+		_rendererType = GFX_DRIVER_OPENGL;
+	} else if (type == "opengl_shaders") {
+		_rendererType = GFX_DRIVER_OPENGL_SHADERS;
+	} else if (type == "software") {
+		_rendererType = GFX_DRIVER_TINYGL;
+	}
 
-	if (!_softRenderer && !g_system->hasFeature(OSystem::kFeatureOpenGL)) {
+	if (!_rendererType != GFX_DRIVER_TINYGL && !g_system->hasFeature(OSystem::kFeatureOpenGL)) {
 		warning("gfx backend doesn't support hardware rendering");
-		_softRenderer = true;
+		_rendererType = GFX_DRIVER_TINYGL;
 	}
 
-	if (_softRenderer) {
-		g_driver = CreateGfxTinyGL();
-#ifdef USE_OPENGL
-	} else {
-		g_driver = CreateGfxOpenGL();
-#endif
-	}
+	g_driver = CreateGfxDriver(_rendererType);
 }
 
 const char *GrimEngine::getUpdateFilename() {
@@ -319,7 +315,7 @@ Common::Error GrimEngine::run() {
 
 	// This flipBuffer() may make the OpenGL renderer show garbage instead of the splash,
 	// while the TinyGL renderer needs it.
-	if (_softRenderer)
+	if (_rendererType == GFX_DRIVER_TINYGL)
 		g_driver->flipBuffer();
 
 	LuaBase *lua = createLua();
