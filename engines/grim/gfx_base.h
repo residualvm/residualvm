@@ -307,6 +307,7 @@ protected:
 
 // Factory-like functions:
 
+GfxBase *CreateGfxOpenGLS();
 GfxBase *CreateGfxOpenGL();
 GfxBase *CreateGfxTinyGL();
 

@@ -159,6 +159,7 @@ void registerDefaults() {
 	ConfMan.registerDefault("fullscreen", false);
 	ConfMan.registerDefault("soft_renderer", false);
 	ConfMan.registerDefault("show_fps", false);
+	ConfMan.registerDefault("shaders", false);
 
 	// Sound & Music
 	ConfMan.registerDefault("music_volume", 192);
