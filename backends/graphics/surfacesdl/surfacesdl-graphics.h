@@ -141,6 +141,7 @@ protected:
 	bool _opengl;
 #endif
 	bool _fullscreen;
+	uint _desktopW, _desktopH;
 
 	// overlay
 	SDL_Surface *_overlayscreen;

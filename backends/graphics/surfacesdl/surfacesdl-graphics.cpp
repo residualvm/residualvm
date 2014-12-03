@@ -62,6 +62,9 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	, _boxShader(nullptr), _boxVerticesVBO(0)
 #endif
 	{
+	const SDL_VideoInfo *vi = SDL_GetVideoInfo();
+	_desktopW = vi->current_w;
+	_desktopH = vi->current_h;
 }
 
 SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
@@ -197,6 +200,12 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 
 	if (_fullscreen)
 		sdlflags |= SDL_FULLSCREEN;
+
+	// If the game supports arbitrary resolutions, use the desktop mode as the fullscreen mode
+	if (_fullscreen && g_engine->hasFeature(Engine::kSupportsArbitraryResolutions)) {
+		screenW = _desktopW;
+		screenH = _desktopH;
+	}
 
 	_screen = SDL_SetVideoMode(screenW, screenH, bpp, sdlflags);
 #ifdef USE_OPENGL
