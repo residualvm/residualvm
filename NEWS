@@ -1,15 +1,19 @@
 
 0.2.0 (2014-12-XX)
 	New Games:
-	- Escape from Monkey Island full game and demo supported.
 	- Myst III game supported.
 
 	General:
 	- Improved TinyGL renderer.
-	- Improved Fullscreen mode, see README.mt file.
+	- Improved Fullscreen mode, see README.md file.
 
 	Grim fixes:
-	- ...
+	- Shadow only rendered on stairs outside the DOD (#741)
+	- Crash upon entering the Lola Engine Room Set (#843)
+	- Year 4 - Character stuck on Aztec Temple (#861)
+	- [Tim plays GRIM] Can see shirt through glottis' open mouth (#887)
+	- crash during animation of the guy at the photo-finish booth (#1039)
+	- Crash when entering Domino's office (#1115)
 
 0.1.1 (2013-02-10)
 	New features:

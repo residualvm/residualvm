@@ -5,18 +5,14 @@ Common
  * Switching full-screen/windowed with alt-enter might crash ResidualVM
  * Running fullscreen in widescreen monitors might stretch the image
    You can try solve issue by using config file option: "fullscreen_res".
-   See README.mt file for more information.
+   See README.md file for more information.
 
 Grim
 ----
  * Characters might pop into place at times
  * Some animations will show their initial state at the end
- * TinyGL gfx glitch prevent render boxes on Don's computer
-   See issue #1114
-
-EMI
----
- * PS2 version of game is not well supported and contains several issues
+ * TinyGL (software renderer) glitch prevent rendering boxes
+   on Don's computer, see issue #1114
 
 MYST III
 --------
