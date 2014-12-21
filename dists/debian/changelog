@@ -1,5 +1,18 @@
-residualvm (0.3.0-1) stable; urgency=low
+residualvm (0.2.0-1) stable; urgency=low
 
   * Release build.
 
  -- Pawel Kolodziejski <aquadran@residualvm.org>
+
+residualvm (0.1.1-1) stable; urgency=low
+
+  * Release build.
+
+ -- Pawel Kolodziejski <aquadran@residualvm.org>
+
+residualvm (0.1.0-1) stable; urgency=low
+
+  * Release build.
+
+ -- Pawel Kolodziejski <aquadran@residualvm.org>
+
