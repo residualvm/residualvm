@@ -19,8 +19,8 @@ Architecture: any
 Depends: ${shlibs:Depends}
 Description: Interpreter for several 3D games
  ResidualVM is a cross-platform 3D game interpreter which allows you to
- play LucasArts' LUA-based 3D adventures: Grim Fandango and
- Escape from Monkey Island, provided you already have their data files.
+ play LucasArts' LUA-based 3D adventure game: Grim Fandango, plus
+ Myst III game, provided you already have their data files.
  .
  ResidualVM just replaces the executables shipped with the games,
  allowing you to play them on systems for which they were never designed!
