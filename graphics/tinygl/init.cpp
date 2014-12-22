@@ -27,7 +27,6 @@
  */
 
 #include "graphics/tinygl/zgl.h"
-#include "graphics/tinygl/zblit.h"
 
 namespace TinyGL {
 
@@ -218,15 +217,6 @@ void glInit(void *zbuffer1, int textureSize) {
 	c->depth_test = 0;
 
 	c->color_mask = (1 << 24) | (1 << 16) | (1 << 8) | (1 << 0);
-
-	const int kDrawCallMemory = 5 * 1024 * 1024;
-
-	c->_currentAllocatorIndex = 0;
-	c->_drawCallAllocator[0].initialize(kDrawCallMemory);
-	c->_drawCallAllocator[1].initialize(kDrawCallMemory);
-	c->_enableDirtyRectangles = false;
-
-	Graphics::Internal::tglBlitSetScissorRect(0, 0, c->fb->xsize, c->fb->ysize);
 }
 
 void glClose() {

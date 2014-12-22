@@ -308,7 +308,6 @@ Common::Error GrimEngine::run() {
 	bool fullscreen = ConfMan.getBool("fullscreen");
 	createRenderer();
 	g_driver->setupScreen(640, 480, fullscreen);
-	g_driver->loadEmergFont();
 
 	if (getGameType() == GType_MONKEY4 && SearchMan.hasFile("AMWI.m4b")) {
 		// Play EMI Mac Aspyr logo
@@ -564,7 +563,7 @@ void GrimEngine::updateDisplayScene() {
 				if (frame != _prevSmushFrame) {
 					_prevSmushFrame = g_movie->getFrame();
 					g_driver->drawMovieFrame(g_movie->getX(), g_movie->getY());
-					if (_showFps)
+					if (_showFps && _mode != DrawMode)
 						g_driver->drawEmergString(550, 25, _fps, Color(255, 255, 255));
 				} else
 					_doFlip = false;

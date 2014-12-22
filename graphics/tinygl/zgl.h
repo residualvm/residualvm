@@ -31,14 +31,10 @@
 
 #include "common/util.h"
 #include "common/textconsole.h"
-#include "common/array.h"
-#include "common/list.h"
 
 #include "graphics/tinygl/gl.h"
 #include "graphics/tinygl/zbuffer.h"
 #include "graphics/tinygl/zmath.h"
-#include "graphics/tinygl/zblit.h"
-#include "graphics/tinygl/zdirtyrect.h"
 
 namespace TinyGL {
 
@@ -377,17 +373,6 @@ struct GLContext {
 	int color_mask;
 
 	Common::Rect _scissorRect;
-
-	bool _enableDirtyRectangles;
-
-	// blit test
-	Common::List<Graphics::BlitImage *> _blitImages;
-
-	// Draw call queue
-	Common::List<Graphics::DrawCall *> _drawCallsQueue;
-	Common::List<Graphics::DrawCall *> _previousFrameDrawCallsQueue;
-	int _currentAllocatorIndex;
-	LinearAllocator _drawCallAllocator[2];
 };
 
 extern GLContext *gl_ctx;
@@ -423,8 +408,6 @@ void gl_resizeImage(unsigned char *dest, int xsize_dest, int ysize_dest,
 					unsigned char *src, int xsize_src, int ysize_src);
 void gl_resizeImageNoInterpolate(unsigned char *dest, int xsize_dest, int ysize_dest,
 								 unsigned char *src, int xsize_src, int ysize_src);
-
-void tglIssueDrawCall(Graphics::DrawCall *drawCall);
 
 GLContext *gl_get_context();
 
