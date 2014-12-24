@@ -1,11 +1,11 @@
 
-0.2.0 (2014-12-XX)
+0.2.0 (2014-12-31)
 	New Games:
-	- Myst III game supported.
+	- Myst III game supported
 
 	General:
 	- Improved TinyGL renderer.
-	- Improved Fullscreen mode, see README.md file.
+	- Improved Fullscreen mode, see README.md file
 
 	Grim fixes:
 	- Shadow only rendered on stairs outside the DOD (#741)
