@@ -8,12 +8,12 @@
 	- Improved Fullscreen mode, see README.md file
 
 	Grim fixes:
-	- Shadow only rendered on stairs outside the DOD (#741)
-	- Crash upon entering the Lola Engine Room Set (#843)
-	- Year 4 - Character stuck on Aztec Temple (#861)
-	- [Tim plays GRIM] Can see shirt through glottis' open mouth (#887)
-	- crash during animation of the guy at the photo-finish booth (#1039)
-	- Crash when entering Domino's office (#1115)
+	- Fixed: Shadow only rendered on stairs outside the DOD (#741)
+	- Fixed crash upon entering the Lola Engine Room Set (#843)
+	- Fixed: Year 4 - Character stuck on Aztec Temple (#861)
+	- Fixed: [Tim plays GRIM] Can see shirt through glottis' open mouth (#887)
+	- Fixed crash during animation of the guy at the photo-finish booth (#1039)
+	- Fixed crash when entering Domino's office (#1115)
 
 0.1.1 (2013-02-10)
 	New features:
