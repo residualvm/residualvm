@@ -46,7 +46,8 @@ void start_script() {
 			lua_pushnil();
 			return;
 		} else {
-			lua_error("Bad argument to start_script");
+			// workaround for #1075: "GRIM: Lua error at mechanical tree in petrified forrest"
+			warning("Bad argument to start_script, ignoring");
 			return;
 		}
 	}
