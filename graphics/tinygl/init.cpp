@@ -228,7 +228,7 @@ void glClose() {
 	endSharedState(c);
 	gl_free(c->vertex);
 
-	gl_free(c);
+	delete c;
 }
 
 } // end of namespace TinyGL
