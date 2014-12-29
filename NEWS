@@ -4,7 +4,8 @@
 	- Myst III game supported
 
 	General:
-	- Improved TinyGL renderer.
+	- Added game data integrity check for Grim Fandango
+	- Improved TinyGL renderer
 	- Improved Fullscreen mode, see README.md file
 
 	Grim fixes:
