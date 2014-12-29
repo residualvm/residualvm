@@ -4,11 +4,11 @@
 	- Myst III game supported
 
 	General:
-	- Added game data integrity check for Grim Fandango
 	- Improved TinyGL renderer
 	- Improved Fullscreen mode, see README.md file
 
-	Grim fixes:
+	Grim changes:
+	- Added game data integrity check
 	- Fixed: Shadow only rendered on stairs outside the DOD (#741)
 	- Fixed crash upon entering the Lola Engine Room Set (#843)
 	- Fixed: Year 4 - Character stuck on Aztec Temple (#861)
