@@ -1,4 +1,11 @@
 
+0.2.1 (2015-xx-xx)
+	Grim fixes:
+	- Fixes for IRIX platform
+
+	Myst III fixes:
+	- Fixed crash when Polish subtitles are enabled
+
 0.2.0 (2014-12-31)
 	New Games:
 	- Myst III game supported
