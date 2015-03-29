@@ -1204,7 +1204,7 @@ void GfxOpenGLS::selectTexture(const Texture *texture) {
 	GLuint *textures = (GLuint *)texture->_texture;
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 
-	if (texture->_hasAlpha && g_grim->getGameType() == GType_MONKEY4) {
+	if (texture->_hasAlpha) {
 		glEnable(GL_BLEND);
 	}
 
