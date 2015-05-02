@@ -107,12 +107,35 @@ void Lua_V1::MakeTextObject() {
 	if (!lua_isstring(textObj)) {
 		return;
 	}
-
-	TextObject *textObject = new TextObject();
-	const char *line = lua_getstring(textObj);
-
-	textObject->setDefaults(&g_grim->_blastTextDefaults);
 	lua_Object tableObj = lua_getparam(2);
+
+	int layer = 0;
+	if (lua_istable(tableObj)) {
+		lua_Object keyObj;
+		lua_pushobject(tableObj);
+		lua_pushobject(lua_getref(refTextObjectLayer));
+		keyObj = lua_gettable();
+		if (keyObj) {
+			if (lua_isnumber(keyObj)) {
+				layer = lua_getnumber(keyObj);
+			}
+		}
+	}
+
+	// Re-use text object if the Id and the layer match
+	TextObject *textObject = nullptr;
+	const char *line = lua_getstring(textObj);
+	foreach (TextObject *t, TextObject::getPool()) {
+		if (t->getName().equals(line) && t->getLayer() == layer) {
+			textObject = t;
+			break;
+		}
+	}
+	if (textObject == nullptr) {
+		textObject = new TextObject();
+		textObject->setDefaults(&g_grim->_blastTextDefaults);
+	}
+
 	if (lua_istable(tableObj))
 		setTextObjectParams(textObject, tableObj);
 
