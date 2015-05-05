@@ -458,7 +458,11 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 			&& !g_engine->hasFeature(Engine::kSupportsArbitraryResolutions)
 			&& framebufferSupported) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		_frameBuffer = new Graphics::FrameBuffer(fbW, fbH);
+		if (_antialiasing) {
+			_frameBuffer = new Graphics::MultiSampleFrameBuffer(fbW, fbH);
+		} else {
+			_frameBuffer = new Graphics::FrameBuffer(fbW, fbH);
+		}
 		_frameBuffer->attach();
 	}
 #endif
