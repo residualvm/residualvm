@@ -165,6 +165,7 @@ private:
 	int _translationMode;
 	unsigned int _frameTimeCollection;
 
+public:
 	int refSystemTable;
 	int refTypeOverride;
 	int refOldConcatFallback;
