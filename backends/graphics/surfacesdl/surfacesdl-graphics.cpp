@@ -651,8 +651,9 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGLShaders() {
 
 	_boxShader->use();
 	_boxShader->setUniform("sizeWH", Math::Vector2d(BITMAP_TEXTURE_SIZE / (float)_overlayWidth, BITMAP_TEXTURE_SIZE / (float)_overlayHeight));
+	_boxShader->setUniform("texOffsetXY", Math::Vector2d(0.0, 0.0));
+	_boxShader->setUniform("texSizeWH", Math::Vector2d(1.0, 1.0));
 	_boxShader->setUniform("flipY", true);
-	_boxShader->setUniform("texcrop", Math::Vector2d(1.0, 1.0));
 
 	int curTexIdx = 0;
 	for (int y = 0; y < _overlayHeight; y += BITMAP_TEXTURE_SIZE) {
@@ -672,11 +673,12 @@ void SurfaceSdlGraphicsManager::drawFramebufferOpenGLShaders() {
 	_boxShader->use();
 	float texcropX = _frameBuffer->getWidth() / float(_frameBuffer->getTexWidth());
 	float texcropY = _frameBuffer->getHeight() / float(_frameBuffer->getTexHeight());
-	_boxShader->setUniform("texcrop", Math::Vector2d(texcropX, texcropY));
-	_boxShader->setUniform("flipY", false);
 
 	_boxShader->setUniform("offsetXY", _gameRect.getTopLeft());
 	_boxShader->setUniform("sizeWH", Math::Vector2d(_gameRect.getWidth(), _gameRect.getHeight()));
+	_boxShader->setUniform("texOffsetXY", Math::Vector2d(0.0, 0.0));
+	_boxShader->setUniform("texSizeWH", Math::Vector2d(texcropX, texcropY));
+	_boxShader->setUniform("flipY", false);
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindTexture(GL_TEXTURE_2D, 0);
