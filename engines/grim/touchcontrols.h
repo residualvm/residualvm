@@ -27,13 +27,10 @@
 
 namespace Grim {
 
-class GrimControls;
-
 class JoystickMode : public TouchControlsImpl {
 	public:
 	JoystickMode(uint32 width, uint32 height);
 	~JoystickMode();
-
 	static JoystickMode *create();
 
 	virtual void process(const Common::Event &ev) {}
@@ -43,7 +40,8 @@ class JoystickMode : public TouchControlsImpl {
 	virtual void pointerUp(uint32 pointerId, uint32 x, uint32 y);
 
 	private:
-	GrimControls *_gc;
+	class State;
+	State *_gc;
 };
 
 }
