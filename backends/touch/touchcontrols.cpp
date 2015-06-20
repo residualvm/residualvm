@@ -26,6 +26,9 @@
 #include "backends/touch/touchcontrols.h"
 #include "backends/touch/touch_impl.h"
 
+#include "graphics/opengl/texture.h"
+#include "graphics/opengles2/shader.h"
+
 class TouchpadMode : public TouchControlsImpl {
 	public:
 	TouchpadMode(uint32 width, uint32 height)
@@ -98,5 +101,37 @@ TouchControlsBackend::TouchControlsBackend()
 
 TouchControlsBackend::~TouchControlsBackend() {
 	delete _touchImpl;
+}
+
+static const GLfloat vertices[] = {
+	0.0, 0.0,
+	1.0, 0.0,
+	0.0, 1.0,
+	1.0, 1.0,
+};
+
+void TouchControlsImpl::drawRect(Graphics::Texture *tex, const Common::Rect& src,
+                                 const Math::Vector2d &dstPos, const Math::Vector2d &dstSize) {
+	static Graphics::Shader *boxShader = nullptr;
+	static GLuint boxVerticesVBO = 0;
+	if (!boxShader) {
+		// Setup the box shader used to render the controls
+		const char* attributes[] = { "position", "texcoord", NULL };
+		boxShader = Graphics::Shader::fromStrings("box", Graphics::BuiltinShaders::boxVertex, Graphics::BuiltinShaders::boxFragment, attributes);
+		boxVerticesVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, sizeof(vertices), vertices);
+		boxShader->enableVertexAttribute("position", boxVerticesVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
+		boxShader->enableVertexAttribute("texcoord", boxVerticesVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
+	}
+
+	boxShader->use();
+	boxShader->setUniform("offsetXY", Math::Vector2d(float(dstPos.getX()) / _screenW, float(dstPos.getY()) / _screenH));
+	boxShader->setUniform("sizeWH", Math::Vector2d(float(dstSize.getX()) / _screenW, float(dstSize.getY()) / _screenH));
+	boxShader->setUniform("texOffsetXY", Math::Vector2d(float(src.left) / tex->getTexWidth(), float(src.bottom) / tex->getTexHeight()));
+	boxShader->setUniform("texSizeWH", Math::Vector2d(float(src.width()) / tex->getTexWidth(), float(src.height()) / tex->getTexHeight()));
+	boxShader->setUniform1f("flipY", true);
+
+	glEnable(GL_BLEND);
+	glBindTexture(GL_TEXTURE_2D, tex->getTextureName());
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 

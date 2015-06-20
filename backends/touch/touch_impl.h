@@ -2,6 +2,14 @@
 #define BACKENDS_TOUCH_IMPL_H
 
 #include "common/events.h"
+#include "common/ptr.h"
+#include "common/rect.h"
+
+#include "math/vector2d.h"
+
+namespace Graphics {
+	class Texture;
+}
 
 class TouchControlsImpl {
 	public:
@@ -16,6 +24,8 @@ class TouchControlsImpl {
 
 	protected:
 	uint32 _screenW, _screenH;
+	void drawRect(Graphics::Texture *tex, const Common::Rect& src,
+	              const Math::Vector2d &dstPos, const Math::Vector2d &dstSize);
 };
 
 class NullTouchMode : public TouchControlsImpl {
