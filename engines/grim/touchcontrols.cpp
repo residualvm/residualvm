@@ -20,14 +20,17 @@
  *
  */
 
+#include "common/scummsys.h"
+
+#if defined(ENABLE_TOUCH)
+
 #include "common/archive.h"
 #include "common/events.h"
 #include "common/fs.h"
 #include "common/stream.h"
 #include "common/system.h"
 #include "image/tga.h"
-
-#if defined(ENABLE_TOUCH)
+#include "math/vector2d.h"
 
 #include "backends/touch/touchcontrols.h"
 #include "engines/grim/touchcontrols.h"
@@ -40,7 +43,6 @@ enum TouchArea {
 	kTouchAreaNone     = 0,
 	kTouchAreaJoystick = 1,
 	kTouchAreaCenter   = 2,
-	kTouchAreaRight    = 3,
 };
 enum { kNumPointers = 5 };
 enum KeyPressType { DOWN, UP, PRESS };
@@ -75,7 +77,7 @@ static TouchArea getTouchArea(float xPercent, float yPercent) {
 	else if (xPercent < 0.8)
 		return kTouchAreaCenter;
 	else
-		return kTouchAreaRight;
+		return kTouchAreaNone;
 }
 
 static void keyPress(const Common::KeyCode code, const KeyPressType type = PRESS) {
@@ -120,7 +122,7 @@ static Common::Rect clipFor(const Common::KeyCode &cs) {
 
 class JoystickMode::State {
 	public:
-	State();
+	State(uint32 width, uint32 height);
 	~State();
 
 	struct Pointer {
@@ -131,10 +133,19 @@ class JoystickMode::State {
 	};
 
 	Pointer _pointers[kNumPointers];
-	int _activePointers[4];
-	Common::KeyCode _joystickPressing, _centerPressing, _rightPressing;
+	int _activePointers[3];
+	Common::KeyCode _joystickPressing, _centerPressing;
 	int &pointerFor(TouchArea ta);
 	Graphics::Texture *_arrowsTexture;
+	struct Button {
+		Button() {}
+		Button(const Math::Vector2d &c, const Math::Vector2d &s, const Common::Rect &ip,
+		       const Common::KeyCode &k) : center(c), size(s), imgPos(ip), key(k) {}
+		Math::Vector2d center, size;
+		Common::Rect imgPos;
+		Common::KeyCode key;
+	};
+	Button _buttons[6];
 };
 
 static Graphics::Texture *loadBuiltinTexture(const char *filename) {
@@ -149,10 +160,9 @@ static Graphics::Texture *loadBuiltinTexture(const char *filename) {
 	return tex;
 }
 
-JoystickMode::State::State() :
+JoystickMode::State::State(uint32 width, uint32 height) :
 	_joystickPressing(Common::KEYCODE_INVALID),
-	_centerPressing(Common::KEYCODE_INVALID),
-	_rightPressing(Common::KEYCODE_INVALID) {
+	_centerPressing(Common::KEYCODE_INVALID) {
 
 	_arrowsTexture = loadBuiltinTexture("arrows.tga");
 
@@ -163,9 +173,24 @@ JoystickMode::State::State() :
 		pp.function = kTouchAreaNone;
 	}
 
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 3; ++i) {
 		_activePointers[i] = -1;
 	}
+
+
+	const uint32 gridSize = 160;
+	uint32 numW = (width  - 1 - gridSize) / gridSize;
+	uint32 numH = (height - 1 - gridSize) / gridSize;
+#define BUTTON(cx, cy, sx, sy, imgPos, key) \
+	Button(Math::Vector2d((cx) * gridSize + gridSize/2, (cy) * gridSize + gridSize/2), \
+	       Math::Vector2d(sx, sy), \
+	       Common::Rect imgPos, key)
+	_buttons[0] = BUTTON(numW - 1, numH / 2    , 128, 128, (0, 128, 128, 256), Common::KEYCODE_PAGEUP);
+	_buttons[1] = BUTTON(numW    , numH / 2    , 128, 128, (256, 128, 384, 256), Common::KEYCODE_PAGEDOWN);
+	_buttons[2] = BUTTON(numW - 1, numH / 2 + 1, 128, 128, (0, 0, 128, 128),   Common::KEYCODE_i);
+	_buttons[3] = BUTTON(numW    , numH / 2 + 1, 128, 128, (128, 0, 256, 128), Common::KEYCODE_p);
+	_buttons[4] = BUTTON(numW - 1, numH / 2 + 2, 128, 128, (256, 0, 384, 128), Common::KEYCODE_u);
+	_buttons[5] = BUTTON(numW    , numH / 2 + 2, 128, 128, (384, 0, 512, 128), Common::KEYCODE_l);
 }
 
 JoystickMode::State::~State() {
@@ -186,7 +211,7 @@ JoystickMode *JoystickMode::create() {
 
 JoystickMode::JoystickMode(uint32 width, uint32 height)
 	: TouchControlsImpl(width, height) {
-		_gc = new JoystickMode::State();
+		_gc = new JoystickMode::State(width, height);
 }
 
 JoystickMode::~JoystickMode() {
@@ -194,9 +219,14 @@ JoystickMode::~JoystickMode() {
 }
 
 void JoystickMode::draw() {
+	for (uint32 b = 0; b < ARRAYSIZE(_gc->_buttons); ++b) {
+		State::Button &bu = _gc->_buttons[b];
+		drawRect(_gc->_arrowsTexture, bu.imgPos, bu.center - bu.size / 2, bu.size);
+	}
+
 	if (_gc->_joystickPressing != Common::KEYCODE_INVALID) {
 		Common::Rect clip = clipFor(_gc->_joystickPressing);
-		drawRect(_gc->_arrowsTexture, clip, Math::Vector2d(2 * _screenW / 10, _screenH / 2), Math::Vector2d(64, 64));
+		drawRect(_gc->_arrowsTexture, clip, Math::Vector2d(1 * _screenW / 10, _screenH / 2), Math::Vector2d(64, 64));
 	}
 
 	if (_gc->_centerPressing != Common::KEYCODE_INVALID) {
@@ -204,10 +234,6 @@ void JoystickMode::draw() {
 		drawRect(_gc->_arrowsTexture, clip, Math::Vector2d(_screenW / 2, _screenH / 2), Math::Vector2d(64, 64));
 	}
 
-	if (_gc->_rightPressing != Common::KEYCODE_INVALID) {
-		Common::Rect clip = clipFor(_gc->_rightPressing);
-		drawRect(_gc->_arrowsTexture, clip, Math::Vector2d(8 * _screenW / 10, _screenH / 2), Math::Vector2d(64, 64));
-	}
 }
 
 void JoystickMode::pointerDown(uint32 ptr, uint32 x, uint32 y) {
@@ -223,7 +249,7 @@ void JoystickMode::pointerDown(uint32 ptr, uint32 x, uint32 y) {
 		pointers[ptr].function = touchArea;
 		pointers[ptr].startX = pointers[ptr].currentX = x;
 		pointers[ptr].startY = pointers[ptr].currentY = y;
-		// fall through to move case to initialize _{joy,center,right}Pressing
+		// fall through to move case to initialize _{joy,center}Pressing
 		pointerMove(ptr, x, y);
 	}
 }
@@ -257,26 +283,6 @@ void JoystickMode::pointerMove(uint32 ptr, uint32 x, uint32 y) {
 		_gc->_centerPressing = determineKey(dX, dY, Common::KEYCODE_RETURN);
 		return;
 
-	case kTouchAreaRight:
-		_gc->_rightPressing = determineKey(dX, dY, Common::KEYCODE_i);
-		switch (_gc->_rightPressing) {
-		case Common::KEYCODE_LEFT:
-		case Common::KEYCODE_RIGHT:
-			_gc->_rightPressing = _rightKeycodes[abs(dX / 100) % _numRightKeycodes];
-			break;
-
-		case Common::KEYCODE_UP:
-			_gc->_rightPressing = Common::KEYCODE_PAGEUP;
-			break;
-
-		case Common::KEYCODE_DOWN:
-			_gc->_rightPressing = Common::KEYCODE_PAGEDOWN;
-			break;
-
-		default:
-			break;
-		}
-
 	default:
 		return;
 	}
@@ -285,6 +291,15 @@ void JoystickMode::pointerMove(uint32 ptr, uint32 x, uint32 y) {
 void JoystickMode::pointerUp(uint32 ptr, uint32 x, uint32 y) {
 	if (ptr > kNumPointers)
 		return;
+
+	for (uint32 b = 0; b < ARRAYSIZE(_gc->_buttons); ++b) {
+		const State::Button &bu = _gc->_buttons[b];
+		if (   abs(bu.center.getX() - x) <= bu.size.getX()
+			&& abs(bu.center.getY() - y) <= bu.size.getY()) {
+			keyPress(bu.key, PRESS);
+			return;
+		}
+	}
 
 	State::Pointer *pointers = _gc->_pointers;
 	switch (pointers[ptr].function) {
@@ -303,17 +318,10 @@ void JoystickMode::pointerUp(uint32 ptr, uint32 x, uint32 y) {
 		_gc->_centerPressing = Common::KEYCODE_INVALID;
 		break;
 
-	case kTouchAreaRight:
-		_gc->pointerFor(kTouchAreaRight) = -1;
-		keyPress(_gc->_rightPressing);
-		_gc->_rightPressing = Common::KEYCODE_INVALID;
-		break;
-
 	case kTouchAreaNone:
 	default:
 		break;
 	}
-
 
 	pointers[ptr].active = false;
 	pointers[ptr].function = kTouchAreaNone;
