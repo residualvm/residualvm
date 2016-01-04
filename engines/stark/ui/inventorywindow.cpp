@@ -180,6 +180,7 @@ void InventoryWindow::onMouseMove(const Common::Point &pos) {
 		VisualImageXMG *cursorImage = StarkGameInterface->getCursorImage(_selectedInventoryItem);
 		_cursor->setCursorImage(cursorImage);
 		_cursor->setFading(hoveredItemAction == _selectedInventoryItem);
+		_cursor->setMouseHint("");
 	}
 }
 
