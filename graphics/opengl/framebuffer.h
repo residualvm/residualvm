@@ -33,22 +33,42 @@ public:
 	FrameBuffer(uint width, uint height);
 	FrameBuffer(GLuint texture_name, uint width, uint height, uint texture_width, uint texture_height);
 #ifdef AMIGAOS
-	~FrameBuffer() {}
+	virtual ~FrameBuffer() {}
 
 	void attach() {}
 	void detach() {}
 #else
-	~FrameBuffer();
+	virtual ~FrameBuffer();
 
-	void attach();
-	void detach();
+	virtual void attach();
+	virtual void detach();
 #endif
+
+protected:
+	GLuint getFrameBufferName() const { return _frameBuffer; }
 
 private:
 	void init();
 	GLuint _renderBuffers[2];
 	GLuint _frameBuffer;
 };
+
+#if defined(SDL_BACKEND) && !defined(AMIGAOS)
+class MultiSampleFrameBuffer : public FrameBuffer {
+public:
+	MultiSampleFrameBuffer(uint width, uint height);
+	~MultiSampleFrameBuffer();
+
+	virtual void attach();
+	virtual void detach();
+
+private:
+	void init();
+	GLuint _msFrameBufferId;
+	GLuint _msColorId;
+	GLuint _msDepthId;
+};
+#endif
 
 }
 
