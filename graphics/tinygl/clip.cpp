@@ -409,6 +409,7 @@ void gl_draw_triangle_fill(GLContext *c, GLVertex *p0, GLVertex *p1, GLVertex *p
 		count_triangles++;
 	}
 #endif
+	const Vector4 default_tex_coord = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 
 	if (c->color_mask == 0) {
 		// FIXME: Accept more than just 0 or 1.
@@ -420,7 +421,11 @@ void gl_draw_triangle_fill(GLContext *c, GLVertex *p0, GLVertex *p1, GLVertex *p
 	} else if (c->shadow_mode & 2) {
 		assert(c->fb->shadow_mask_buf);
 		c->fb->fillTriangleFlatShadow(&p0->zp, &p1->zp, &p2->zp);
-	} else if (c->texture_2d_enabled) {
+	} else if (c->texture_2d_enabled && (
+		p0->tex_coord != default_tex_coord ||
+		p1->tex_coord != default_tex_coord ||
+		p2->tex_coord != default_tex_coord
+	)) {
 #ifdef TINYGL_PROFILE
 		count_triangles_textured++;
 #endif
