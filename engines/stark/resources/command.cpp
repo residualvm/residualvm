@@ -360,8 +360,8 @@ Command *Command::opGoto2DLocation(const Common::String &level, const Common::St
 	return nullptr;
 }
 
-Command *Command::opRumbleScene(int32 unknown1, int32 unknown2) {
-	warning("(TODO: Implement) opRumble(%d, %d)", unknown1, unknown2);
+Command *Command::opRumbleScene(uint32 duration, bool slow) {
+	StarkUserInterface->startShake(duration, slow);
 
 	return nextCommand();
 }

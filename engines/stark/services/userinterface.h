@@ -68,6 +68,8 @@ public:
 	void inventoryOpen(bool open);
 	bool shouldExit() { return _exitGame; }
 
+	void startShake(uint32 duration, bool slow);
+
 	/** Start playing a FMV */
 	void requestFMVPlayback(const Common::String &name);
 

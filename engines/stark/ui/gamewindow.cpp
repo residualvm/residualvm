@@ -20,6 +20,8 @@
  *
  */
 
+#include "common/system.h"
+
 #include "engines/stark/ui/gamewindow.h"
 
 #include "engines/stark/scene.h"
@@ -43,13 +45,25 @@
 
 namespace Stark {
 
+static const int8 shakeOffsets[][2] = {
+	{-1, 0},
+	{0,  1},
+	{0, -1},
+	{1,  0},
+};
+
 GameWindow::GameWindow(Gfx::Driver *gfx, Cursor *cursor, ActionMenu *actionMenu, InventoryWindow *inventory) :
 		Window(gfx, cursor),
 	_actionMenu(actionMenu),
 	_inventory(inventory),
-	_objectUnderCursor(nullptr) {
+	_objectUnderCursor(nullptr),
+	_shakeEndMillis(0),
+	_shakeFrameCount(0),
+	_staticFrameCount(0),
+	_staticFrameInterval(1) {
 	_position = Common::Rect(Gfx::Driver::kGameViewportWidth, Gfx::Driver::kGameViewportHeight);
 	_position.translate(0, Gfx::Driver::kTopBorderHeight);
+	_originalPosition = _position;
 	_visible = true;
 }
 
@@ -67,6 +81,35 @@ void GameWindow::onRender() {
 
 		// Go for the next one
 		element++;
+	}
+
+	// Setup the screen shake
+	if (_shakeEndMillis) {
+		uint32 currentMillis = g_system->getMillis();
+		int32 remainingShakeMillis = _shakeEndMillis - currentMillis;
+
+		if (remainingShakeMillis > 0) {
+			// Hold translated position every x frames
+			if (!(_shakeFrameCount % 3)) {
+				_staticFrameCount++;
+
+				// Allow shake to continue after pause
+				if (!(_staticFrameCount % _staticFrameInterval)) {
+					_shakeFrameCount++;
+				}
+			} else {
+				// Translate window based on remaining time
+				_shakeFrameCount++;
+
+				uint8 shakeIndex = remainingShakeMillis % (sizeof(shakeOffsets) / 2);
+				_position = _originalPosition;
+				_position.grow(1);
+				_position.translate(shakeOffsets[shakeIndex][0], shakeOffsets[shakeIndex][1]);
+			}
+		} else {
+			// Toggle shake if time has elapsed
+			stopShake();
+		}
 	}
 }
 
@@ -219,6 +262,23 @@ void GameWindow::reset() {
 	_objectUnderCursor = nullptr;
 	_objectRelativePosition.x = 0;
 	_objectRelativePosition.y = 0;
+
+	stopShake();
+}
+
+void GameWindow::startShake(uint32 duration, bool slow) {
+	uint32 currentMillis = g_system->getMillis();
+
+	_shakeEndMillis = currentMillis + duration;
+	_originalPosition = _position;
+	_shakeFrameCount = 0;
+	_staticFrameCount = 0;
+	_staticFrameInterval = slow ? 7 : 3;
+}
+
+void GameWindow::stopShake() {
+	_shakeEndMillis = 0;
+	_position = _originalPosition;
 }
 
 } // End of namespace Stark
