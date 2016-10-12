@@ -44,6 +44,9 @@ public:
 	/** Clear the location dependent state */
 	void reset();
 
+	void startShake(uint32 duration, bool slow);
+	void stopShake();
+
 protected:
 	void onMouseMove(const Common::Point &pos) override;
 	void onClick(const Common::Point &pos) override;
@@ -59,6 +62,12 @@ protected:
 	Gfx::RenderEntryArray _renderEntries;
 	Resources::ItemVisual *_objectUnderCursor;
 	Common::Point _objectRelativePosition;
+
+	uint32 _shakeEndMillis;
+	Common::Rect _originalPosition;
+	uint32 _shakeFrameCount;
+	uint32 _staticFrameCount;
+	uint8 _staticFrameInterval;
 };
 
 } // End of namespace Stark

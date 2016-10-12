@@ -77,9 +77,9 @@ void UserInterface::init() {
 
 	_gameScreenWindows.push_back(_actionMenu);
 	_gameScreenWindows.push_back(_inventoryWindow);
-	_gameScreenWindows.push_back(_gameWindow);
 	_gameScreenWindows.push_back(_topMenu);
 	_gameScreenWindows.push_back(_dialogPanel);
+	_gameScreenWindows.push_back(_gameWindow);
 
 	// FMV Screen window
 	_fmvPlayer = new FMVPlayer(_gfx, _cursor);
@@ -218,5 +218,9 @@ void UserInterface::optionsOpen() {
 	event.type = Common::EVENT_MAINMENU;
 	g_system->getEventManager()->pushEvent(event);
 }
-} // End of namespace Stark
 
+void UserInterface::startShake(uint32 duration, bool slow) {
+	_gameWindow->startShake(duration, slow);
+}
+
+} // End of namespace Stark
