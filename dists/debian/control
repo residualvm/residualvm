@@ -5,7 +5,7 @@ Maintainer: Pawel Kolodziejski <aquadran@residualvm.org>
 Build-Depends: debhelper (>= 9)
               ,libasound2-dev [linux-any]
               ,libgl1-mesa-dev
-              ,libsdl1.2-dev
+              ,libsdl2-dev
               ,libmad0-dev
               ,libz-dev
               ,libmpeg2-4-dev

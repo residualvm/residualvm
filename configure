@@ -188,7 +188,7 @@ _stagingpath="staging"
 _win32path="C:/residualvm"
 _amigaospath="Games:ResidualVM"
 _staticlibpath=
-_sdlconfig=sdl-config
+_sdlconfig=sdl2-config
 _freetypeconfig=freetype-config
 _sdlpath="$PATH"
 _freetypepath="$PATH"
@@ -371,7 +371,7 @@ define_in_config_if_yes() {
 # TODO: small bit of code to test sdl usability
 find_sdlconfig() {
 	echo_n "Looking for sdl-config... "
-	sdlconfigs="$SDL_CONFIG:$_sdlconfig:sdl-config:sdl11-config:sdl12-config"
+	sdlconfigs="$SDL_CONFIG:$_sdlconfig:sdl2-config:sdl12-config:sdl11-config:sdl-config"
 	_sdlconfig=
 
 	IFS="${IFS=   }"; ac_save_ifs="$IFS"; IFS="$SEPARATOR"
@@ -2457,7 +2457,6 @@ case $_host_os in
 		;;
 	ps3)
 		# Force use of SDL and freetype from the ps3 toolchain
-		_sdlconfig=sdl2-config
 		_sdlpath="$PS3DEV/portlibs/ppu:$PS3DEV/portlibs/ppu/bin"
 		_freetypepath="$PS3DEV/portlibs/ppu:$PS3DEV/portlibs/ppu/bin"
 
