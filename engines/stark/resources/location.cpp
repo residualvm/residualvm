@@ -51,7 +51,8 @@ Location::Location(Object *parent, byte subType, uint16 index, const Common::Str
 		_canScroll(false),
 		_currentLayer(nullptr),
 		_hasActiveScroll(false),
-		_scrollFollowCharacter(false) {
+		_scrollFollowCharacter(false),
+		_rumbleFramesRemaining(0) {
 	_type = TYPE;
 }
 
