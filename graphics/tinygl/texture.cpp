@@ -148,6 +148,7 @@ void glInitTextures(GLContext *c) {
 	// textures
 	c->texture_2d_enabled = 0;
 	c->current_texture = find_texture(c, 0);
+	c->texture_internal_pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
 }
 
 void glopBindTexture(GLContext *c, GLParam *p) {
@@ -192,36 +193,15 @@ void glopTexImage2D(GLContext *c, GLParam *p) {
 	if (border != 0)
 		error("tglTexImage2D: invalid border");
 
-	Graphics::PixelFormat pf;
-	switch (format) {
-		case TGL_RGBA:
-		case TGL_RGB:
-#if defined(SCUMM_BIG_ENDIAN)
-			pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0);
-#elif defined(SCUMM_LITTLE_ENDIAN)
-			pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
-#endif
-			break;
-		case TGL_BGRA:
-		case TGL_BGR:
-#if defined(SCUMM_BIG_ENDIAN)
-			pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 0, 8, 16);
-#elif defined(SCUMM_LITTLE_ENDIAN)
-			pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 16, 8, 0, 24);
-#endif
-			break;
-		default:
-			break;
-	}
 	Graphics::PixelBuffer internal(
-		pf,
+		c->texture_internal_pf,
 		c->_textureSize * c->_textureSize,
 		DisposeAfterUse::NO
 	);
 	if (pixels != NULL) {
 		Graphics::PixelBuffer src(formatType2PixelFormat(format, type), pixels);
 		if (width != c->_textureSize || height != c->_textureSize) {
-			Graphics::PixelBuffer src_conv(pf, width * height, DisposeAfterUse::YES);
+			Graphics::PixelBuffer src_conv(c->texture_internal_pf, width * height, DisposeAfterUse::YES);
 			src_conv.copyBuffer(
 				0,
 				width * height,
