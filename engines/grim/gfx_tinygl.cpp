@@ -1127,48 +1127,47 @@ void GfxTinyGL::destroyTextObject(TextObject *text) {
 void GfxTinyGL::createTexture(Texture *texture, const uint8 *data, const CMap *cmap, bool clamp) {
 	texture->_texture = new TGLuint[1];
 	tglGenTextures(1, (TGLuint *)texture->_texture);
-	uint8 *texdata = new uint8[texture->_width * texture->_height * 4];
-	uint8 *texdatapos = texdata;
+	uint8 *texdata;
+	int texture_format;
 
 	if (cmap != nullptr) { // EMI doesn't have colour-maps
-		for (int y = 0; y < texture->_height; y++) {
-			for (int x = 0; x < texture->_width; x++) {
-				uint8 col = *data;
-				if (col == 0) {
-					memset(texdatapos, 0, 4); // transparent
-					if (!texture->_hasAlpha) {
-						texdatapos[3] = '\xff'; // fully opaque
-					}
+		unsigned int pixel_count = texture->_height * texture->_width;
+		Graphics::PixelFormat pf(4, 8, 8, 8, 8, 0, 8, 16, 24);
+		texdata = new uint8[pixel_count * pf.bytesPerPixel];
+		Graphics::PixelBuffer converted(pf, texdata);
+		for (unsigned int pixel = 0; pixel < pixel_count; pixel++, data++) {
+			uint8 col = *data;
+			uint8 a, r, g, b;
+			if (col == 0) {
+				if (texture->_hasAlpha) {
+					a = 0x00; // transparent
 				} else {
-					memcpy(texdatapos, cmap->_colors + 3 * (col), 3);
-					texdatapos[3] = '\xff'; // fully opaque
+					a = 0xff; // fully opaque
 				}
-				texdatapos += 4;
-				data++;
+				r = g = b = 0;
+			} else {
+				const uint8 *cmap_color = (const uint8 *) cmap->_colors + col * 3;
+				r = cmap_color[0];
+				g = cmap_color[1];
+				b = cmap_color[2];
+				a = 0xff; // fully opaque
 			}
+			converted.setPixelAt(pixel, a, r, g, b);
 		}
+		texture_format = BM_RGBA;
 	} else {
-#ifdef SCUMM_BIG_ENDIAN
-		// Copy and swap
-		for (int y = 0; y < texture->_height; y++) {
-			for (int x = 0; x < texture->_width; x++) {
-				uint32 pixel = (y * texture->_width + x) * texture->_bpp;
-				for (int b = 0; b < texture->_bpp; b++) {
-					texdata[pixel + b] = data[pixel + (texture->_bpp - 1) - b];
-				}
-			}
-		}
-#else
-		memcpy(texdata, data, texture->_width * texture->_height * texture->_bpp);
-#endif
+		int texdata_size = texture->_width * texture->_height * texture->_bpp;
+		texdata = new uint8[texdata_size];
+		memcpy(texdata, data, texdata_size);
+		texture_format = texture->_colorFormat;
 	}
 
 	TGLuint format = 0;
 //	TGLuint internalFormat = 0;
-	if (texture->_colorFormat == BM_RGBA) {
+	if (texture_format == BM_RGBA) {
 		format = TGL_RGBA;
 //		internalFormat = TGL_RGBA;
-	} else if (texture->_colorFormat == BM_BGRA) {
+	} else if (texture_format == BM_BGRA) {
 		format = TGL_BGRA;
 	} else {    // The only other colorFormat we load right now is BGR
 		format = TGL_BGR;
