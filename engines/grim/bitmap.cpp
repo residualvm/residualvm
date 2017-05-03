@@ -335,13 +335,12 @@ bool BitmapData::loadTile(Common::SeekableReadStream *o) {
 				uint8 r = (p & 0x001F) << 3;
 				uint8 a = (p & 0x8000) ? 0xFF : 0x00;
 				// Recombine the color components into a 32 bit RGB value
-				uint32 tmp = (r << 24) | (g << 16) | (b << 8) | a;
-				WRITE_BE_UINT32(&d[j], tmp);
+				d[j] = (a << 24) | (b << 16) | (g << 8) | r;
 			}
 		} else if (_bpp == 32) {
 			uint32 *d = (uint32 *)data[i];
 			for (int j = 0; j < _width * _height; ++j) {
-				o->read(&(d[j]), 4);
+				d[j] = o->readUint32LE();
 			}
 		}
 	}
