@@ -479,7 +479,11 @@ void GameState::StateData::syncWithSaveGame(Common::Serializer &s) {
 	}
 	assert(thumbnail && thumbnail->w == kThumbnailWidth && thumbnail->h == kThumbnailHeight);
 
-	s.syncBytes((byte *)thumbnail->getPixels(), kThumbnailWidth * kThumbnailHeight * 4);
+	uint32 remain = kThumbnailWidth * kThumbnailHeight;
+	uint32 *pixel = (uint32 *) thumbnail->getPixels();
+	while (remain--) {
+		s.syncAsUint32LE(*(pixel++));
+	}
 }
 
 void GameState::StateData::resizeThumbnail(Graphics::Surface *small) const {
