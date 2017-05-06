@@ -39,6 +39,7 @@
 #include "graphics/tinygl/zmath.h"
 #include "graphics/tinygl/zblit.h"
 #include "graphics/tinygl/zdirtyrect.h"
+#include "graphics/tinygl/texelbuffer.h"
 
 namespace TinyGL {
 
@@ -173,7 +174,7 @@ struct GLVertex {
 };
 
 struct GLImage {
-	Graphics::PixelBuffer pixmap;
+	Graphics::TexelBuffer *pixmap;
 	int xsize, ysize;
 };
 
@@ -278,6 +279,10 @@ struct GLContext {
 	// textures
 	GLTexture *current_texture;
 	int texture_2d_enabled;
+	int texture_mag_filter;
+	int texture_min_filter;
+	unsigned int texture_wrap_s;
+	unsigned int texture_wrap_t;
 
 	// shared state
 	GLSharedState shared_state;
