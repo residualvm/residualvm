@@ -29,6 +29,7 @@
 
 #include "graphics/colormasks.h"
 #include "graphics/pixelformat.h"
+#include "graphics/surface.h"
 
 namespace Graphics {
 
@@ -71,6 +72,13 @@ public:
 	 * @param buffer The raw buffer containing the pixels.
 	 */
 	PixelBuffer(const Graphics::PixelFormat &format, byte *buffer);
+	/**
+	 * Construct a PixelBuffer, using an already allocated byffer belonging to
+	 * an existing Surface.
+	 *
+	 * @param surface The Surface to use.
+	 */
+	PixelBuffer(Graphics::Surface &surface);
 	/**
 	 * Copy constructor.
 	 * The internal buffer will NOT be duplicated, it will be shared between the instances.

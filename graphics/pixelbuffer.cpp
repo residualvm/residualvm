@@ -21,6 +21,7 @@
  */
 
 #include "graphics/pixelbuffer.h"
+#include "graphics/surface.h"
 
 namespace Graphics {
 
@@ -39,6 +40,13 @@ PixelBuffer::PixelBuffer(const PixelFormat &format, int buffersize, DisposeAfter
 PixelBuffer::PixelBuffer(const PixelFormat &format, byte *buffer)
 	: _buffer(buffer),
 	  _format(format),
+	  _dispose(DisposeAfterUse::NO) {
+
+}
+
+PixelBuffer::PixelBuffer(Graphics::Surface &surface)
+	: _buffer((byte *) surface.getPixels()),
+	  _format(surface.format),
 	  _dispose(DisposeAfterUse::NO) {
 
 }
