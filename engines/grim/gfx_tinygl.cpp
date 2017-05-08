@@ -1124,57 +1124,18 @@ void GfxTinyGL::destroyTextObject(TextObject *text) {
 	}
 }
 
-void GfxTinyGL::createTexture(Texture *texture, const uint8 *data, const CMap *cmap, bool clamp) {
-	texture->_texture = new TGLuint[1];
+void GfxTinyGL::createTexture(Texture *texture, const CMap *cmap, bool clamp) {
+	TGLuint format;
+
+	TGLuint *textures = new TGLuint[1];
+	texture->_texture = (void *)textures;
 	tglGenTextures(1, (TGLuint *)texture->_texture);
-	uint8 *texdata;
-	int texture_format;
 
-	if (cmap != nullptr) { // EMI doesn't have colour-maps
-		unsigned int pixel_count = texture->_height * texture->_width;
-		Graphics::PixelFormat pf(4, 8, 8, 8, 8, 0, 8, 16, 24);
-		texdata = new uint8[pixel_count * pf.bytesPerPixel];
-		Graphics::PixelBuffer converted(pf, texdata);
-		for (unsigned int pixel = 0; pixel < pixel_count; pixel++, data++) {
-			uint8 col = *data;
-			uint8 a, r, g, b;
-			if (col == 0) {
-				if (texture->_hasAlpha) {
-					a = 0x00; // transparent
-				} else {
-					a = 0xff; // fully opaque
-				}
-				r = g = b = 0;
-			} else {
-				const uint8 *cmap_color = (const uint8 *) cmap->_colors + col * 3;
-				r = cmap_color[0];
-				g = cmap_color[1];
-				b = cmap_color[2];
-				a = 0xff; // fully opaque
-			}
-			converted.setPixelAt(pixel, a, r, g, b);
-		}
-		texture_format = BM_RGBA;
-	} else {
-		int texdata_size = texture->_width * texture->_height * texture->_bpp;
-		texdata = new uint8[texdata_size];
-		memcpy(texdata, data, texdata_size);
-		texture_format = texture->_colorFormat;
-	}
-
-	TGLuint format = 0;
-//	TGLuint internalFormat = 0;
-	if (texture_format == BM_RGBA) {
+	if (texture->format == Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24)) {
 		format = TGL_RGBA;
-//		internalFormat = TGL_RGBA;
-	} else if (texture_format == BM_BGRA) {
-		format = TGL_BGRA;
-	} else {    // The only other colorFormat we load right now is BGR
-		format = TGL_BGR;
-//		internalFormat = TGL_RGB;
-	}
+	} else
+		error("Unsupported texture format %s", texture->format.toString().c_str());
 
-	TGLuint *textures = (TGLuint *)texture->_texture;
 	tglBindTexture(TGL_TEXTURE_2D, textures[0]);
 
 	// TinyGL doesn't have issues with dark lines in EMI intro so doesn't need TGL_CLAMP_TO_EDGE
@@ -1183,8 +1144,7 @@ void GfxTinyGL::createTexture(Texture *texture, const uint8 *data, const CMap *c
 
 	tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_MAG_FILTER, TGL_LINEAR);
 	tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_MIN_FILTER, TGL_LINEAR);
-	tglTexImage2D(TGL_TEXTURE_2D, 0, 3, texture->_width, texture->_height, 0, format, TGL_UNSIGNED_BYTE, texdata);
-	delete[] texdata;
+	tglTexImage2D(TGL_TEXTURE_2D, 0, format, texture->w, texture->h, 0, format, TGL_UNSIGNED_BYTE, texture->getPixels());
 }
 
 void GfxTinyGL::selectTexture(const Texture *texture) {
@@ -1199,7 +1159,7 @@ void GfxTinyGL::selectTexture(const Texture *texture) {
 	if (g_grim->getGameType() != GType_MONKEY4) {
 		tglMatrixMode(TGL_TEXTURE);
 		tglLoadIdentity();
-		tglScalef(1.0f / texture->_width, 1.0f / texture->_height, 1);
+		tglScalef(1.0f / texture->w, 1.0f / texture->h, 1);
 	}
 }
 

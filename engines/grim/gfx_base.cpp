@@ -161,18 +161,16 @@ Math::Matrix4 GfxBase::makeProjMatrix(float fov, float nclip, float fclip) {
 }
 
 
-void GfxBase::createSpecialtyTexture(uint id, const uint8 *data, int width, int height) {
+void GfxBase::createSpecialtyTexture(uint id, uint8 *data, int width, int height) {
+	Graphics::PixelFormat pf(4, 8, 8, 8, 8, 0, 8, 16, 24);
 	if (id >= _numSpecialtyTextures)
 		return;
 	if (_specialtyTextures[id]._texture) {
 		destroyTexture(&_specialtyTextures[id]);
 	}
-	delete[] _specialtyTextures[id]._data;
-	_specialtyTextures[id]._width = width;
-	_specialtyTextures[id]._height = height;
-	_specialtyTextures[id]._bpp = 4;
-	_specialtyTextures[id]._colorFormat = BM_RGBA;
-	createTexture(&_specialtyTextures[id], data, nullptr, true);
+	_specialtyTextures[id].create(width, height, pf);
+	memcpy(_specialtyTextures[id].getPixels(), data, width * height * pf.bytesPerPixel);
+	createTexture(&_specialtyTextures[id], nullptr, true);
 }
 
 Bitmap *GfxBase::createScreenshotBitmap(const Graphics::PixelBuffer src, int w, int h, bool flipOrientation) {

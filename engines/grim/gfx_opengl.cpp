@@ -1454,63 +1454,21 @@ void GfxOpenGL::drawTextObject(const TextObject *text) {
 void GfxOpenGL::destroyTextObject(TextObject *text) {
 }
 
-void GfxOpenGL::createTexture(Texture *texture, const uint8 *data, const CMap *cmap, bool clamp) {
-	texture->_texture = new GLuint[1];
+void GfxOpenGL::createTexture(Texture *texture, const CMap *cmap, bool clamp) {
+	GLuint format;
+
+	GLuint *textures = new GLuint[1];
+	texture->_texture = (void *)textures;
 	glGenTextures(1, (GLuint *)texture->_texture);
-	uint8 *texdata = new uint8[texture->_width * texture->_height * 4];
-	uint8 *texdatapos = texdata;
 
-	if (cmap != nullptr) { // EMI doesn't have colour-maps
-		int bytes = 4;
-		for (int y = 0; y < texture->_height; y++) {
-			for (int x = 0; x < texture->_width; x++) {
-				uint8 col = *data;
-				if (col == 0) {
-					memset(texdatapos, 0, bytes); // transparent
-					if (!texture->_hasAlpha) {
-						texdatapos[3] = '\xff'; // fully opaque
-					}
-				} else {
-					memcpy(texdatapos, cmap->_colors + 3 * (col), 3);
-					texdatapos[3] = '\xff'; // fully opaque
-				}
-				texdatapos += bytes;
-				data++;
-			}
-		}
-	} else {
-#ifdef SCUMM_BIG_ENDIAN
-		// Copy and swap
-		for (int y = 0; y < texture->_height; y++) {
-			for (int x = 0; x < texture->_width; x++) {
-				uint32 pixel = (y * texture->_width + x) * texture->_bpp;
-				for (int b = 0; b < texture->_bpp; b++) {
-					texdata[pixel + b] = data[pixel + (texture->_bpp - 1) - b];
-				}
-			}
-		}
-#else
-		memcpy(texdata, data, texture->_width * texture->_height * texture->_bpp);
-#endif
-	}
-
-	GLuint format = 0;
-	GLuint internalFormat = 0;
-	if (texture->_colorFormat == BM_RGBA) {
+	if (texture->format == Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24)) {
 		format = GL_RGBA;
-		internalFormat = GL_RGBA;
-	} else if (texture->_colorFormat == BM_BGRA) {
-		format = GL_BGRA;
-		internalFormat = GL_RGBA;
-	} else {    // The only other colorFormat we load right now is BGR
-		format = GL_BGR;
-		internalFormat = GL_RGB;
-	}
+	} else
+		error("Unsupported texture format %s", texture->format.toString().c_str());
 
-	GLuint *textures = (GLuint *)texture->_texture;
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 
-	//Remove darkened lines in EMI intro
+	// Remove darkened lines in EMI intro
 	if (g_grim->getGameType() == GType_MONKEY4 && clamp) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1521,8 +1479,7 @@ void GfxOpenGL::createTexture(Texture *texture, const uint8 *data, const CMap *c
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, texture->_width, texture->_height, 0, format, GL_UNSIGNED_BYTE, texdata);
-	delete[] texdata;
+	glTexImage2D(GL_TEXTURE_2D, 0, format, texture->w, texture->h, 0, format, GL_UNSIGNED_BYTE, texture->getPixels());
 }
 
 void GfxOpenGL::selectTexture(const Texture *texture) {
@@ -1537,7 +1494,7 @@ void GfxOpenGL::selectTexture(const Texture *texture) {
 	if (g_grim->getGameType() != GType_MONKEY4) {
 		glMatrixMode(GL_TEXTURE);
 		glLoadIdentity();
-		glScalef(1.0f / texture->_width, 1.0f / texture->_height, 1);
+		glScalef(1.0f / texture->w, 1.0f / texture->h, 1);
 	}
 }
 

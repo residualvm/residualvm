@@ -101,7 +101,7 @@ public:
 	virtual void setupLight(Light *light, int lightId) override;
 	virtual void turnOffLight(int lightId) override;
 
-	virtual void createTexture(Texture *texture, const uint8 *data, const CMap *cmap, bool clamp) override;
+	virtual void createTexture(Texture *texture, const CMap *cmap, bool clamp) override;
 	virtual void selectTexture(const Texture *texture) override;
 	virtual void destroyTexture(Texture *texture) override;
 

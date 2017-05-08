@@ -966,8 +966,7 @@ void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face
 	bool textured = face->_hasTexture && !_currentShadowArray;
 	mud->_shader->setUniform("textured", textured ? GL_TRUE : GL_FALSE);
 	mud->_shader->setUniform("lightsEnabled", (face->_flags & EMIMeshFace::kNoLighting) ? false : _lightsEnabled);
-	mud->_shader->setUniform("swapRandB", _selectedTexture->_colorFormat == BM_BGRA || _selectedTexture->_colorFormat == BM_BGR888);
-	mud->_shader->setUniform("useVertexAlpha", _selectedTexture->_colorFormat == BM_BGRA);
+	mud->_shader->setUniform("useVertexAlpha", _selectedTexture->_hasAlpha);
 	mud->_shader->setUniform1f("meshAlpha", (model->_meshAlphaMode == Actor::AlphaReplace) ? model->_meshAlpha : 1.0f);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
@@ -1002,7 +1001,7 @@ void GfxOpenGLS::drawMesh(const Mesh *mesh) {
 
 		bool textured = face->hasTexture() && !_currentShadowArray;
 		actorShader->setUniform("textured", textured ? GL_TRUE : GL_FALSE);
-		actorShader->setUniform("texScale", Math::Vector2d(_selectedTexture->_width, _selectedTexture->_height));
+		actorShader->setUniform("texScale", Math::Vector2d(_selectedTexture->w, _selectedTexture->h));
 
 		glDrawArrays(GL_TRIANGLES, *(int *)face->_userData, faces);
 	}
@@ -1151,58 +1150,18 @@ void GfxOpenGLS::turnOffLight(int lightId) {
 }
 
 
-void GfxOpenGLS::createTexture(Texture *texture, const uint8 *data, const CMap *cmap, bool clamp) {
-	texture->_texture = new GLuint[1];
+void GfxOpenGLS::createTexture(Texture *texture, const CMap *cmap, bool clamp) {
+	GLuint format;
+
+	GLuint *textures = new GLuint[1];
+	texture->_texture = (void *)textures;
 	glGenTextures(1, (GLuint *)texture->_texture);
-	char *texdata = new char[texture->_width * texture->_height * 4];
-	char *texdatapos = texdata;
 
-	if (cmap != NULL) { // EMI doesn't have colour-maps
-		int bytes = 4;
-		for (int y = 0; y < texture->_height; y++) {
-			for (int x = 0; x < texture->_width; x++) {
-				uint8 col = *(const uint8 *)(data);
-				if (col == 0) {
-					memset(texdatapos, 0, bytes); // transparent
-					if (!texture->_hasAlpha) {
-						texdatapos[3] = '\xff'; // fully opaque
-					}
-				} else {
-					memcpy(texdatapos, cmap->_colors + 3 * (col), 3);
-					texdatapos[3] = '\xff'; // fully opaque
-				}
-				texdatapos += bytes;
-				data++;
-			}
-		}
-	} else {
-		memcpy(texdata, data, texture->_width * texture->_height * texture->_bpp);
-	}
-
-	GLuint format = 0;
-	GLuint internalFormat = 0;
-	if (texture->_colorFormat == BM_RGBA) {
+	if (texture->format == Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24)) {
 		format = GL_RGBA;
-		internalFormat = GL_RGBA;
-	} else if (texture->_colorFormat == BM_BGRA) {
-#ifdef USE_GLES2
-		format = GL_RGBA;
-		internalFormat = GL_RGBA;
-#else
-		format = GL_BGRA;
-		internalFormat = GL_RGBA;
-#endif
-	} else { // The only other colorFormat we load right now is BGR
-#ifdef USE_GLES2
-		format = GL_RGB;
-		internalFormat = GL_RGB;
-#else
-		format = GL_BGR;
-		internalFormat = GL_RGBA;
-#endif
-	}
+	} else
+		error("Unsupported texture format %s", texture->format.toString().c_str());
 
-	GLuint *textures = (GLuint *)texture->_texture;
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 
 	// Remove darkened lines in EMI intro
@@ -1216,8 +1175,7 @@ void GfxOpenGLS::createTexture(Texture *texture, const uint8 *data, const CMap *
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, texture->_width, texture->_height, 0, format, GL_UNSIGNED_BYTE, texdata);
-	delete[] texdata;
+	glTexImage2D(GL_TEXTURE_2D, 0, format, texture->w, texture->h, 0, format, GL_UNSIGNED_BYTE, texture->getPixels());
 }
 
 void GfxOpenGLS::selectTexture(const Texture *texture) {

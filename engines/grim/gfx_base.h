@@ -153,7 +153,7 @@ public:
 	virtual void setupLight(Light *light, int lightId) = 0;
 	virtual void turnOffLight(int lightId) = 0;
 
-	virtual void createTexture(Texture *texture, const uint8 *data, const CMap *cmap, bool clamp) = 0;
+	virtual void createTexture(Texture *texture, const CMap *cmap, bool clamp) = 0;
 	virtual void selectTexture(const Texture *texture) = 0;
 	virtual void destroyTexture(Texture *texture) = 0;
 
@@ -268,7 +268,7 @@ public:
 	virtual void updateEMIModel(const EMIModel *model) {}
 	virtual void destroyEMIModel(EMIModel *model) {}
 
-	virtual void createSpecialtyTexture(uint id, const uint8 *data, int width, int height);
+	virtual void createSpecialtyTexture(uint id, uint8 *data, int width, int height);
 	virtual void createSpecialtyTextureFromScreen(uint id, uint8 *data, int x, int y, int width, int height) = 0;
 
 	static Math::Matrix4 makeLookMatrix(const Math::Vector3d& pos, const Math::Vector3d& interest, const Math::Vector3d& up);
