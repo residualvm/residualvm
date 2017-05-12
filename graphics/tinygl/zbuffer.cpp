@@ -45,7 +45,7 @@ void memset_s(void *adr, int val, int count) {
 	p = (unsigned int *)adr;
 	v = val | (val << 16);
 
-	n = count >> 3;
+	n = count >> 2;
 	for (int i = 0; i < n; i++) {
 		p[0] = v;
 		p[1] = v;
