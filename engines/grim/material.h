@@ -24,22 +24,17 @@
 #define GRIM_MATERIAL_H
 
 #include "engines/grim/object.h"
+#include "graphics/surface.h"
 
 namespace Grim {
 
 class CMap;
 
-class Texture {
+class Texture : public Graphics::Surface{
 public:
-	Texture() :
-		_width(0), _height(0), _colorFormat(0), _bpp(0), _hasAlpha(false), _texture(nullptr), _data(nullptr), _isShared(false) {};
-	int _width;
-	int _height;
-	int _colorFormat;
-	int _bpp;
+	Texture() : Surface(), _hasAlpha(false), _texture(nullptr), _isShared(false) {};
 	bool _hasAlpha;
 	void *_texture;
-	uint8 *_data;
 	bool _isShared;
 };
 

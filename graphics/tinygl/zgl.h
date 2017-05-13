@@ -278,6 +278,7 @@ struct GLContext {
 	// textures
 	GLTexture *current_texture;
 	int texture_2d_enabled;
+	Graphics::PixelFormat texture_internal_pf;
 
 	// shared state
 	GLSharedState shared_state;

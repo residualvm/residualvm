@@ -161,18 +161,15 @@ Math::Matrix4 GfxBase::makeProjMatrix(float fov, float nclip, float fclip) {
 }
 
 
-void GfxBase::createSpecialtyTexture(uint id, const uint8 *data, int width, int height) {
+void GfxBase::createSpecialtyTexture(uint id, const Graphics::Surface &surface) {
 	if (id >= _numSpecialtyTextures)
 		return;
 	if (_specialtyTextures[id]._texture) {
 		destroyTexture(&_specialtyTextures[id]);
 	}
-	delete[] _specialtyTextures[id]._data;
-	_specialtyTextures[id]._width = width;
-	_specialtyTextures[id]._height = height;
-	_specialtyTextures[id]._bpp = 4;
-	_specialtyTextures[id]._colorFormat = BM_RGBA;
-	createTexture(&_specialtyTextures[id], data, nullptr, true);
+	_specialtyTextures[id].copyFrom(surface);
+	_specialtyTextures[id].convertToInPlace(Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
+	createTexture(&_specialtyTextures[id], nullptr, true);
 }
 
 Bitmap *GfxBase::createScreenshotBitmap(const Graphics::PixelBuffer src, int w, int h, bool flipOrientation) {
@@ -214,20 +211,27 @@ Bitmap *GfxBase::createScreenshotBitmap(const Graphics::PixelBuffer src, int w, 
 }
 
 void GfxBase::makeScreenTextures() {
-	//make a buffer big enough to hold any of the textures
-	uint8 *buffer = new uint8[256 * 256 * 4];
+	Bitmap *screenshot = getScreenshot(_screenWidth, _screenHeight, false);
+	const Graphics::PixelBuffer screenbuffer = screenshot->getData(0);
+	Graphics::Surface surface;
+	surface.init(
+		_screenWidth, _screenHeight,
+		_screenWidth * screenbuffer.getFormat().bytesPerPixel,
+		screenbuffer.getRawBuffer(),
+		screenbuffer.getFormat()
+	);
 
 	// TODO: Handle screen resolutions other than 640 x 480
-	createSpecialtyTextureFromScreen(0, buffer, 0, 0, 256, 256);
-	createSpecialtyTextureFromScreen(1, buffer, 256, 0, 256, 256);
-	createSpecialtyTextureFromScreen(2, buffer, 512, 0, 128, 128);
-	createSpecialtyTextureFromScreen(3, buffer, 512, 128, 128, 128);
-	createSpecialtyTextureFromScreen(4, buffer, 0, 256, 256, 256);
-	createSpecialtyTextureFromScreen(5, buffer, 256, 256, 256, 256);
-	createSpecialtyTextureFromScreen(6, buffer, 512, 256, 128, 128);
-	createSpecialtyTextureFromScreen(7, buffer, 512, 384, 128, 128);
+	createSpecialtyTexture(0, surface.getSubArea(Common::Rect(0, 0, 256, 256)));
+	createSpecialtyTexture(1, surface.getSubArea(Common::Rect(256, 0, 256, 256)));
+	createSpecialtyTexture(2, surface.getSubArea(Common::Rect(512, 0, 128, 128)));
+	createSpecialtyTexture(3, surface.getSubArea(Common::Rect(512, 128, 128, 128)));
+	createSpecialtyTexture(4, surface.getSubArea(Common::Rect(0, 256, 256, 256)));
+	createSpecialtyTexture(5, surface.getSubArea(Common::Rect(256, 256, 256, 256)));
+	createSpecialtyTexture(6, surface.getSubArea(Common::Rect(512, 256, 128, 128)));
+	createSpecialtyTexture(7, surface.getSubArea(Common::Rect(512, 384, 128, 128)));
 
-	delete[] buffer;
+	delete screenshot;
 }
 
 Texture *GfxBase::getSpecialtyTexturePtr(Common::String name) {

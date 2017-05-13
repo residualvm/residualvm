@@ -22,6 +22,7 @@
 
 #include "common/endian.h"
 #include "image/tga.h"
+#include "graphics/pixelbuffer.h"
 #include "graphics/surface.h"
 
 #include "engines/grim/grim.h"
@@ -51,7 +52,9 @@ void MaterialData::initGrim(Common::SeekableReadStream *data) {
 	if (tag != MKTAG('M','A','T',' '))
 		error("Invalid header for texture %s. Expected 'MAT ', got '%c%c%c%c'", _fname.c_str(),
 		                 (tag >> 24) & 0xFF, (tag >> 16) & 0xFF, (tag >> 8) & 0xFF, tag & 0xFF);
+	assert(_cmap);
 
+	Graphics::PixelFormat pf(4, 8, 8, 8, 8, 0, 8, 16, 24);
 	data->seek(12, SEEK_SET);
 	_numImages = data->readUint32LE();
 	_textures = new Texture*[_numImages];
@@ -68,52 +71,64 @@ void MaterialData::initGrim(Common::SeekableReadStream *data) {
 
 	data->seek(60 + _numImages * 40 + offset, SEEK_SET);
 	for (int i = 0; i < _numImages; ++i) {
-		Texture *t = _textures[i] = new Texture();
-		t->_width = data->readUint32LE();
-		t->_height = data->readUint32LE();
-		t->_hasAlpha = data->readUint32LE();
-		t->_texture = nullptr;
-		t->_colorFormat = BM_RGBA;
-		t->_data = nullptr;
-		if (t->_width == 0 || t->_height == 0) {
+		uint32 width, height;
+		Graphics::PixelBuffer buf;
+		unsigned int pixel_count;
+		bool hasAlpha;
+		Texture *t;
+
+		width = (uint16) data->readUint32LE();
+		height = (uint16) data->readUint32LE();
+		if (width == 0 || height == 0 ||
+		    width >= (1 << 16) || height >= (1 << 16)
+		) {
 			Debug::warning(Debug::Materials, "skip load texture: bad texture size (%dx%d) for texture %d of material %s",
-						   t->_width, t->_height, i, _fname.c_str());
+						   width, height, i, _fname.c_str());
+			for (; i < _numImages; i++)
+				_textures[i] = nullptr;
 			break;
 		}
-		t->_data = new uint8[t->_width * t->_height];
+		hasAlpha = data->readUint32LE();
 		data->seek(12, SEEK_CUR);
-		data->read(t->_data, t->_width * t->_height);
+		pixel_count = width * height;
+		t = new Texture();
+		t->create(width, height, pf);
+		t->_hasAlpha = hasAlpha;
+		buf = Graphics::PixelBuffer(*t);
+		for (unsigned int pixel = 0; pixel < pixel_count; pixel++) {
+			uint8 a, r, g, b;
+			uint8 color = data->readByte();
+			if (color == 0) {
+				if (hasAlpha) {
+					a = 0x00; // transparent
+				} else {
+					a = 0xff; // fully opaque
+				}
+				r = g = b = 0;
+			} else {
+				const uint8 *cmap_color = (const uint8 *) _cmap->_colors + color * 3;
+				r = cmap_color[0];
+				g = cmap_color[1];
+				b = cmap_color[2];
+				a = 0xff; // fully opaque
+			}
+			buf.setPixelAt(pixel, a, r, g, b);
+		}
+		_textures[i] = t;
 	}
 }
 
 void loadTGA(Common::SeekableReadStream *data, Texture *t) {
 	Image::TGADecoder *tgaDecoder = new Image::TGADecoder();
 	tgaDecoder->loadStream(*data);
-	const Graphics::Surface *tgaSurface = tgaDecoder->getSurface();
-
-	t->_width = tgaSurface->w;
-	t->_height = tgaSurface->h;
-	t->_texture = nullptr;
-
-	int bpp = tgaSurface->format.bytesPerPixel;
-	if (bpp == 4) {
-		t->_colorFormat = BM_BGRA;
-		t->_bpp = 4;
-		t->_hasAlpha = true;
-	} else {
-		t->_colorFormat = BM_BGR888;
-		t->_bpp = 3;
-		t->_hasAlpha = false;
-	}
-
-	assert(bpp == 3 || bpp == 4); // Assure we have 24/32 bpp
-
-	// Allocate room for the texture.
-	t->_data = new uint8[t->_width * t->_height * (bpp)];
-
-	// Copy the texture data, as the decoder owns the current copy.
-	memcpy(t->_data, tgaSurface->getPixels(), t->_width * t->_height * (bpp));
-
+	const Graphics::Surface *tgaSurface;
+	Graphics::Surface *convertedTgaSurface;
+	tgaSurface = tgaDecoder->getSurface();
+	t->_hasAlpha = tgaSurface->format.aBits();
+	convertedTgaSurface = tgaSurface->convertTo(Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
+	t->copyFrom(*convertedTgaSurface);
+	convertedTgaSurface->free();
+	delete convertedTgaSurface;
 	delete tgaDecoder;
 }
 
@@ -143,10 +158,7 @@ void MaterialData::initEMI(Common::SeekableReadStream *data) {
 				Common::SeekableReadStream *texData = g_resourceloader->openNewStreamFile(texFileNames[i].c_str(), true);
 				if (!texData) {
 					warning("Couldn't find tex-file: %s", texFileNames[i].c_str());
-					_textures[i]->_width = 0;
-					_textures[i]->_height = 0;
 					_textures[i]->_texture = new int(1); // HACK to avoid initializing.
-					_textures[i]->_data = nullptr;
 					continue;
 				}
 				loadTGA(texData, _textures[i]);
@@ -182,9 +194,9 @@ MaterialData::~MaterialData() {
 		Texture *t = _textures[i];
 		if (!t) continue;
 		if (t->_isShared) continue; // don't delete specialty textures
-		if (t->_width && t->_height && t->_texture)
+		if (t->_texture)
 			g_driver->destroyTexture(t);
-		delete[] t->_data;
+		t->free();
 		delete t;
 	}
 	delete[] _textures;
@@ -238,11 +250,14 @@ void Material::reload(CMap *cmap) {
 
 void Material::select() const {
 	Texture *t = _data->_textures[_currImage];
-	if (t && t->_width && t->_height) {
+	if (t) {
 		if (!t->_texture) {
-			g_driver->createTexture(t, (uint8 *)t->_data, _data->_cmap, _clampTexture);
-			delete[] t->_data;
-			t->_data = nullptr;
+			uint16 w = t->w, h = t->h;
+			g_driver->createTexture(t, _data->_cmap, _clampTexture);
+			t->free();
+			// free() zeroes wisth and height, but we need these when selecting the texture.
+			t->w = w;
+			t->h = h;
 		}
 		g_driver->selectTexture(t);
 	} else {

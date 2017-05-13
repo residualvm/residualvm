@@ -93,6 +93,7 @@ byte *GfxTinyGL::setupScreen(int screenW, int screenH, bool fullscreen) {
 	g_system->setWindowCaption("ResidualVM: Software 3D Renderer");
 
 	_pixelFormat = buf.getFormat();
+	debug("INFO: TinyGL front buffer pixel format: %s", _pixelFormat.toString().c_str());
 	_zb = new TinyGL::FrameBuffer(screenW, screenH, buf);
 	TinyGL::glInit(_zb, 256);
 	tglEnableDirtyRects(ConfMan.getBool("dirtyrects"));
@@ -1123,58 +1124,18 @@ void GfxTinyGL::destroyTextObject(TextObject *text) {
 	}
 }
 
-void GfxTinyGL::createTexture(Texture *texture, const uint8 *data, const CMap *cmap, bool clamp) {
-	texture->_texture = new TGLuint[1];
+void GfxTinyGL::createTexture(Texture *texture, const CMap *cmap, bool clamp) {
+	TGLuint format;
+
+	TGLuint *textures = new TGLuint[1];
+	texture->_texture = (void *)textures;
 	tglGenTextures(1, (TGLuint *)texture->_texture);
-	uint8 *texdata = new uint8[texture->_width * texture->_height * 4];
-	uint8 *texdatapos = texdata;
 
-	if (cmap != nullptr) { // EMI doesn't have colour-maps
-		for (int y = 0; y < texture->_height; y++) {
-			for (int x = 0; x < texture->_width; x++) {
-				uint8 col = *data;
-				if (col == 0) {
-					memset(texdatapos, 0, 4); // transparent
-					if (!texture->_hasAlpha) {
-						texdatapos[3] = '\xff'; // fully opaque
-					}
-				} else {
-					memcpy(texdatapos, cmap->_colors + 3 * (col), 3);
-					texdatapos[3] = '\xff'; // fully opaque
-				}
-				texdatapos += 4;
-				data++;
-			}
-		}
-	} else {
-#ifdef SCUMM_BIG_ENDIAN
-		// Copy and swap
-		for (int y = 0; y < texture->_height; y++) {
-			for (int x = 0; x < texture->_width; x++) {
-				uint32 pixel = (y * texture->_width + x) * texture->_bpp;
-				for (int b = 0; b < texture->_bpp; b++) {
-					texdata[pixel + b] = data[pixel + (texture->_bpp - 1) - b];
-				}
-			}
-		}
-#else
-		memcpy(texdata, data, texture->_width * texture->_height * texture->_bpp);
-#endif
-	}
-
-	TGLuint format = 0;
-//	TGLuint internalFormat = 0;
-	if (texture->_colorFormat == BM_RGBA) {
+	if (texture->format == Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24)) {
 		format = TGL_RGBA;
-//		internalFormat = TGL_RGBA;
-	} else if (texture->_colorFormat == BM_BGRA) {
-		format = TGL_BGRA;
-	} else {    // The only other colorFormat we load right now is BGR
-		format = TGL_BGR;
-//		internalFormat = TGL_RGB;
-	}
+	} else
+		error("Unsupported texture format %s", texture->format.toString().c_str());
 
-	TGLuint *textures = (TGLuint *)texture->_texture;
 	tglBindTexture(TGL_TEXTURE_2D, textures[0]);
 
 	// TinyGL doesn't have issues with dark lines in EMI intro so doesn't need TGL_CLAMP_TO_EDGE
@@ -1183,8 +1144,7 @@ void GfxTinyGL::createTexture(Texture *texture, const uint8 *data, const CMap *c
 
 	tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_MAG_FILTER, TGL_LINEAR);
 	tglTexParameteri(TGL_TEXTURE_2D, TGL_TEXTURE_MIN_FILTER, TGL_LINEAR);
-	tglTexImage2D(TGL_TEXTURE_2D, 0, 3, texture->_width, texture->_height, 0, format, TGL_UNSIGNED_BYTE, texdata);
-	delete[] texdata;
+	tglTexImage2D(TGL_TEXTURE_2D, 0, format, texture->w, texture->h, 0, format, TGL_UNSIGNED_BYTE, texture->getPixels());
 }
 
 void GfxTinyGL::selectTexture(const Texture *texture) {
@@ -1199,7 +1159,7 @@ void GfxTinyGL::selectTexture(const Texture *texture) {
 	if (g_grim->getGameType() != GType_MONKEY4) {
 		tglMatrixMode(TGL_TEXTURE);
 		tglLoadIdentity();
-		tglScalef(1.0f / texture->_width, 1.0f / texture->_height, 1);
+		tglScalef(1.0f / texture->w, 1.0f / texture->h, 1);
 	}
 }
 
@@ -1268,11 +1228,6 @@ Bitmap *GfxTinyGL::getScreenshot(int w, int h, bool useStored) {
 		_zb->copyToBuffer(src);
 		return createScreenshotBitmap(src, w, h, true);
 	}
-}
-
-void GfxTinyGL::createSpecialtyTextureFromScreen(uint id, uint8 *data, int x, int y, int width, int height) {
-	readPixels(x, y, width, height, data);
-	createSpecialtyTexture(id, data, width, height);
 }
 
 void GfxTinyGL::storeDisplay() {
@@ -1511,31 +1466,6 @@ void GfxTinyGL::drawPolygon(const PrimitiveObject *primitive) {
 	tglDepthMask(TGL_TRUE);
 	tglEnable(TGL_DEPTH_TEST);
 	tglEnable(TGL_LIGHTING);
-}
-
-void GfxTinyGL::readPixels(int x, int y, int width, int height, uint8 *buffer) {
-	assert(x >= 0);
-	assert(y >= 0);
-	assert(x < _screenWidth);
-	assert(y < _screenHeight);
-
-	uint8 r, g, b;
-	int pos = x + y * _screenWidth;
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			if ((j + x) >= _screenWidth || (i + y) >= _screenHeight) {
-				buffer[0] = buffer[1] = buffer[2] = 0;
-			} else {
-				_zb->readPixelRGB(pos + j, r, g, b);
-				buffer[0] = r;
-				buffer[1] = g;
-				buffer[2] = b;
-			}
-			buffer[3] = 255;
-			buffer += 4;
-		}
-		pos += _screenWidth;
-	}
 }
 
 void GfxTinyGL::setBlendMode(bool additive) {

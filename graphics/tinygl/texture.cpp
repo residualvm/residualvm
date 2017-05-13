@@ -32,6 +32,58 @@
 
 #include "graphics/tinygl/zgl.h"
 
+struct tglColorAssociation {
+	Graphics::PixelFormat pf;
+	TGLuint format;
+	TGLuint type;
+};
+
+// Declare endian-independent versions of endian-dependent types
+#if defined(SCUMM_LITLE_ENDIAN)
+#	define _TGL_UNSIGNED_INT_8_8_8_8	TGL_UNSIGNED_INT_8_8_8_8
+#	define _TGL_UNSIGNED_SHORT_5_5_5_1	TGL_UNSIGNED_SHORT_5_5_5_1
+#	define _TGL_UNSIGNED_SHORT_5_6_5	TGL_UNSIGNED_SHORT_5_6_5
+#	define _TGL_UNSIGNED_INT_8_8_8_8_REV	TGL_UNSIGNED_INT_8_8_8_8_REV
+#	define _TGL_UNSIGNED_SHORT_1_5_5_5_REV	TGL_UNSIGNED_SHORT_1_5_5_5_REV
+#	define _TGL_UNSIGNED_SHORT_5_6_5_REV	TGL_UNSIGNED_SHORT_5_6_5_REV
+#else
+#	define _TGL_UNSIGNED_INT_8_8_8_8	TGL_UNSIGNED_INT_8_8_8_8_REV
+#	define _TGL_UNSIGNED_SHORT_5_5_5_1	TGL_UNSIGNED_SHORT_1_5_5_5_REV
+#	define _TGL_UNSIGNED_SHORT_5_6_5	TGL_UNSIGNED_SHORT_5_6_5_REV
+#	define _TGL_UNSIGNED_INT_8_8_8_8_REV	TGL_UNSIGNED_INT_8_8_8_8
+#	define _TGL_UNSIGNED_SHORT_1_5_5_5_REV	TGL_UNSIGNED_SHORT_5_5_5_1
+#	define _TGL_UNSIGNED_SHORT_5_6_5_REV	TGL_UNSIGNED_SHORT_5_6_5
+#endif
+
+// When there are multiple possible types for a given PixelFormat, always put
+// TGL_UNSIGNED_BYTE before other variants to be consistent with OpenGLES
+// support.
+static const struct tglColorAssociation colorAssociationList[] = {
+	{Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24), TGL_RGBA, TGL_UNSIGNED_BYTE},
+	{Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24), TGL_RGBA, _TGL_UNSIGNED_INT_8_8_8_8},
+	{Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0), TGL_RGBA, _TGL_UNSIGNED_INT_8_8_8_8_REV},
+	{Graphics::PixelFormat(4, 8, 8, 8, 8, 16, 8, 0, 24), TGL_BGRA, TGL_UNSIGNED_BYTE},
+	{Graphics::PixelFormat(4, 8, 8, 8, 8, 16, 8, 0, 24), TGL_BGRA, _TGL_UNSIGNED_INT_8_8_8_8},
+	{Graphics::PixelFormat(4, 8, 8, 8, 8, 8, 16, 24, 0), TGL_BGRA, _TGL_UNSIGNED_INT_8_8_8_8_REV},
+	{Graphics::PixelFormat(3, 8, 8, 8, 0, 0, 8, 16, 0),  TGL_RGB,  TGL_UNSIGNED_BYTE},
+	{Graphics::PixelFormat(3, 8, 8, 8, 0, 16, 8, 0, 0),  TGL_BGR,  TGL_UNSIGNED_BYTE},
+	{Graphics::PixelFormat(2, 5, 5, 5, 1, 0, 5, 10, 15), TGL_RGBA, _TGL_UNSIGNED_SHORT_5_5_5_1},
+	{Graphics::PixelFormat(2, 5, 5, 5, 1, 11, 6, 1, 0),  TGL_RGBA, _TGL_UNSIGNED_SHORT_1_5_5_5_REV},
+	{Graphics::PixelFormat(2, 5, 5, 5, 1, 10, 5, 0, 15), TGL_BGRA, _TGL_UNSIGNED_SHORT_5_5_5_1},
+	{Graphics::PixelFormat(2, 5, 5, 5, 1, 1, 6, 11, 0),  TGL_BGRA, _TGL_UNSIGNED_SHORT_1_5_5_5_REV},
+	{Graphics::PixelFormat(2, 5, 6, 5, 0, 0, 5, 11, 0),  TGL_RGB,  _TGL_UNSIGNED_SHORT_5_6_5},
+	{Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0),  TGL_BGR,  _TGL_UNSIGNED_SHORT_5_6_5},
+	{Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0),  TGL_BGR,  _TGL_UNSIGNED_SHORT_5_6_5_REV},
+	{Graphics::PixelFormat(2, 5, 6, 5, 0, 0, 5, 11, 0),  TGL_RGB,  _TGL_UNSIGNED_SHORT_5_6_5_REV}
+};
+#define COLOR_ASSOCIATION_LIST_LENGTH (sizeof(colorAssociationList) / sizeof(*colorAssociationList))
+#undef _TGL_UNSIGNED_INT_8_8_8_8
+#undef _TGL_UNSIGNED_SHORT_5_5_5_1
+#undef _TGL_UNSIGNED_SHORT_5_6_5
+#undef _TGL_UNSIGNED_INT_8_8_8_8_REV
+#undef _TGL_UNSIGNED_SHORT_5_5_5_1_REV
+#undef _TGL_UNSIGNED_SHORT_5_6_5_REV
+
 namespace TinyGL {
 
 static GLTexture *find_texture(GLContext *c, unsigned int h) {
@@ -96,6 +148,7 @@ void glInitTextures(GLContext *c) {
 	// textures
 	c->texture_2d_enabled = 0;
 	c->current_texture = find_texture(c, 0);
+	c->texture_internal_pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
 }
 
 void glopBindTexture(GLContext *c, GLParam *p) {
@@ -112,6 +165,15 @@ void glopBindTexture(GLContext *c, GLParam *p) {
 	c->current_texture = t;
 }
 
+static inline const Graphics::PixelFormat formatType2PixelFormat(TGLuint format,  TGLuint type) {
+	for (unsigned int i = 0; i < COLOR_ASSOCIATION_LIST_LENGTH; i++) {
+		if (colorAssociationList[i].format == format &&
+		    colorAssociationList[i].type == type)
+			return colorAssociationList[i].pf;
+	}
+	error("TinyGL texture: format 0x%04x and type 0x%04x combination not supported", format, type);
+}
+
 void glopTexImage2D(GLContext *c, GLParam *p) {
 	int target = p[1].i;
 	int level = p[2].i;
@@ -123,110 +185,49 @@ void glopTexImage2D(GLContext *c, GLParam *p) {
 	int type = p[8].i;
 	byte *pixels = (byte *)p[9].p;
 	GLImage *im;
-	byte *pixels1;
-	bool do_free_after_rgb2rgba = false;
 
-	Graphics::PixelFormat sourceFormat;
-	switch (format) {
-		case TGL_RGBA:
-			sourceFormat = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
-			break;
-		case TGL_RGB:
-			sourceFormat = Graphics::PixelFormat(3, 8, 8, 8, 0, 0, 8, 16, 0);
-			break;
-		case TGL_BGRA:
-			sourceFormat = Graphics::PixelFormat(4, 8, 8, 8, 8, 16, 8, 0, 24);
-			break;
-		case TGL_BGR:
-			sourceFormat = Graphics::PixelFormat(3, 8, 8, 8, 0, 16, 8, 0, 0);
-			break;
-		default:
-			error("tglTexImage2D: Pixel format not handled.");
-	}
+	if (target != TGL_TEXTURE_2D)
+		error("tglTexImage2D: target not handled");
+	if (level < 0 || level >= MAX_TEXTURE_LEVELS)
+		error("tglTexImage2D: invalid level");
+	if (border != 0)
+		error("tglTexImage2D: invalid border");
 
-	Graphics::PixelFormat pf;
-	switch (format) {
-		case TGL_RGBA:
-		case TGL_RGB:
-#if defined(SCUMM_BIG_ENDIAN)
-			pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0);
-#elif defined(SCUMM_LITTLE_ENDIAN)
-			pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
-#endif
-			break;
-		case TGL_BGRA:
-		case TGL_BGR:
-#if defined(SCUMM_BIG_ENDIAN)
-			pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 0, 8, 16);
-#elif defined(SCUMM_LITTLE_ENDIAN)
-			pf = Graphics::PixelFormat(4, 8, 8, 8, 8, 16, 8, 0, 24);
-#endif
-			break;
-		default:
-			break;
-	}
-	int bytes = pf.bytesPerPixel;
-
-	// Simply unpack RGB into RGBA with 255 for Alpha.
-	// FIXME: This will need additional checks when we get around to adding 24/32-bit backend.
-	if (target == TGL_TEXTURE_2D && level == 0 && components == 3 && border == 0 && pixels != NULL) {
-		if (format == TGL_RGB || format == TGL_BGR) {
-			Graphics::PixelBuffer temp(pf, width * height, DisposeAfterUse::NO);
-			Graphics::PixelBuffer pixPtr(sourceFormat, pixels);
-
-			for (int i = 0; i < width * height; ++i) {
-				uint8 r, g, b;
-				pixPtr.getRGBAt(i, r, g, b);
-				temp.setPixelAt(i, 255, r, g, b);
-			}
-			pixels = temp.getRawBuffer();
-			do_free_after_rgb2rgba = true;
-		}
-	} else if ((format != TGL_RGBA &&
-		    format != TGL_RGB &&
-		    format != TGL_BGR &&
-		    format != TGL_BGRA) ||
-		    (type != TGL_UNSIGNED_BYTE &&
-		     type != TGL_UNSIGNED_INT_8_8_8_8_REV)) {
-		error("tglTexImage2D: combination of parameters not handled");
-	}
-
-	pixels1 = new byte[c->_textureSize * c->_textureSize * bytes];
+	Graphics::PixelBuffer internal(
+		c->texture_internal_pf,
+		c->_textureSize * c->_textureSize,
+		DisposeAfterUse::NO
+	);
 	if (pixels != NULL) {
+		Graphics::PixelBuffer src(formatType2PixelFormat(format, type), pixels);
 		if (width != c->_textureSize || height != c->_textureSize) {
+			Graphics::PixelBuffer src_conv(c->texture_internal_pf, width * height, DisposeAfterUse::YES);
+			src_conv.copyBuffer(
+				0,
+				width * height,
+				src
+			);
 			// we use interpolation for better looking result
-			gl_resizeImage(pixels1, c->_textureSize, c->_textureSize, pixels, width, height);
-			width = c->_textureSize;
-			height = c->_textureSize;
+			gl_resizeImage(
+				internal.getRawBuffer(), c->_textureSize, c->_textureSize,
+				src_conv.getRawBuffer(), width, height
+			);
 		} else {
-			memcpy(pixels1, pixels, c->_textureSize * c->_textureSize * bytes);
+			internal.copyBuffer(
+				0,
+				c->_textureSize * c->_textureSize,
+				src
+			);
 		}
-#if defined(SCUMM_BIG_ENDIAN)
-		if (type == TGL_UNSIGNED_INT_8_8_8_8_REV) {
-			for (int y = 0; y < height; y++) {
-				for (int x = 0; x < width; x++) {
-					uint32 offset = (y * width + x) * 4;
-					byte *data = pixels1 + offset;
-					WRITE_BE_UINT32(data, READ_LE_UINT32(data));
-				}
-			}
-		}
-#endif
 	}
 
 	c->current_texture->versionNumber++;
 	im = &c->current_texture->images[level];
-	im->xsize = width;
-	im->ysize = height;
+	im->xsize = c->_textureSize;
+	im->ysize = c->_textureSize;
 	if (im->pixmap)
 		im->pixmap.free();
-	im->pixmap = Graphics::PixelBuffer(pf, pixels1);
-
-	if (do_free_after_rgb2rgba) {
-		// pixels as been assigned to tmp.getRawBuffer() which was created with
-		// DisposeAfterUse::NO, therefore delete[] it
-		delete[] pixels;
-	}
+	im->pixmap = internal;
 }
 
 // TODO: not all tests are done
