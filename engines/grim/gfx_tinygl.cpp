@@ -1230,11 +1230,6 @@ Bitmap *GfxTinyGL::getScreenshot(int w, int h, bool useStored) {
 	}
 }
 
-void GfxTinyGL::createSpecialtyTextureFromScreen(uint id, uint8 *data, int x, int y, int width, int height) {
-	readPixels(x, y, width, height, data);
-	createSpecialtyTexture(id, data, width, height);
-}
-
 void GfxTinyGL::storeDisplay() {
 	TinyGL::tglPresentBuffer();
 	_zb->copyToBuffer(_storedDisplay);
@@ -1471,31 +1466,6 @@ void GfxTinyGL::drawPolygon(const PrimitiveObject *primitive) {
 	tglDepthMask(TGL_TRUE);
 	tglEnable(TGL_DEPTH_TEST);
 	tglEnable(TGL_LIGHTING);
-}
-
-void GfxTinyGL::readPixels(int x, int y, int width, int height, uint8 *buffer) {
-	assert(x >= 0);
-	assert(y >= 0);
-	assert(x < _screenWidth);
-	assert(y < _screenHeight);
-
-	uint8 r, g, b;
-	int pos = x + y * _screenWidth;
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			if ((j + x) >= _screenWidth || (i + y) >= _screenHeight) {
-				buffer[0] = buffer[1] = buffer[2] = 0;
-			} else {
-				_zb->readPixelRGB(pos + j, r, g, b);
-				buffer[0] = r;
-				buffer[1] = g;
-				buffer[2] = b;
-			}
-			buffer[3] = 255;
-			buffer += 4;
-		}
-		pos += _screenWidth;
-	}
 }
 
 void GfxTinyGL::setBlendMode(bool additive) {

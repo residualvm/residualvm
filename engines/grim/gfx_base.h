@@ -268,8 +268,7 @@ public:
 	virtual void updateEMIModel(const EMIModel *model) {}
 	virtual void destroyEMIModel(EMIModel *model) {}
 
-	virtual void createSpecialtyTexture(uint id, uint8 *data, int width, int height);
-	virtual void createSpecialtyTextureFromScreen(uint id, uint8 *data, int x, int y, int width, int height) = 0;
+	virtual void createSpecialtyTexture(uint id, const Graphics::Surface &surface);
 
 	static Math::Matrix4 makeLookMatrix(const Math::Vector3d& pos, const Math::Vector3d& interest, const Math::Vector3d& up);
 	static Math::Matrix4 makeProjMatrix(float fov, float nclip, float fclip);

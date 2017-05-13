@@ -2075,14 +2075,6 @@ void GfxOpenGLS::destroyMesh(const Mesh *mesh) {
 	delete mud;
 }
 
-static void readPixels(int x, int y, int width, int height, byte *buffer) {
-	byte *p = buffer;
-	for (int i = y; i < y + height; i++) {
-		glReadPixels(x, 479 - i, width, 1, GL_RGBA, GL_UNSIGNED_BYTE, p);
-		p += width * 4;
-	}
-}
-
 Bitmap *GfxOpenGLS::getScreenshot(int w, int h, bool useStored) {
 	Graphics::PixelBuffer src(Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24), _screenWidth * _screenHeight, DisposeAfterUse::YES);
 #ifndef USE_GLES2
@@ -2099,14 +2091,13 @@ Bitmap *GfxOpenGLS::getScreenshot(int w, int h, bool useStored) {
 	} else
 #endif
 	{
-		readPixels(0, 0, _screenWidth, _screenHeight, src.getRawBuffer());
+		byte *p = src.getRawBuffer();
+		for (int i = 0; i < _screenHeight; i++) {
+			glReadPixels(0, 479 - i, _screenWidth, 1, GL_RGBA, GL_UNSIGNED_BYTE, p);
+			p += _screenWidth * 4;
+		}
 	}
 	return createScreenshotBitmap(src, w, h, true);
-}
-
-void GfxOpenGLS::createSpecialtyTextureFromScreen(uint id, uint8 *data, int x, int y, int width, int height) {
-	readPixels(x, y, width, height, data);
-	createSpecialtyTexture(id, data, width, height);
 }
 
 void GfxOpenGLS::setBlendMode(bool additive) {

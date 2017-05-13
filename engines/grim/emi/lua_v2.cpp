@@ -500,25 +500,14 @@ void Lua_V2::ThumbnailFromFile() {
 		delete savedState;
 		return;
 	}
-	uint16 *data = new uint16[dataSize / 2];
+	Graphics::Surface screenshot;
+	screenshot.create(width, height, Graphics::createPixelFormat<565>());
+	uint16 *data = (uint16 *) screenshot.getPixels();
 	for (int l = 0; l < dataSize / 2; l++) {
 		data[l] = savedState->readLEUint16();
 	}
-	Graphics::PixelBuffer buf(Graphics::createPixelFormat<565>(), (byte *)data);
-	Bitmap *screenshot = new Bitmap(buf, width, height, "screenshot");
-	if (!screenshot) {
-		lua_pushnil();
-		warning("Lua_V2::ThumbnailFromFile: Could not restore screenshot from file %s", filename.c_str());
-		delete screenshot;
-		delete[] data;
-		delete savedState;
-		return;
-	}
-
-	screenshot->_data->convertToColorFormat(Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24));
-	g_driver->createSpecialtyTexture(index, screenshot->getData(0).getRawBuffer(), width, height);
-	delete screenshot;
-	delete[] data;
+	g_driver->createSpecialtyTexture(index, screenshot);
+	screenshot.free();
 	savedState->endSection();
 	delete savedState;
 

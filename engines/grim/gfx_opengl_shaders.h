@@ -215,7 +215,6 @@ protected:
 	void setupShaders();
 	GLuint compileShader(const char *vertex, const char *fragment);
 	GLuint compileShader(const char *shader) { return compileShader(shader, shader); }
-	void createSpecialtyTextureFromScreen(uint id, uint8 *data, int x, int y, int width, int height) override;
 
 private:
 	const Actor *_currentActor;

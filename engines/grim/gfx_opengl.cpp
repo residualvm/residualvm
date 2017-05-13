@@ -2040,19 +2040,6 @@ void GfxOpenGL::drawPolygon(const PrimitiveObject *primitive) {
 #endif
 }
 
-void GfxOpenGL::readPixels(int x, int y, int width, int height, uint8 *buffer) {
-	uint8 *p = buffer;
-	for (int i = y; i < y + height; i++) {
-		glReadPixels(x, _screenHeight - 1 - i, width, 1, GL_RGBA, GL_UNSIGNED_BYTE, p);
-		p += width * 4;
-	}
-}
-
-void GfxOpenGL::createSpecialtyTextureFromScreen(uint id, uint8 *data, int x, int y, int width, int height) {
-	readPixels(x, y, width, height, data);
-	createSpecialtyTexture(id, data, width, height);
-}
-
 void GfxOpenGL::setBlendMode(bool additive) {
 	if (additive) {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE);

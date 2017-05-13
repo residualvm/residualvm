@@ -124,9 +124,6 @@ public:
 
 	void setBlendMode(bool additive) override;
 
-protected:
-	void createSpecialtyTextureFromScreen(uint id, uint8 *data, int x, int y, int width, int height);
-
 private:
 	TinyGL::FrameBuffer *_zb;
 	Graphics::PixelFormat _pixelFormat;
@@ -136,8 +133,6 @@ private:
 	float _alpha;
 	const Actor *_currentActor;
 	TGLenum _depthFunc;
-
-	void readPixels(int x, int y, int width, int height, uint8 *buffer);
 };
 
 } // end of namespace Grim
