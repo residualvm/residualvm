@@ -170,14 +170,17 @@ void InventoryWindow::onMouseMove(const Common::Point &pos) {
 	if (_selectedInventoryItem == -1) {
 		if (hoveredItem) {
 			_cursor->setCursorType(Cursor::kActive);
+			_cursor->setMouseHint(hoveredItem->getName());
 		} else {
 			_cursor->setCursorType(Cursor::kDefault);
+			_cursor->setMouseHint("");
 		}
 		_cursor->setFading(false);
 	} else {
 		VisualImageXMG *cursorImage = StarkGameInterface->getCursorImage(_selectedInventoryItem);
 		_cursor->setCursorImage(cursorImage);
 		_cursor->setFading(hoveredItemAction == _selectedInventoryItem);
+		_cursor->setMouseHint("");
 	}
 
 	if (hoveredItem) {
