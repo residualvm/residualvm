@@ -47,6 +47,10 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 
 SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
 	closeOverlay();
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	_window->destroyWindow();
+#endif
 }
 
 bool SurfaceSdlGraphicsManager::hasFeature(OSystem::Feature f) {
@@ -378,8 +382,6 @@ void SurfaceSdlGraphicsManager::deinitializeRenderer() {
 
 	SDL_DestroyRenderer(_renderer);
 	_renderer = nullptr;
-
-	_window->destroyWindow();
 }
 
 SDL_Surface *SurfaceSdlGraphicsManager::SDL_SetVideoMode(int width, int height, int bpp, Uint32 flags) {
