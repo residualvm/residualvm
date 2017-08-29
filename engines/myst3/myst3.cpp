@@ -473,8 +473,12 @@ void Myst3Engine::processInput(bool lookOnly) {
 				break;
 			case Common::KEYCODE_RETURN:
 			case Common::KEYCODE_KP_ENTER:
-				_inputEnterPressed = true;
-				shouldInteractWithHoveredElement = true;
+				if (event.kbd.hasFlags(Common::KBD_ALT)) {
+					_gfx->toggleFullscreen();
+				} else {
+					_inputEnterPressed = true;
+					shouldInteractWithHoveredElement = true;
+				}
 				break;
 			case Common::KEYCODE_SPACE:
 				_inputSpacePressed = true;
@@ -517,6 +521,10 @@ void Myst3Engine::processInput(bool lookOnly) {
 			default:
 				break;
 			}
+		} else if (event.type == Common::EVENT_SCREEN_CHANGED) {
+			_gfx->computeScreenViewport();
+			_cursor->updatePosition(_eventMan->getMousePos());
+			_inventory->reflow();
 		}
 	}
 
@@ -1171,25 +1179,18 @@ void Myst3Engine::playSimpleMovie(uint16 id, bool fullframe, bool refreshAmbient
 
 	_drawables.push_back(&movie);
 
-	bool skip = false;
-
-	while (!skip && !shouldQuit() && !movie.endOfVideo()) {
+	while (!shouldQuit() && !movie.endOfVideo()) {
 		movie.update();
 
 		// Process events
-		Common::Event event;
-		while (getEventManager()->pollEvent(event))
-			if (event.type == Common::EVENT_MOUSEMOVE) {
-				if (_state->getViewType() == kCube)
-					_scene->updateCamera(event.relMouse);
+		processInput(true);
 
-				_cursor->updatePosition(event.mouse);
-
-			} else if (event.type == Common::EVENT_KEYDOWN) {
-				if (event.kbd.keycode == Common::KEYCODE_SPACE
-						|| event.kbd.keycode == Common::KEYCODE_ESCAPE)
-					skip = true;
-			}
+		// Handle skipping
+		if (_inputSpacePressed || _inputEscapePressed) {
+			// Consume the escape key press so the menu does not open
+			_inputEscapePressedNotConsumed = false;
+			break;
+		}
 
 		drawFrame();
 	}
