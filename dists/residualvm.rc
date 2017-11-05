@@ -12,7 +12,6 @@ IDI_ICON               ICON    DISCARDABLE     "icons/residualvm.ico"
 IDI_COUNT              ICON    DISCARDABLE     "icons/count.ico"
 
 residualvm-grim-patch.lab        FILE    "dists/engine-data/residualvm-grim-patch.lab"
-residualvm-emi-patch.m4b        FILE    "dists/engine-data/residualvm-emi-patch.m4b"
 #if ENABLE_MYST3 == STATIC_PLUGIN
 myst3.dat                        FILE    "dists/engine-data/myst3.dat"
 #endif

@@ -54,7 +54,6 @@ install -m644 -D icons/residualvm.svg %{buildroot}%{_datadir}/icons/hicolor/scal
 install -m644 -D dists/redhat/residualvm48.png %{buildroot}%{_datadir}/icons/hicolor/48x48/apps/residualvm.png
 install -m644 -D gui/themes/modern.zip %{buildroot}%{_datadir}/residualvm/modern.zip
 install -m644 -D dists/engine-data/residualvm-grim-patch.lab %{buildroot}%{_datadir}/residualvm/residualvm-grim-patch.lab
-install -m644 -D dists/engine-data/residualvm-emi-patch.m4b %{buildroot}%{_datadir}/residualvm/residualvm-emi-patch.m4b
 install -m644 -D dists/engine-data/myst3.dat %{buildroot}%{_datadir}/residualvm/myst3.dat
 desktop-file-install --vendor residualvm --dir=%{buildroot}/%{_datadir}/applications dists/residualvm.desktop
 
@@ -86,7 +85,6 @@ fi
 %{_datadir}/icons/hicolor/scalable/apps/residualvm.svg
 %{_datadir}/residualvm/modern.zip
 %{_datadir}/residualvm/residualvm-grim-patch.lab
-%{_datadir}/residualvm/residualvm-emi-patch.m4b
 %{_datadir}/residualvm/myst3.dat
 %{_mandir}/man6/residualvm.6*
 
