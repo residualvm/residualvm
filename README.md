@@ -15,8 +15,7 @@ ResidualVM: A 3D game interpreter
 
 ## 1. What is ResidualVM?
 ResidualVM is a game engine reimplementation that allows you
-to play 3D adventure games such as Grim Fandango, Escape from Monkey Island
-and Myst III.
+to play 3D adventure games such as Grim Fandango and Myst III.
 
 ResidualVM utilizes OpenGL for 3D graphics hardware acceleration.
 A software renderer is also included for machines without hardware OpenGL.
@@ -30,8 +29,7 @@ itself originally had a few unintentional ways to get the game stuck).
 
 ### 2.1. Which games does ResidualVM support? ###
 
-Currently ResidualVM supports Grim Fandango and Escape From Monkey Island,
-as well Myst III.
+Currently ResidualVM supports Grim Fandango as well Myst III.
 
 #### 2.1.1. GrimE-games support ####
 
@@ -39,9 +37,6 @@ Game                             | Status
 -------------------------------- | -------------------------
 Grim Fandango                    | Completable with glitches
 Grim Fandango (demo)             | Completable with glitches
-Escape From Monkey Island        | Completable with glitches
-Escape From Monkey Island (demo) | Completable with glitches
-Escape From Monkey Island (PS2)  | Untested
 
 #### 2.1.2. Other games support ####
 
@@ -60,8 +55,8 @@ http://wiki.residualvm.org/
 
 ### 3.1. Required files
 
-For both Grim Fandango and Escape from Monkey Island, you will need the original
-game files as well as the official update patch.
+For Grim Fandango, you will need the original game files as well
+as the official update patch.
 
 #### 3.1.1. Grim Fandango ####
 
@@ -71,41 +66,6 @@ directory. Specifically, you'll need:
   * A copy of the Grim Fandango 1.01 update EXE
         The patch can be downloaded from:
         http://demos.residualvm.org/patches/gfupd101.exe
-
-#### 3.1.2. Escape from Monkey Island ####
-
-You will need to copy the data files from your Escape from Monkey Island CDs
-into one directory. Specifically, you'll need:
-  * All of the .M4B files from both CDs.
-    One of the files is easy to miss:
-    local.m4b is located on CD1 in Monkey4/MonkeyInstall.
-        Note: The file voiceAll.m4b is repeated on both CDs. Use the
-              copy from the first CD, it contains all of the required
-              voice data
-  * The Textures directory, combined from both CDs. When copying, rename
-    the FullMonkeyMap.imt files to FullMonkeyMap1.imt and
-    FullMonkeyMap2.imt from CDs 1 and 2 respectively.
-  * The Movies directory from each CD
-  * A copy of the Escape from Monkey Monkey Island update EXE
-    You will need a patch specific to the EMI version you're using:
-  * "EFMI Installer" if you have the Mac version of EMI.
-
-Language   | URL
----------- |---------------------------------------------------------
-English    | http://demos.residualvm.org/patches/MonkeyUpdate.exe
-Portuguese | http://demos.residualvm.org/patches/MonkeyUpdate_BRZ.exe
-German     | http://demos.residualvm.org/patches/MonkeyUpdate_DEU.exe
-Spanish    | http://demos.residualvm.org/patches/MonkeyUpdate_ESP.exe
-French     | http://demos.residualvm.org/patches/MonkeyUpdate_FRA.exe
-Italian    | http://demos.residualvm.org/patches/MonkeyUpdate_ITA.exe
-
-#### 3.1.3. Escape from Monkey Island (PS2) ####
-
-You will need to copy the data files from your Escape from Monkey Island DVD
-into one directory. Specifically, you'll need:
-  * All of the m4b files from the DVD
-  * The Videos, demos, jambalay, lucre, melee and monkey directores
-
 
 ### 3.2. Running the game ###
 
@@ -273,8 +233,8 @@ these tool. Please use at your own risk!
 
 ### 7.1. Debugging GrimE Games ###
 
-The development console can be used to debug both Grim Fandango and Escape From
-Monkey Island. To enter the debug console, press Ctrl + d. Use the `help`
+The development console can be used to debug Grim Fandango.
+To enter the debug console, press Ctrl + d. Use the `help`
 command to display a list of the available commands.
 
 Some of the useful commands are:
@@ -288,7 +248,6 @@ set_renderer  | Select a renderer (software, OpenGL or OpenGL with shaders)
 
 The `jump` targets can be found at:
   * http://wiki.residualvm.org/index.php/Grim_Fandango_Debug_Mode#jump_targets
-  * http://wiki.residualvm.org/index.php/Escape_From_Monkey_Island_Debug_Mode
 
 ### 7.2. Debugging Grim Fandango ###
 
@@ -352,7 +311,7 @@ Please read the Wiki regarding how to report bugs properly first though:
 http://wiki.residualvm.org/index.php?title=Reporting_Bugs
 
 Remember to always have the following information in your bug reports:
-  * Information about the game (Escape from Monkey Island, PS2 version)
+  * Information about the game (Grim Fandango, Myst III)
   * Language of game (English, German, ...)
   * Platform and Compiler (Win32, Linux, Mac OS X, ...)
   * Bug details, including instructions on reproducing it
