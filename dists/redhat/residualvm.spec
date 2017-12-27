@@ -7,7 +7,7 @@
 #   Prologue information
 #------------------------------------------------------------------------------
 Name		: residualvm
-Version		: 0.3.0pre
+Version		: 0.3.1pre
 Release		: 1
 Summary		: Interpreter for several 3D games
 Group		: Amusements/Games
