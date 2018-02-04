@@ -876,10 +876,6 @@ void GrimEngine::mainLoop() {
 				handleJoyButton(type, event.joystick.button);
 		}
 
-		if (!(getGamePlatform() == Common::kPlatformPS2 && _mode == SmushMode && g_movie->isPlaying())) {
-			luaUpdate();
-		}
-
 		if (_mode != PauseMode) {
 			// Draw the display scene before doing the luaUpdate.
 			// This give a large performance boost as OpenGL stores commands
