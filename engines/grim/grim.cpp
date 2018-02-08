@@ -894,11 +894,6 @@ void GrimEngine::mainLoop() {
 			doFlip();
 		}
 
-		// We do not want the scripts to update while a movie is playing in the PS2-version.
-		if (!(getGamePlatform() == Common::kPlatformPS2 && _mode == SmushMode)) {
-			luaUpdate();
-		}
-
 		if (g_imuseState != -1) {
 			g_sound->setMusicState(g_imuseState);
 			g_imuseState = -1;
