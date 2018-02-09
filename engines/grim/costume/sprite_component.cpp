@@ -75,7 +75,7 @@ void SpriteComponent::init() {
 			_sprite->loadGrim(name, ",10,20,0,6,-4", getCMap());
 		}
 		else if (_name.equalsIgnoreCase("smok.mat,8,18,0,3,-4")) {
-			_sprite->loadGrim(name, ",8,18,0,4,-6", getCMap());
+			_sprite->loadGrim(name, ",8,18,2,4,-6", getCMap());
 		}
 		else {
 			_sprite->loadGrim(name, comma, getCMap());

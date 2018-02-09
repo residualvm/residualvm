@@ -876,7 +876,7 @@ void GrimEngine::mainLoop() {
 				handleJoyButton(type, event.joystick.button);
 		}
 
-		if (!(getGamePlatform() == Common::kPlatformPS2 && _mode == SmushMode && g_movie->isPlaying())) {
+		if (!(getGamePlatform() == Common::kPlatformPS2 && _mode == SmushMode)) {
 			luaUpdate();
 		}
 
