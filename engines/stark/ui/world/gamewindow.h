@@ -42,6 +42,9 @@ public:
 	GameWindow(Gfx::Driver *gfx, Cursor *cursor, ActionMenu *actionMenu, InventoryWindow *inventory);
 	virtual ~GameWindow();
 
+        /** Get current scaled window position */
+        Common::Rect getScaledPosition() const;
+
 	/** Clear the location dependent state */
 	void reset();
 

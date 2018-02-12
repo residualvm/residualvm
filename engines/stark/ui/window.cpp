@@ -38,6 +38,11 @@ Window::Window(Gfx::Driver *gfx, Cursor *cursor) :
 Window::~Window() {
 }
 
+Common::Rect Window::getScaledPosition() const {
+        return Common::Rect(_gfx->scaleWidthOriginalToCurrent(_position.width()),
+                            _gfx->scaleHeightOriginalToCurrent(_position.height()));
+}
+
 void Window::render() {
 	if (!_visible) {
 		return;
