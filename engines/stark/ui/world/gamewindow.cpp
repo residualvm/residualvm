@@ -53,10 +53,20 @@ GameWindow::GameWindow(Gfx::Driver *gfx, Cursor *cursor, ActionMenu *actionMenu,
 	_visible = true;
 
 	_fadeRenderer = _gfx->createFadeRenderer();
+
+        _actionMenu->setGameWindow(this);
 }
 
 GameWindow::~GameWindow() {
 	delete _fadeRenderer;
+}
+
+Common::Rect GameWindow::getScaledPosition() const {
+        Common::Rect scaledPosition = Window::getScaledPosition();
+
+        scaledPosition.translate(0, Gfx::Driver::kTopBorderHeight);
+
+        return scaledPosition;
 }
 
 void GameWindow::onRender() {
@@ -148,7 +158,7 @@ void GameWindow::onClick(const Common::Point &pos) {
 
 	if (_objectUnderCursor) {
 		if (singlePossibleAction != -1) {
-			StarkGameInterface->itemDoActionAt(_objectUnderCursor, singlePossibleAction, _objectRelativePosition);
+                        StarkGameInterface->itemDoActionAt(_objectUnderCursor, singlePossibleAction, _objectRelativePosition);
 		} else if (selectedInventoryItem == -1) {
 			_actionMenu->open(_objectUnderCursor, _objectRelativePosition);
 		}

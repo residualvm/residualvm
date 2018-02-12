@@ -39,9 +39,8 @@ Window::~Window() {
 }
 
 Common::Rect Window::getScaledPosition() const {
-  return Common::Rect(_gfx->scaleWidthOriginalToCurrent(Gfx::Driver::kGameViewportWidth),
-                      _gfx->scaleHeightOriginalToCurrent(Gfx::Driver::kGameViewportHeight));
-
+        return Common::Rect(_gfx->scaleWidthOriginalToCurrent(_position.width()),
+                            _gfx->scaleHeightOriginalToCurrent(_position.height()));
 }
 
 void Window::render() {

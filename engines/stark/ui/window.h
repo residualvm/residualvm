@@ -81,14 +81,15 @@ public:
 	/** Grab a screenshot of the window if it is visible */
 	Graphics::Surface *getScreenshot() const;
 
+        /** Get current scaled window position */
+        Common::Rect getScaledPosition() const;
+
 protected:
 	virtual void onMouseMove(const Common::Point &pos) {}
 	virtual void onClick(const Common::Point &pos) {}
 	virtual void onRightClick(const Common::Point &pos) {}
 	virtual void onDoubleClick(const Common::Point &pos) {}
 	virtual void onRender() = 0;
-
-        Common::Rect getScaledPosition() const;
 
 	Common::Point getRelativeMousePosition() const;
 
