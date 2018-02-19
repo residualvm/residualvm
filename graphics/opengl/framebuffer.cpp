@@ -158,7 +158,7 @@ void FrameBuffer::init() {
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	} else {
 		glBindRenderbuffer(GL_RENDERBUFFER, _renderBuffers[0]);
-		glRenderbufferStorage(GL_RENDERBUFFER, useDepthComponent24()?GL_DEPTH_COMPONENT24:GL_DEPTH_COMPONENT16, _texWidth, _texHeight);
+		glRenderbufferStorage(GL_RENDERBUFFER, useDepthComponent24() ? GL_DEPTH_COMPONENT24 : GL_DEPTH_COMPONENT16, _texWidth, _texHeight);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _renderBuffers[0]);
 
 		glBindRenderbuffer(GL_RENDERBUFFER, _renderBuffers[1]);
