@@ -118,6 +118,12 @@ protected:
 	virtual bool handleKbdMouse(Common::Event &event);
 
 	//@}
+ 
+	/**
+	 * Checks if mouse is locked or not.
+	 * Avoid to emulate a mouse movement from joystick if locked.
+	 */
+	bool isMouseLocked();
 
 	/**
 	 * Assigns the mouse coords to the mouse event. Furthermore notify the

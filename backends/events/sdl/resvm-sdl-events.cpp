@@ -25,24 +25,62 @@
 #if defined(SDL_BACKEND)
 
 #include "resvm-sdl-events.h"
+#include "graphics/cursorman.h"
+#include "engines/engine.h"
+
+// The maximum index of the joystick button to convert in mouse event
+#define JOY_TO_MOUSE_BUTTONS 1
 
 bool ResVmSdlEventSource::handleJoyButtonDown(SDL_Event &ev, Common::Event &event) {
-	event.type = Common::EVENT_JOYBUTTON_DOWN;
-	event.joystick.button = ev.jbutton.button;
-	return true;
+	// Engine doesn't support joystick -> emulate mouse events
+	if (g_engine)
+		if (!g_engine->hasFeature(Engine::kSupportsJoystick))
+			return SdlEventSource::handleJoyButtonDown(ev, event);
+	
+	// If mouse cursor is visible, emulates standard buttons of joystick as mouse
+	if (CursorMan.isVisible() && (ev.jbutton.button < JOY_TO_MOUSE_BUTTONS)) {
+		return SdlEventSource::handleJoyButtonDown(ev, event);
+	}
+	else {
+		event.type = Common::EVENT_JOYBUTTON_DOWN;
+		event.joystick.button = ev.jbutton.button;
+		return true;
+	}
 }
 
 bool ResVmSdlEventSource::handleJoyButtonUp(SDL_Event &ev, Common::Event &event) {
-	event.type = Common::EVENT_JOYBUTTON_UP;
-	event.joystick.button = ev.jbutton.button;
-	return true;
+	// Engine doesn't support joystick -> emulate mouse events
+	if (g_engine)
+		if (!g_engine->hasFeature(Engine::kSupportsJoystick))
+			return SdlEventSource::handleJoyButtonUp(ev, event);
+	
+	// If mouse cursor is visible, emulates standard buttons of joystick as mouse
+	if (CursorMan.isVisible() && (ev.jbutton.button < JOY_TO_MOUSE_BUTTONS)) {
+		return SdlEventSource::handleJoyButtonUp(ev, event);
+	}
+	else {
+		event.type = Common::EVENT_JOYBUTTON_UP;
+		event.joystick.button = ev.jbutton.button;
+		return true;
+	}
 }
 
 bool ResVmSdlEventSource::handleJoyAxisMotion(SDL_Event &ev, Common::Event &event) {
-	event.type = Common::EVENT_JOYAXIS_MOTION;
-	event.joystick.axis = ev.jaxis.axis;
-	event.joystick.position = ev.jaxis.value;
-	return true;
+	// Engine doesn't support joystick -> emulate mouse events
+	if (g_engine)
+			if (!g_engine->hasFeature(Engine::kSupportsJoystick))
+				return SdlEventSource::handleJoyAxisMotion(ev, event);
+	
+	// If mouse cursor is visible, emulates joystick movements as mouse
+	if (CursorMan.isVisible()) {
+		return SdlEventSource::handleJoyAxisMotion(ev, event);
+	}
+	else {
+		event.type = Common::EVENT_JOYAXIS_MOTION;
+		event.joystick.axis = ev.jaxis.axis;
+		event.joystick.position = ev.jaxis.value;
+		return true;
+	}
 }
 
 #endif

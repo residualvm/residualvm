@@ -62,6 +62,7 @@
 #define JOY_BUT_PERIOD 1
 #define JOY_BUT_SPACE 4
 #define JOY_BUT_F5 5
+#define JOY_BUT_VKEYBOARD 6
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 static uint32 convUTF8ToUTF32(const char *src) {
@@ -193,11 +194,19 @@ bool SdlEventSource::processMouseEvent(Common::Event &event, int x, int y, int r
 	return true;
 }
 
+
+bool SdlEventSource::isMouseLocked() {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	return SDL_GetRelativeMouseMode() == SDL_TRUE;
+#else
+	return SDL_GrabMode() == SDL_GRAB_ON;
+#endif
+}
+
 bool SdlEventSource::handleKbdMouse(Common::Event &event) {
 	// returns true if an event is generated
 	// Skip recording of these events
 	uint32 curTime = g_system->getMillis(true);
-
 	if (curTime >= _km.last_time + _km.delay_time) {
 
 		int16 oldKmX = _km.x;
@@ -288,12 +297,17 @@ bool SdlEventSource::handleKbdMouse(Common::Event &event) {
 			// - all velocities were originally chosen
 			// at a delay of 25, so that is the reference used here
 			// - note: operator order is important to avoid overflow
+			int relx = 0, rely = 0;
 			if (_km.modifier) {
-				_km.x += ((_km.x_vel / 10) * ((int16)_km.delay_time)) / speedFactor;
-				_km.y += ((_km.y_vel / 10) * ((int16)_km.delay_time)) / speedFactor;
+				relx = ((_km.x_vel / 10) * ((int16)_km.delay_time)) / speedFactor;
+				rely = ((_km.y_vel / 10) * ((int16)_km.delay_time)) / speedFactor;
 			} else {
-				_km.x += (_km.x_vel * ((int16)_km.delay_time)) / speedFactor;
-				_km.y += (_km.y_vel * ((int16)_km.delay_time)) / speedFactor;
+				relx = (_km.x_vel * ((int16)_km.delay_time)) / speedFactor;
+				rely = (_km.y_vel * ((int16)_km.delay_time)) / speedFactor;
+			}
+			if (!isMouseLocked()) {
+				_km.x += relx;
+				_km.y += rely;
 			}
 
 			if (_km.x < 0) {
@@ -320,9 +334,9 @@ bool SdlEventSource::handleKbdMouse(Common::Event &event) {
 				_graphicsManager->getWindow()->warpMouseInWindow((Uint16)(_km.x / MULTIPLIER), (Uint16)(_km.y / MULTIPLIER));
 			}
 
-			if (_km.x != oldKmX || _km.y != oldKmY) {
+			if (_km.x != oldKmX || _km.y != oldKmY || relx != 0 || rely != 0) {
 				event.type = Common::EVENT_MOUSEMOVE;
-				return processMouseEvent(event, _km.x / MULTIPLIER, _km.y / MULTIPLIER);
+				return processMouseEvent(event, _km.x / MULTIPLIER, _km.y / MULTIPLIER, relx / MULTIPLIER, rely / MULTIPLIER);
 			}
 		}
 	}
@@ -843,6 +857,9 @@ bool SdlEventSource::handleJoyButtonDown(SDL_Event &ev, Common::Event &event) {
 			event.kbd.keycode = Common::KEYCODE_F5;
 			event.kbd.ascii = mapKey(SDLK_F5, (SDLMod)ev.key.keysym.mod, 0);
 			break;
+		case JOY_BUT_VKEYBOARD: // Toggles virtual keyboard
+			event.type = Common::EVENT_VIRTUAL_KEYBOARD;
+			break;
 		}
 		return true;
 	}
@@ -873,6 +890,9 @@ bool SdlEventSource::handleJoyButtonUp(SDL_Event &ev, Common::Event &event) {
 		case JOY_BUT_F5:
 			event.kbd.keycode = Common::KEYCODE_F5;
 			event.kbd.ascii = mapKey(SDLK_F5, (SDLMod)ev.key.keysym.mod, 0);
+			break;
+		case JOY_BUT_VKEYBOARD: // Toggles virtual keyboard
+			// Handled in key down
 			break;
 		}
 		return true;

@@ -92,9 +92,11 @@ Math::Rect2d ResVmSdlGraphicsManager::computeGameRect(GameRenderTarget gameRende
 	switch (gameRenderTarget) {
 		case kScreen:
 			// The game occupies the whole screen
+			_eventSource->resetKeyboardEmulation(effectiveWidth - 1, effectiveHeight - 1);
 			return Math::Rect2d(Math::Vector2d(0, 0), Math::Vector2d(1, 1));
 		case kSubScreen:
 			// The game is centered on the screen
+			_eventSource->resetKeyboardEmulation(effectiveWidth - 1, effectiveHeight - 1);
 			return Math::Rect2d(
 					Math::Vector2d((effectiveWidth - gameWidth) / 2, (effectiveHeight - gameHeight) / 2),
 					Math::Vector2d((effectiveWidth + gameWidth) / 2, (effectiveHeight + gameHeight) / 2)
@@ -105,12 +107,14 @@ Math::Rect2d ResVmSdlGraphicsManager::computeGameRect(GameRenderTarget gameRende
 				float scale = MIN(effectiveHeight / float(gameHeight), effectiveWidth / float(gameWidth));
 				float scaledW = scale * (gameWidth / float(effectiveWidth));
 				float scaledH = scale * (gameHeight / float(effectiveHeight));
+				_eventSource->resetKeyboardEmulation(effectiveWidth - 1, effectiveHeight - 1);
 				return Math::Rect2d(
 						Math::Vector2d(0.5 - (0.5 * scaledW), 0.5 - (0.5 * scaledH)),
 						Math::Vector2d(0.5 + (0.5 * scaledW), 0.5 + (0.5 * scaledH))
 				);
 			} else {
 				// The game occupies the whole screen
+				_eventSource->resetKeyboardEmulation(effectiveWidth - 1, effectiveHeight - 1);
 				return Math::Rect2d(Math::Vector2d(0, 0), Math::Vector2d(1, 1));
 			}
 		default:

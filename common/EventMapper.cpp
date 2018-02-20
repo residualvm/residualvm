@@ -25,6 +25,9 @@
 #include "common/system.h"
 #include "common/textconsole.h"
 
+// The index of the joystick button associated to virtual keyboard
+#define JOY_BUT_VKEYBOARD 6
+
 namespace Common {
 
 List<Event> DefaultEventMapper::mapEvent(const Event &ev, EventSource *source) {
@@ -37,11 +40,13 @@ List<Event> DefaultEventMapper::mapEvent(const Event &ev, EventSource *source) {
 
 	static uint32 vkeybdThen = 0;
 
-	if (ev.type == EVENT_MBUTTONDOWN) {
+	if ((ev.type == EVENT_MBUTTONDOWN) || 
+            ((ev.type == EVENT_JOYBUTTON_DOWN) && (ev.joystick.button == JOY_BUT_VKEYBOARD))) {
 		vkeybdThen = g_system->getMillis();
 	}
 
-	if (ev.type == EVENT_MBUTTONUP) {
+	if ((ev.type == EVENT_MBUTTONUP) || 
+            ((ev.type == EVENT_JOYBUTTON_UP) && (ev.joystick.button == JOY_BUT_VKEYBOARD))) {
 		if ((g_system->getMillis() - vkeybdThen) >= vkeybdTime) {
 			mappedEvent.type = EVENT_VIRTUAL_KEYBOARD;
 
