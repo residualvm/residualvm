@@ -31,22 +31,48 @@
 
 namespace Stark {
 
+class VisualExplodingImage;
 class VisualImageXMG;
+class VisualText;
 
 namespace Resources {
 class Anim;
 }
 
 class Button {
+public:
+	enum HintAlign { kAlignLeft, kAlignRight };
+
+	Button(const Common::String &text, StaticProvider::UIElement stockElement, const Common::Point &pos, HintAlign align, const Common::Point &hintPos);
+	~Button();
+
+	void setPosition(const Common::Point &pos) { _position = pos; }
+	/** Set hint to render for one frame */
+	void showButtonHint();
+	void render();
+	bool containsPoint(const Common::Point &point);
+
+	/** Reset the hint text visual so it is rebuilt with the appropriate texture size */
+	void resetHintVisual();
+
+	/** Move execution of the button's icon anim script to the specified item */
+	void goToAnimStatement(int animScriptItemIndex);
+
+	/** Start overlaying an explosion animation of an image on top of the button */
+	void startImageExplosion(VisualImageXMG *image);
+
+	/** Remove the currently playing exploding image animation, if any */
+	void stopImageExplosion();
+
+private:
 	StaticProvider::UIElement _stockElement;
 	Common::Point _position;
+	Common::Point _hintPosition;
 	Common::String _text;
-public:
-	Button(const Common::String &text, StaticProvider::UIElement stockElement, Common::Point pos);
-	void setPosition(Common::Point pos) { _position = pos; }
-	void render();
-	bool containsPoint(Common::Point point);
-	Common::String getText() const { return _text; }
+	VisualText *_mouseText;
+	VisualExplodingImage *_explodingImageAnimation;
+	const HintAlign _align;
+	bool _renderHint;
 };
 
 } // End of namespace Stark

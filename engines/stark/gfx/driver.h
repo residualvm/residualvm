@@ -57,7 +57,7 @@ public:
 	void computeScreenViewport();
 	virtual void setScreenViewport(bool noScaling) = 0; // deprecated
 
-	virtual void setViewport(Common::Rect rect, bool noScaling) = 0;
+	virtual void setViewport(const Common::Rect &rect, bool noScaling) = 0;
 
 	/** Get the screen viewport in actual resolution */
 	Common::Rect getScreenViewport() { return _screenViewport; }
@@ -115,8 +115,11 @@ public:
 	/** Scale a height value from original resolution to current resolution */
 	uint scaleHeightOriginalToCurrent(uint height) const;
 
-	/** Scale a width value from original resolution to current resolution */
+	/** Scale a width value from current resolution to original resolution */
 	uint scaleWidthCurrentToOriginal(uint width) const;
+
+	/** Scale a height value from current resolution to original resolution */
+	uint scaleHeightCurrentToOriginal(uint width) const;
 
 	/**
 	 * Textures are expected to be in the RGBA byte order

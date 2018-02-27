@@ -30,6 +30,7 @@ namespace Stark {
 class Cursor;
 class VisualImageXMG;
 class InventoryWindow;
+class GameWindow;
 
 namespace Resources {
 class ItemVisual;
@@ -46,6 +47,8 @@ public:
 	void close();
 
 protected:
+	Common::Rect getPosition(const Common::Point &mouse) const;
+
 	void onMouseMove(const Common::Point &pos) override;
 	void onClick(const Common::Point &pos) override;
 	void onRender() override;

@@ -23,6 +23,7 @@
 #include "engines/stark/services/staticprovider.h"
 
 #include "engines/stark/resources/anim.h"
+#include "engines/stark/resources/animscript.h"
 #include "engines/stark/resources/container.h"
 #include "engines/stark/resources/image.h"
 #include "engines/stark/resources/item.h"
@@ -77,18 +78,32 @@ void StaticProvider::shutdown() {
 	_archiveLoader->unloadUnused();
 }
 
-VisualImageXMG *StaticProvider::getCursorImage(uint32 cursor) {
+VisualImageXMG *StaticProvider::getCursorImage(uint32 cursor) const {
 	Resources::Anim *anim = _stockAnims[cursor];
 	return anim->getVisual()->get<VisualImageXMG>();
 }
 
-VisualImageXMG *StaticProvider::getUIElement(UIElement element) {
+VisualImageXMG *StaticProvider::getUIElement(UIElement element) const {
 	return getCursorImage(element);
 }
 
-VisualImageXMG *StaticProvider::getUIImage(UIImage image) {
+VisualImageXMG *StaticProvider::getUIImage(UIImage image) const {
 	Resources::Image *anim = _stockImages[image];
 	return anim->getVisual()->get<VisualImageXMG>();
+}
+
+void StaticProvider::goToAnimScriptStatement(StaticProvider::UIElement stockUIElement, int animScriptItemIndex) {
+	Resources::Anim *anim = _stockAnims[stockUIElement];
+	Resources::AnimScript *animScript = anim->findChild<Resources::AnimScript>();
+	Resources::AnimScriptItem *animScriptItem = animScript->findChildWithIndex<Resources::AnimScriptItem>(animScriptItemIndex);
+	animScript->goToScriptItem(animScriptItem);
+}
+
+Resources::Sound *StaticProvider::getUISound(UISound sound) const {
+	Resources::Item *staticLevelItem = _level->findChild<Resources::Item>();
+	Resources::Anim *anim = staticLevelItem->findChildWithOrder<Resources::Anim>(4);
+	Resources::Container *sounds = anim->findChildWithSubtype<Resources::Container>(Resources::Container::kSounds);
+	return sounds->findChildWithOrder<Resources::Sound>(sound);
 }
 
 Common::String StaticProvider::buildLocationArchiveName(const char *locationName) const {

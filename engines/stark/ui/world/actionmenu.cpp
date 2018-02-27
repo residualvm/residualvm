@@ -23,7 +23,10 @@
 #include "engines/stark/ui/world/actionmenu.h"
 
 #include "engines/stark/ui/cursor.h"
+#include "engines/stark/ui/world/gamewindow.h"
 #include "engines/stark/ui/world/inventorywindow.h"
+
+#include "engines/stark/gfx/driver.h"
 
 #include "engines/stark/resources/anim.h"
 #include "engines/stark/resources/item.h"
@@ -44,6 +47,7 @@ namespace Stark {
 
 ActionMenu::ActionMenu(Gfx::Driver *gfx, Cursor *cursor) :
 		Window(gfx, cursor) {
+
 	_background = StarkStaticProvider->getUIElement(StaticProvider::kActionMenuBg);
 
 	_unscaled = true;
@@ -66,7 +70,8 @@ void ActionMenu::open(Resources::ItemVisual *item, const Common::Point &itemRela
 	_visible = true;
 
 	Common::Point screenMousePos = _cursor->getMousePosition(true);
-	_position = Common::Rect::center(screenMousePos.x, screenMousePos.y, 160, 111);
+
+	_position = getPosition(screenMousePos);
 
 	_itemRelativePos = itemRelativePos;
 	_item = item;
@@ -94,6 +99,19 @@ void ActionMenu::open(Resources::ItemVisual *item, const Common::Point &itemRela
 void ActionMenu::close() {
 	_visible = false;
 	_item = nullptr;
+}
+
+Common::Rect ActionMenu::getPosition(const Common::Point &mouse) const {
+	Common::Rect position = Common::Rect::center(mouse.x, mouse.y, 160, 111);
+
+	Common::Rect gameWindowRect = StarkGfx->gameViewport();
+
+	if (position.top < gameWindowRect.top)       position.translate(0, gameWindowRect.top - position.top);
+	if (position.left < gameWindowRect.left)     position.translate(gameWindowRect.left - position.left, 0);
+	if (position.bottom > gameWindowRect.bottom) position.translate(0, gameWindowRect.bottom - position.bottom);
+	if (position.right > gameWindowRect.right)   position.translate(gameWindowRect.right - position.right, 0);
+
+	return position;
 }
 
 void ActionMenu::onRender() {

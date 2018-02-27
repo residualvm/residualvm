@@ -87,7 +87,7 @@ void Driver::computeScreenViewport() {
 
 Common::Rect Driver::gameViewport() const {
 	Common::Rect game = Common::Rect(_screenViewport.width(), _screenViewport.height() * kGameViewportHeight / kOriginalHeight);
-	game.translate(_screenViewport.left, _screenViewport.top + _screenViewport.height() * kBottomBorderHeight / kOriginalHeight);
+	game.translate(_screenViewport.left, _screenViewport.top + _screenViewport.height() * kTopBorderHeight / kOriginalHeight);
 
 	return game;
 }
@@ -122,6 +122,10 @@ uint Driver::scaleHeightOriginalToCurrent(uint height) const {
 
 uint Driver::scaleWidthCurrentToOriginal(uint width) const {
 	return kOriginalWidth * width / _screenViewport.width();
+}
+
+uint Driver::scaleHeightCurrentToOriginal(uint height) const {
+	return kOriginalHeight * height / _screenViewport.height();
 }
 
 void Driver::flipVertical(Graphics::Surface *s) {

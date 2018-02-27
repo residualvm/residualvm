@@ -23,6 +23,7 @@
 #include "engines/stark/ui/cursor.h"
 
 #include "engines/stark/gfx/driver.h"
+#include "engines/stark/gfx/texture.h"
 
 #include "engines/stark/services/gameinterface.h"
 #include "engines/stark/services/global.h"
@@ -43,7 +44,6 @@ Cursor::Cursor(Gfx::Driver *gfx) :
 		_cursorImage(nullptr),
 		_mouseText(nullptr),
 		_currentCursorType(kNone),
-		_currentHint(""),
 		_fading(false),
 		_fadeLevelIncreasing(true),
 		_fadeLevel(0) {
@@ -73,7 +73,7 @@ void Cursor::setCursorImage(VisualImageXMG *image) {
 }
 
 
-void Cursor::setMousePosition(Common::Point pos) {
+void Cursor::setMousePosition(const Common::Point &pos) {
 	_mousePos = _gfx->getScreenPosBounded(pos);
 }
 
@@ -100,14 +100,27 @@ void Cursor::updateFadeLevel() {
 void Cursor::render() {
 	updateFadeLevel();
 
-	_gfx->setScreenViewport(true); // The cursor is drawn unscaled
+	if (_mouseText) {
+		_gfx->setScreenViewport(false);
+
+		// TODO: Should probably query the image for the width of the cursor
+		// TODO: Add delay to the mouse hints like in the game
+		const int16 cursorDistance = _gfx->scaleHeightCurrentToOriginal(32);
+		Common::Point pos = _gfx->convertCoordinateCurrentToOriginal(_mousePos);
+		Common::Rect mouseRect = _mouseText->getRect();
+		pos.x = CLIP<int16>(pos.x, 48, Gfx::Driver::kOriginalWidth - 48);
+		pos.y = CLIP<int16>(pos.y, Gfx::Driver::kTopBorderHeight, Gfx::Driver::kOriginalHeight - Gfx::Driver::kBottomBorderHeight - cursorDistance - mouseRect.height());
+		pos.x -= mouseRect.width() / 2;
+		pos.y += cursorDistance;
+
+		_mouseText->render(pos);
+	}
+
 	if (_cursorImage) {
+		_gfx->setScreenViewport(true); // The cursor is drawn unscaled
+
 		_cursorImage->setFadeLevel(_fadeLevel);
 		_cursorImage->render(_mousePos, true);
-	}
-	if (_mouseText) {
-		// TODO: Should probably query the image for the width of the cursor
-		_mouseText->render(Common::Point(_mousePos.x + 20, _mousePos.y));
 	}
 }
 
@@ -123,7 +136,7 @@ Common::Point Cursor::getMousePosition(bool unscaled) const {
 void Cursor::setMouseHint(const Common::String &hint) {
 	if (hint != _currentHint) {
 		delete _mouseText;
-		if (hint != "") {
+		if (!hint.empty()) {
 			_mouseText = new VisualText(_gfx);
 			_mouseText->setText(hint);
 			_mouseText->setColor(0xFFFFFFFF);

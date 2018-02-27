@@ -44,7 +44,7 @@ public:
 	void init() override;
 
 	void setScreenViewport(bool noScaling) override;
-	void setViewport(Common::Rect rect, bool noScaling) override;
+	void setViewport(const Common::Rect &rect, bool noScaling) override;
 
 	void clearScreen() override;
 	void flipBuffer() override;
@@ -61,7 +61,7 @@ public:
 
 	void start2DMode();
 	void end2DMode();
-	void set3DMode();
+	void set3DMode() override;
 
 	Common::Rect getViewport() const;
 	Common::Rect getUnscaledViewport() const;

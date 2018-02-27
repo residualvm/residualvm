@@ -30,19 +30,20 @@ namespace Stark {
 class Visual {
 public:
 	enum VisualType {
-		kImageXMG      = 2,
-		kRendered      = 3,
-		kImageText     = 4,
-		kSmackerStream = 5,
-		kActor         = 6,
-		kSmackerFMV    = 7,
-		kEffectFish    = 8,
-		kEffectBubbles = 9,
-		kEffectFirefly = 10,
-		kEffectSmoke   = 11
+		kImageXMG       = 2,
+		kRendered       = 3,
+		kImageText      = 4,
+		kSmackerStream  = 5,
+		kActor          = 6,
+		kSmackerFMV     = 7,
+		kEffectFish     = 8,
+		kEffectBubbles  = 9,
+		kEffectFirefly  = 10,
+		kEffectSmoke    = 11,
+		kExplodingImage = 100,
 	};
 
-	Visual(VisualType type) : _type(type) {}
+	explicit Visual(VisualType type) : _type(type) {}
 	virtual ~Visual() {}
 
 	/**
