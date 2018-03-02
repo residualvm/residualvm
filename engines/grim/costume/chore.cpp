@@ -60,6 +60,10 @@ void Chore::load(TextSplitter &ts) {
 		for (int j = 0; j < numKeys; j++) {
 			ts.scanString(" %d %d", 2, &_tracks[i].keys[j].time, &_tracks[i].keys[j].value);
 		}
+		if (strcmp("closing", _name) == 0 && this->getOwner()->_fname.equals("bk_door.cos") && compID == 0) {
+			_tracks[0].keys[1].time = int(67);
+			_tracks[0].keys[1].value = int(4);
+		}
 	}
 }
 
