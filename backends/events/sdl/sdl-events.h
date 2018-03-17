@@ -145,6 +145,12 @@ protected:
 #endif
 
 	//@}
+ 
+	/**
+	 * Checks if mouse is locked or not.
+	 * Avoid to emulate a mouse movement from joystick if locked.
+	 */
+	bool isMouseLocked();
 
 	/**
 	 * Update the virtual mouse according to a joystick or game controller axis position change
