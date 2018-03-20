@@ -1,7 +1,7 @@
 /* ResidualVM - A 3D game interpreter
  *
  * ResidualVM is the legal property of its developers, whose names
- * are too numerous to list here. Please refer to the COPYRIGHT
+ * are too numerous to list here. Please refer to the AUTHORS
  * file distributed with this source distribution.
  *
  * This program is free software; you can redistribute it and/or
@@ -20,34 +20,48 @@
  *
  */
 
-#ifndef GRIM_MD5CHECKDIALOG_H
-#define GRIM_MD5CHECKDIALOG_H
+#ifndef STARK_VISUAL_EFFECTS_EFFECT_H
+#define STARK_VISUAL_EFFECTS_EFFECT_H
+
+#include "engines/stark/visual/visual.h"
 
 #include "common/rect.h"
 
-#include "gui/dialog.h"
+#include "graphics/pixelformat.h"
 
-namespace GUI {
-class SliderWidget;
+namespace Graphics {
+struct Surface;
 }
 
-namespace Grim {
+namespace Stark {
 
-class MD5CheckDialog : public GUI::Dialog {
+namespace Gfx {
+class Driver;
+class SurfaceRenderer;
+class Texture;
+}
+
+/**
+ * A 2D visual effect overlay
+ *
+ * The backing surface is alpha blended on top of the scene
+ */
+class VisualEffect : public Visual {
 public:
-	MD5CheckDialog();
+	explicit VisualEffect(VisualType type, const Common::Point &size, Gfx::Driver *gfx);
+	~VisualEffect() override;
 
 protected:
-	void handleTickle() override;
+	Gfx::Driver *_gfx;
+	Gfx::SurfaceRenderer *_surfaceRenderer;
+	Gfx::Texture *_texture;
+	Graphics::Surface *_surface;
 
-private:
-	void check();
-
-	GUI::SliderWidget *_progressSliderWidget;
-
-	bool _checkOk;
+	uint _timeBetweenTwoUpdates;
+	int _timeRemainingUntilNextUpdate;
+	Common::Point _size;
 };
 
-}
+} // End of namespace Stark
 
-#endif
+#endif // STARK_VISUAL_EFFECTS_EFFECT_H

@@ -98,6 +98,9 @@ MODULE_OBJS := \
 	ui/world/gamewindow.o \
 	ui/world/inventorywindow.o \
 	visual/actor.o \
+	visual/effects/bubbles.o \
+	visual/effects/effect.o \
+	visual/effects/fireflies.o \
 	visual/explodingimage.o \
 	visual/image.o \
 	visual/prop.o \

@@ -1,7 +1,7 @@
 /* ResidualVM - A 3D game interpreter
  *
  * ResidualVM is the legal property of its developers, whose names
- * are too numerous to list here. Please refer to the COPYRIGHT
+ * are too numerous to list here. Please refer to the AUTHORS
  * file distributed with this source distribution.
  *
  * This program is free software; you can redistribute it and/or
@@ -20,34 +20,37 @@
  *
  */
 
-#ifndef GRIM_MD5CHECKDIALOG_H
-#define GRIM_MD5CHECKDIALOG_H
+#include "engines/stark/visual/effects/effect.h"
 
-#include "common/rect.h"
+#include "graphics/surface.h"
 
-#include "gui/dialog.h"
+#include "engines/stark/gfx/driver.h"
+#include "engines/stark/gfx/surfacerenderer.h"
+#include "engines/stark/gfx/texture.h"
 
-namespace GUI {
-class SliderWidget;
+namespace Stark {
+
+VisualEffect::VisualEffect(VisualType type, const Common::Point &size, Gfx::Driver *gfx) :
+		Visual(type),
+		_size(size),
+		_gfx(gfx),
+		_timeBetweenTwoUpdates(3 * 33), // ms (frames @ 30 fps)
+		_timeRemainingUntilNextUpdate(0) {
+	_surface = new Graphics::Surface();
+	_surface->create(size.x, size.y, _gfx->getRGBAPixelFormat());
+
+	_texture = _gfx->createTexture(_surface);
+
+	_surfaceRenderer = _gfx->createSurfaceRenderer();
 }
 
-namespace Grim {
-
-class MD5CheckDialog : public GUI::Dialog {
-public:
-	MD5CheckDialog();
-
-protected:
-	void handleTickle() override;
-
-private:
-	void check();
-
-	GUI::SliderWidget *_progressSliderWidget;
-
-	bool _checkOk;
-};
-
+VisualEffect::~VisualEffect() {
+	if (_surface) {
+		_surface->free();
+	}
+	delete _surface;
+	delete _texture;
+	delete _surfaceRenderer;
 }
 
-#endif
+} // End of namespace Stark

@@ -40,7 +40,7 @@ public:
 		kEffectBubbles  = 9,
 		kEffectFirefly  = 10,
 		kEffectSmoke    = 11,
-		kExplodingImage = 100,
+		kExplodingImage = 100
 	};
 
 	explicit Visual(VisualType type) : _type(type) {}
