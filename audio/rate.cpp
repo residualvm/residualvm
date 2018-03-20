@@ -44,7 +44,7 @@ namespace Audio {
  * target processor and various other factors), at which it will decrease
  * again.
  */
-#define INTERMEDIATE_BUFFER_SIZE 512
+#define INTERMEDIATE_BUFFER_SIZE 1536
 
 /**
  * The default fractional type in frac.h (with 16 fractional bits) limits

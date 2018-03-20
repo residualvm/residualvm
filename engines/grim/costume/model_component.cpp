@@ -146,8 +146,9 @@ void ModelComponent::resetColormap() {
 	CMap *cm;
 
 	cm = getCMap();
-	if (_obj && cm)
+	if (_obj && cm && !(_obj->getFilename().equals("br_head3.3do") || _obj->getFilename().equals("br_head2.3do"))) {
 		_obj->reload(cm);
+	}
 }
 
 void ModelComponent::restoreState(SaveGame *state) {

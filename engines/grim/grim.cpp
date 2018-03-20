@@ -876,6 +876,10 @@ void GrimEngine::mainLoop() {
 				handleJoyButton(type, event.joystick.button);
 		}
 
+		if (!(getGamePlatform() == Common::kPlatformPS2 && _mode == SmushMode)) {
+			luaUpdate();
+		}
+
 		if (_mode != PauseMode) {
 			// Draw the display scene before doing the luaUpdate.
 			// This give a large performance boost as OpenGL stores commands
@@ -888,11 +892,6 @@ void GrimEngine::mainLoop() {
 
 		if (_mode != PauseMode) {
 			doFlip();
-		}
-
-		// We do not want the scripts to update while a movie is playing in the PS2-version.
-		if (!(getGamePlatform() == Common::kPlatformPS2 && _mode == SmushMode)) {
-			luaUpdate();
 		}
 
 		if (g_imuseState != -1) {

@@ -36,6 +36,7 @@
 
 namespace Grim {
 
+	ModelNode static *staticNode = nullptr;
 
 /**
  * @class Model
@@ -52,11 +53,33 @@ Model::Model(const Common::String &filename, Common::SeekableReadStream *data, C
 	}
 
 	Math::Vector3d max;
+	if (strcmp(_rootHierNode->_name, "br_head2") == 0 || strcmp(_rootHierNode->_name, "br_head3") == 0) {
+		if (staticNode != nullptr) {
+			Mesh *brHead1 = staticNode->_mesh;
+			int numOfFaces = brHead1->_numFaces;
+			MeshFace *fixedFaces = new MeshFace[numOfFaces];
+			for (int i = 0; i <= 29; i++)
+			{
+				fixedFaces[i] = brHead1->_faces[i];
+			}
+			Mesh *brHead2_3 = _rootHierNode->_mesh;
+			for (int i = 30; i <= 47; i++)
+			{
+				fixedFaces[i] = brHead2_3->_faces[i - 3];
+			}
+			brHead2_3->_faces = fixedFaces;
+			brHead2_3->_numFaces = numOfFaces;
+		}
+		
 
+	}
 	_rootHierNode->update();
 	bool first = true;
 	for (int i = 0; i < _numHierNodes; ++i) {
 		ModelNode &node = _rootHierNode[i];
+		if (strcmp(node._name, "br_head1") == 0) {
+			staticNode = &node;
+		}
 		if (node._mesh) {
 			g_driver->createMesh(node._mesh);
 			Mesh &mesh = *node._mesh;
@@ -64,23 +87,23 @@ Model::Model(const Common::String &filename, Common::SeekableReadStream *data, C
 			float x = p.x();
 			float y = p.y();
 			float z = p.z();
-			for (int k = 0; k < mesh._numVertices * 3; k += 3) {
-				if (first || mesh._vertices[k] + x < _bboxPos.x())
-					_bboxPos.x() = mesh._vertices[k] + x;
-				if (first || mesh._vertices[k + 1] + y < _bboxPos.y())
-					_bboxPos.y() = mesh._vertices[k + 1] + y;
-				if (first || mesh._vertices[k + 2] + z < _bboxPos.z())
-					_bboxPos.z() = mesh._vertices[k + 2] + z;
+				for (int k = 0; k < mesh._numVertices * 3; k += 3) {
+					if (first || mesh._vertices[k] + x < _bboxPos.x())
+						_bboxPos.x() = mesh._vertices[k] + x;
+					if (first || mesh._vertices[k + 1] + y < _bboxPos.y())
+						_bboxPos.y() = mesh._vertices[k + 1] + y;
+					if (first || mesh._vertices[k + 2] + z < _bboxPos.z())
+						_bboxPos.z() = mesh._vertices[k + 2] + z;
 
-				if (first || mesh._vertices[k] + x > max.x())
-					max.x() = mesh._vertices[k] + x;
-				if (first || mesh._vertices[k + 1] + y > max.y())
-					max.y() = mesh._vertices[k + 1] + y;
-				if (first || mesh._vertices[k + 2] + z > max.z())
-					max.z() = mesh._vertices[k + 2] + z;
+					if (first || mesh._vertices[k] + x > max.x())
+						max.x() = mesh._vertices[k] + x;
+					if (first || mesh._vertices[k + 1] + y > max.y())
+						max.y() = mesh._vertices[k + 1] + y;
+					if (first || mesh._vertices[k + 2] + z > max.z())
+						max.z() = mesh._vertices[k + 2] + z;
 
-				first = false;
-			}
+					first = false;
+				}			
 		}
 	}
 
@@ -306,7 +329,9 @@ MeshFace::MeshFace() :
 }
 
 MeshFace::~MeshFace() {
+	_vertices= nullptr;
 	delete[] _vertices;
+	_texVertices = nullptr;
 	delete[] _texVertices;
 }
 
