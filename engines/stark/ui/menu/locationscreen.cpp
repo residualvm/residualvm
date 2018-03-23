@@ -211,7 +211,6 @@ void StaticLocationWidget::setTextColor(uint32 textColor) {
 	text->setColor(textColor);
 }
 
-// Douglas' change
 bool StaticLocationWidget::containsText() {
 	return _renderEntry->getText();
 }

@@ -38,7 +38,7 @@ public:
 	// StaticLocationScreen API
 	void open() override;
 
-	// Douglas' Change
+	// Called when the screen resolution changes to reset the text textures
 	void onScreenChanged();
 
 private:

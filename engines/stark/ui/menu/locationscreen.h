@@ -92,7 +92,7 @@ public:
 	 */
 	void setTextColor(uint32 textColor);
 
-	// Douglas' Changed
+	/** Check weather the widget can call setTextColor() */
 	bool containsText();
 
 	/** Draw the widget */
