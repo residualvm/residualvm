@@ -102,6 +102,16 @@ void DiaryIndexScreen::open() {
 	}
 }
 
+// Douglas' change
+void DiaryIndexScreen::onScreenChanged() {
+	for (uint i = 1; i < _widgets.size(); i++) {
+		if (_widgets[i]->containsText()) {
+			_widgets[i]->setTextColor(_textColorHovered);
+			_widgets[i]->setTextColor(_textColorDefault);
+		}
+	}
+}
+
 void DiaryIndexScreen::widgetTextColorHandler(StaticLocationWidget &widget, const Common::Point &mousePos) {
 	if (widget.isVisible()) {
 		uint32 textColor = widget.isMouseInside(mousePos) ? _textColorHovered : _textColorDefault;

@@ -38,6 +38,9 @@ public:
 	// StaticLocationScreen API
 	void open() override;
 
+	// Douglas' Change
+	void onScreenChanged();
+
 private:
 	void widgetTextColorHandler(StaticLocationWidget &widget, const Common::Point &mousePos);
 	void backHandler();

@@ -92,6 +92,9 @@ public:
 	 */
 	void setTextColor(uint32 textColor);
 
+	// Douglas' Changed
+	bool containsText();
+
 	/** Draw the widget */
 	void render();
 
