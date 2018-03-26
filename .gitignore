@@ -169,9 +169,3 @@ gmon.out
 \#*\#
 \#*
 TAGS
-
-#Ignore CLion output and project files
-.idea
-cmake-build-debug
-CMakeLists.txt
-
