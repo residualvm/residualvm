@@ -92,8 +92,8 @@ public:
 	 */
 	void setTextColor(uint32 textColor);
 
-	/** Check weather the widget can call setTextColor() */
-	bool containsText();
+	/** For widget with no text visual, this function does nothing */
+	void resetTextTexture();
 
 	/** Draw the widget */
 	void render();

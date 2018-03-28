@@ -211,8 +211,11 @@ void StaticLocationWidget::setTextColor(uint32 textColor) {
 	text->setColor(textColor);
 }
 
-bool StaticLocationWidget::containsText() {
-	return _renderEntry->getText();
+void StaticLocationWidget::resetTextTexture() {
+	VisualText *text = _renderEntry->getText();
+	if (text) {
+		text->resetTexture();
+	}
 }
 
 void StaticLocationWidget::onMouseMove(const Common::Point &mousePos) {

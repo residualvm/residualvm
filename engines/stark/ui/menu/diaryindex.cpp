@@ -104,11 +104,8 @@ void DiaryIndexScreen::open() {
 
 void DiaryIndexScreen::onScreenChanged() {
 	for (uint i = 1; i < _widgets.size(); i++) {
-		// Force the texture to be reset by changing the color
-		if (_widgets[i]->containsText()) {
-			_widgets[i]->setTextColor(_textColorHovered);
-			_widgets[i]->setTextColor(_textColorDefault);
-		}
+		// The background image is intentionally ignored
+		_widgets[i]->resetTextTexture();
 	}
 }
 
