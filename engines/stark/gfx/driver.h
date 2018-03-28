@@ -103,6 +103,8 @@ public:
 	 */
 	virtual FadeRenderer *createFadeRenderer() = 0;
 
+	/** Checks if a screenpoint coord is within window bounds */
+	bool isPosInScreenBounds(const Common::Point &point) const;
 
 	/** Convert a coordinate from current to original resolution */
 	Common::Point convertCoordinateCurrentToOriginal(const Common::Point &point) const;

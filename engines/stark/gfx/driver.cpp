@@ -139,5 +139,9 @@ void Driver::flipVertical(Graphics::Surface *s) {
 	}
 }
 
+bool Driver::isPosInScreenBounds(const Common::Point &point) const {
+    return _screenViewport.contains(point);
+}
+
 } // End of namespace Gfx
 } // End of namespace Stark
