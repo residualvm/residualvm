@@ -103,8 +103,6 @@ public:
 	 */
 	virtual FadeRenderer *createFadeRenderer() = 0;
 
-	/** Bound a screen coordinate coord within the actual game area */
-	Common::Point getScreenPosBounded(const Common::Point &point) const;
 
 	/** Convert a coordinate from current to original resolution */
 	Common::Point convertCoordinateCurrentToOriginal(const Common::Point &point) const;
