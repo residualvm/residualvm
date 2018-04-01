@@ -100,11 +100,10 @@ void Cursor::updateFadeLevel() {
 void Cursor::render() {
 	updateFadeLevel();
 
-    Common::Point pos = _gfx->convertCoordinateCurrentToOriginal(_mousePos);
 
-    if (!_gfx->isPosInScreenBounds(_mousePos)) {
-        setCursorType(Cursor::kPassive);
-    }
+	if (!_gfx->isPosInScreenBounds(_mousePos)) {
+		setCursorType(Cursor::kPassive);
+	}
 
 	if (_mouseText) {
 		_gfx->setScreenViewport(false);
@@ -113,6 +112,7 @@ void Cursor::render() {
 		// TODO: Add delay to the mouse hints like in the game
 		const int16 cursorDistance = _gfx->scaleHeightCurrentToOriginal(32);
 		Common::Rect mouseRect = _mouseText->getRect();
+		Common::Point pos = _gfx->convertCoordinateCurrentToOriginal(_mousePos);
 		pos.x = CLIP<int16>(pos.x, 48, Gfx::Driver::kOriginalWidth - 48);
 		pos.y = CLIP<int16>(pos.y, Gfx::Driver::kTopBorderHeight, Gfx::Driver::kOriginalHeight - Gfx::Driver::kBottomBorderHeight - cursorDistance - mouseRect.height());
 		pos.x -= mouseRect.width() / 2;
