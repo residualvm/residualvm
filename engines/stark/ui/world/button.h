@@ -67,11 +67,17 @@ public:
 	/** Remove the currently playing exploding image animation, if any */
 	void stopImageExplosion();
 
-	/** Start a flash animation of an image button */
-	void startImageFlashing(VisualImageXMG *image);
+	/** Start a flashing animation of an image button */
+	void startImageFlashing();
 
-	/** Remove the currently playing flash image animation, if any */
+	/** Remove the currently playing flashing image animation, if any */
 	void stopImageFlashing();
+
+	/** Checks if inventory button image on topmenu is closed or open chest */
+	bool isInvetoryChestOpen() { return _chestOpened; };
+
+	/** Start closing animation of inventory button */
+	void startChestClosingAnim();
 
 private:
 	StaticProvider::UIElement _stockElement;
@@ -83,6 +89,7 @@ private:
 	VisualFlashingImage *_flashingImageAnimation;
 	const HintAlign _align;
 	bool _renderHint;
+	bool _chestOpened;
 };
 
 } // End of namespace Stark

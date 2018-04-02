@@ -88,6 +88,7 @@ private:
 	Graphics::Surface *_surface;
 
 	Common::Array<ExplosionUnit> _units;
+	int _explosionTimeRemaining;
 };
 
 } // End of namespace Stark

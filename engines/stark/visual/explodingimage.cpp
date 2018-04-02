@@ -38,7 +38,8 @@ VisualExplodingImage::VisualExplodingImage(Gfx::Driver *gfx) :
 		Visual(TYPE),
 		_gfx(gfx),
 		_texture(nullptr),
-		_surface(nullptr) {
+		_surface(nullptr),
+		_explosionTimeRemaining(128 * 33) {
 	_surfaceRenderer = _gfx->createSurfaceRenderer();
 }
 
@@ -76,16 +77,21 @@ void VisualExplodingImage::initFromSurface(const Graphics::Surface *surface) {
 }
 
 void VisualExplodingImage::render(const Common::Point &position) {
-	// Fill with transparent color
-	_surface->fillRect(Common::Rect(_surface->w, _surface->h), 0);
+	if (_explosionTimeRemaining > 0)
+	{
+		_explosionTimeRemaining -= StarkGlobal->getMillisecondsPerGameloop();
 
-	for (uint i = 0; i < _units.size(); i++) {
-		_units[i].update();
-		_units[i].draw(_surface);
+		// Fill with transparent color
+		_surface->fillRect(Common::Rect(_surface->w, _surface->h), 0);
+
+		for (uint i = 0; i < _units.size(); i++) {
+			_units[i].update();
+			_units[i].draw(_surface);
+		}
+
+		_texture->update(_surface);
+		_surfaceRenderer->render(_texture, position);
 	}
-
-	_texture->update(_surface);
-	_surfaceRenderer->render(_texture, position);
 }
 
 VisualExplodingImage::ExplosionUnit::ExplosionUnit() :
