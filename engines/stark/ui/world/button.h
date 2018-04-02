@@ -32,6 +32,7 @@
 namespace Stark {
 
 class VisualExplodingImage;
+class VisualFlashingImage;
 class VisualImageXMG;
 class VisualText;
 
@@ -47,6 +48,8 @@ public:
 	~Button();
 
 	void setPosition(const Common::Point &pos) { _position = pos; }
+	void setUIElement(const StaticProvider::UIElement &stockElement) { _stockElement = stockElement; }
+
 	/** Set hint to render for one frame */
 	void showButtonHint();
 	void render();
@@ -64,6 +67,18 @@ public:
 	/** Remove the currently playing exploding image animation, if any */
 	void stopImageExplosion();
 
+	/** Start a flashing animation of an image button */
+	void startImageFlashing();
+
+	/** Remove the currently playing flashing image animation, if any */
+	void stopImageFlashing();
+
+	/** Checks if inventory button image on topmenu is closed or open chest */
+	bool isInvetoryChestOpen() { return _chestOpened; };
+
+	/** Start closing animation of inventory button */
+	void startChestClosingAnim();
+
 private:
 	StaticProvider::UIElement _stockElement;
 	Common::Point _position;
@@ -71,8 +86,10 @@ private:
 	Common::String _text;
 	VisualText *_mouseText;
 	VisualExplodingImage *_explodingImageAnimation;
+	VisualFlashingImage *_flashingImageAnimation;
 	const HintAlign _align;
 	bool _renderHint;
+	bool _chestOpened;
 };
 
 } // End of namespace Stark

@@ -27,6 +27,7 @@
 #include "engines/stark/gfx/texture.h"
 
 #include "engines/stark/visual/explodingimage.h"
+#include "engines/stark/visual/flashingimage.h"
 #include "engines/stark/visual/image.h"
 #include "engines/stark/visual/text.h"
 
@@ -40,7 +41,9 @@ Button::Button(const Common::String &text, StaticProvider::UIElement stockElemen
 		_align(align),
 		_mouseText(nullptr),
 		_renderHint(false),
-		_explodingImageAnimation(nullptr) {
+		_chestOpened(false),
+		_explodingImageAnimation(nullptr),
+		_flashingImageAnimation(nullptr) {
 }
 
 Button::~Button() {
@@ -54,6 +57,10 @@ void Button::render() {
 
 	if (_explodingImageAnimation) {
 		_explodingImageAnimation->render(_position);
+	}
+
+	if (_flashingImageAnimation) {
+		_flashingImageAnimation->render(_position);
 	}
 
 	if (_renderHint) {
@@ -103,11 +110,33 @@ void Button::startImageExplosion(VisualImageXMG *image) {
 	stopImageExplosion();
 	_explodingImageAnimation = new VisualExplodingImage(StarkGfx);
 	_explodingImageAnimation->initFromSurface(image->getSurface());
+	_chestOpened = true;
 }
 
 void Button::stopImageExplosion() {
 	delete _explodingImageAnimation;
 	_explodingImageAnimation = nullptr;
+}
+
+void Button::startImageFlashing() {
+	VisualImageXMG *image = StarkStaticProvider->getUIElement(_stockElement);
+
+	stopImageFlashing();
+	_flashingImageAnimation = new VisualFlashingImage(StarkGfx);
+	_flashingImageAnimation->initFromSurface(image->getSurface());
+}
+
+void Button::stopImageFlashing() {
+	delete _flashingImageAnimation;
+	_flashingImageAnimation = nullptr;
+}
+
+void Button::startChestClosingAnim() {
+	if (_chestOpened)
+	{
+		StarkStaticProvider->goToAnimScriptStatement(StaticProvider::kInventory, 12);
+		_chestOpened = false;
+	}
 }
 
 } // End of namespace Stark

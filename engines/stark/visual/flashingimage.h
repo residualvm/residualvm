@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef STARK_VISUAL_EXPLODING_IMAGE_H
-#define STARK_VISUAL_EXPLODING_IMAGE_H
+#ifndef STARK_VISUAL_FLASHING_IMAGE_H
+#define STARK_VISUAL_FLASHING_IMAGE_H
 
 #include "engines/stark/visual/visual.h"
 
@@ -45,52 +45,38 @@ class Texture;
 }
 
 /**
- * An image with an animated explosion effect
+ * An image with an animated flashing effect
  *
- * Used by the top bar when picking up an inventory item
+ * Used by the top bar when a new entry has been added to the player's diary
  */
-class VisualExplodingImage : public Visual {
+class VisualFlashingImage : public Visual {
 public:
-	static const VisualType TYPE = Visual::kExplodingImage;
+	static const VisualType TYPE = Visual::kFlashingImage;
 
-	explicit VisualExplodingImage(Gfx::Driver *gfx);
-	~VisualExplodingImage() override;
+	explicit VisualFlashingImage(Gfx::Driver *gfx);
+	~VisualFlashingImage() override;
 
-	/** Prepare exploding the specified image */
+	/** Prepare flashing the specified image */
 	void initFromSurface(const Graphics::Surface *surface);
 
 	/** Render the image at the specified position */
 	void render(const Common::Point &position);
 
 private:
-	struct ExplosionUnit {
-		ExplosionUnit();
-
-		void setPosition(int x, int y);
-		void setExplosionSettings(const Common::Point &center, const Common::Point &amplitude);
-		void setColor(uint32 color, const Graphics::PixelFormat &format);
-		void update();
-		void draw(Graphics::Surface *surface);
-
-		Math::Vector2d _position;
-		Math::Vector2d _speed;
-		Math::Vector2d _center;
-
-		int _stillImageTimeRemaining;
-		int _explosionFastAccelerationTimeRemaining;
-		uint32 _mainColor;
-		uint32 _darkColor;
-	};
+	void updateFadeLevel();
 
 	Gfx::Driver *_gfx;
 	Gfx::SurfaceRenderer *_surfaceRenderer;
 	Gfx::Texture *_texture;
 	Graphics::Surface *_surface;
 
-	Common::Array<ExplosionUnit> _units;
-	int _explosionTimeRemaining;
+	int _flashingTimeRemaining;
+	float _fadeLevel;
+	bool _fadeLevelIncreasing;
+	static const float _fadeValueMax;
+
 };
 
 } // End of namespace Stark
 
-#endif // STARK_VISUAL_EXPLODING_IMAGE_H
+#endif // STARK_VISUAL_FLASHING_IMAGE_H
