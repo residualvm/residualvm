@@ -34,66 +34,62 @@
 
 namespace Stark {
 
+const float VisualFlashingImage::_fadeValueMax = 0.55f;
+
 VisualFlashingImage::VisualFlashingImage(Gfx::Driver *gfx) :
 		Visual(TYPE),
 		_gfx(gfx),
 		_texture(nullptr),
 		_surface(nullptr),
-		_originalSurface(nullptr),
+		_fadeLevelIncreasing(true),
+		_fadeLevel(0),
 		_flashingTimeRemaining(150 * 33) {
 	_surfaceRenderer = _gfx->createSurfaceRenderer();
 }
 
 VisualFlashingImage::~VisualFlashingImage() {
-	if (_originalSurface) {
-		_originalSurface->free();
-	}
 	if (_surface) {
 		_surface->free();
 	}
-	delete _originalSurface;
 	delete _surface;
 	delete _texture;
 	delete _surfaceRenderer;
 }
 
 void VisualFlashingImage::initFromSurface(const Graphics::Surface *surface) {
-	assert(!_originalSurface && !_surface && !_texture);
+	assert(!_surface && !_texture);
 
-	_originalSurface = new Graphics::Surface();
-	_originalSurface->copyFrom(*surface);
+	// Decode the XMG
 	_surface = new Graphics::Surface();
-	_surface->create(_originalSurface->w, _originalSurface->h, _originalSurface->format);
+	_surface->copyFrom(*surface);
 	_texture = _gfx->createTexture(_surface);
 }
 
-void VisualFlashingImage::render(const Common::Point &position) {
-
+void VisualFlashingImage::updateFadeLevel() {
+	uint millisecondsPerGameloop = StarkGlobal->getMillisecondsPerGameloop();
 	if (_flashingTimeRemaining > 0) {
-		_flashingTimeRemaining -= StarkGlobal->getMillisecondsPerGameloop();
-		_surface->copyFrom(*_originalSurface);
-
-		// Pixel brightness is calculated by triangle waveform function from the remainig time
-		// Amplitude of the wave is 278 and period is 990ms(33ms*30fps)
-		int32 brightnessDifference = abs(495 - (_flashingTimeRemaining + 248) % 990) / 1.8 - 139;
-
-		for (uint i = 0; i < _surface->h; i++) {
-			for (uint j = 0; j < _surface->w; j++) {
-				uint32 *src = (uint32 *)_surface->getBasePtr(j, i);
-				uint8 a, r, g, b;
-				_surface->format.colorToARGB(*src, a, r, g, b);
-				r = CLIP(r + brightnessDifference, 0, 0xff);
-				g = CLIP(g + brightnessDifference, 0, 0xff);
-				b = CLIP(b + brightnessDifference, 0, 0xff);
-				*src = _surface->format.ARGBToColor(a, r, g, b);
-			}
+		_flashingTimeRemaining -= millisecondsPerGameloop;
+		if (_fadeLevelIncreasing) {
+			_fadeLevel += 0.0022f * millisecondsPerGameloop;
+		}
+		else {
+			_fadeLevel -= 0.0022f * millisecondsPerGameloop;
+		}
+		if (ABS(_fadeLevel) >= _fadeValueMax) {
+			_fadeLevelIncreasing = !_fadeLevelIncreasing;
+			_fadeLevel = CLIP(_fadeLevel, -_fadeValueMax, _fadeValueMax);
 		}
 	} else {
 		// Fill with transparent color
 		_surface->fillRect(Common::Rect(_surface->w, _surface->h), 0);
+		_fadeLevel = 0;
 	}
+}
 
-	_texture->update(_surface);
+void VisualFlashingImage::render(const Common::Point &position) {
+	updateFadeLevel();
+
+	_surfaceRenderer->setFadeLevel(_fadeLevel);
 	_surfaceRenderer->render(_texture, position);
 }
 

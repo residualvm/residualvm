@@ -63,14 +63,17 @@ public:
 	void render(const Common::Point &position);
 
 private:
+	void updateFadeLevel();
 
 	Gfx::Driver *_gfx;
 	Gfx::SurfaceRenderer *_surfaceRenderer;
 	Gfx::Texture *_texture;
-	Graphics::Surface *_originalSurface;
 	Graphics::Surface *_surface;
 
 	int _flashingTimeRemaining;
+	float _fadeLevel;
+	bool _fadeLevelIncreasing;
+	static const float _fadeValueMax;
 
 };
 
