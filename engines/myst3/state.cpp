@@ -653,6 +653,10 @@ bool GameState::evaluate(int16 condition) {
 	}
 }
 
+int32 GameState::valueOrVarValue(RoomID value) {
+	return (int32)value;
+}
+
 int32 GameState::valueOrVarValue(int16 value) {
 	if (value < 0)
 		return getVar(-value);
@@ -776,7 +780,7 @@ void GameState::pauseEngine(bool pause) {
 	}
 }
 
-bool GameState::isZipDestinationAvailable(uint16 node, uint16 room, uint32 age) {
+bool GameState::isZipDestinationAvailable(uint16 node, RoomID room, uint32 age) {
 	int32 zipBitIndex = _db->getNodeZipBitIndex(node, room, age);
 
 	int32 arrayIndex = zipBitIndex / 32;
@@ -785,7 +789,7 @@ bool GameState::isZipDestinationAvailable(uint16 node, uint16 room, uint32 age) 
 	return (_data.zipDestinations[arrayIndex] & (1 << (zipBitIndex % 32))) != 0;
 }
 
-void GameState::markNodeAsVisited(uint16 node, uint16 room, uint32 age) {
+void GameState::markNodeAsVisited(uint16 node, RoomID room, uint32 age) {
 	int32 zipBitIndex = _db->getNodeZipBitIndex(node, room, age);
 
 	int32 arrayIndex = zipBitIndex / 32;

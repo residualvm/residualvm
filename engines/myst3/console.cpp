@@ -57,7 +57,7 @@ void Console::describeScript(const Common::Array<Opcode> &script) {
 
 bool Console::Cmd_Infos(int argc, const char **argv) {
 	uint16 nodeId = _vm->_state->getLocationNode();
-	uint32 roomId = _vm->_state->getLocationRoom();
+	RoomID roomId = (RoomID)_vm->_state->getLocationRoom();
 	uint32 ageID = _vm->_state->getLocationAge();
 
 	if (argc >= 2) {
@@ -178,12 +178,12 @@ bool Console::Cmd_Var(int argc, const char **argv) {
 }
 
 bool Console::Cmd_ListNodes(int argc, const char **argv) {
-	uint32 roomID = _vm->_state->getLocationRoom();
+	RoomID roomID = (RoomID)_vm->_state->getLocationRoom();
 	uint32 ageID = _vm->_state->getLocationAge();
 
 	if (argc == 2) {
 		RoomKey roomKey = _vm->_db->getRoomKey(argv[1]);
-		if (roomKey.roomID == 0 || roomKey.ageID == 0) {
+		if (roomKey.roomID == kNoRoom || roomKey.ageID == 0) {
 			debugPrintf("Unknown room name %s\n", argv[1]);
 			return true;
 		}
@@ -204,7 +204,7 @@ bool Console::Cmd_ListNodes(int argc, const char **argv) {
 
 bool Console::Cmd_Run(int argc, const char **argv) {
 	uint16 nodeId = _vm->_state->getLocationNode();
-	uint32 roomId = _vm->_state->getLocationRoom();
+	RoomID roomId = (RoomID)_vm->_state->getLocationRoom();
 	uint32 ageId = _vm->_state->getLocationAge();
 
 	if (argc >= 2) {

@@ -23,15 +23,18 @@
 #ifndef DATABASE_H_
 #define DATABASE_H_
 
-#include "common/scummsys.h"
+
 #include "engines/myst3/hotspot.h"
-#include "common/str.h"
+#include "engines/myst3/myst3.h" // RoomID enum
+
+#include "common/array.h"
+#include "common/hashmap.h"
 #include "common/language.h"
 #include "common/platform.h"
 #include "common/ptr.h"
-#include "common/array.h"
-#include "common/hashmap.h"
 #include "common/stream.h"
+#include "common/scummsys.h"
+#include "common/str.h"
 
 namespace Myst3 {
 
@@ -65,18 +68,18 @@ struct NodeData {
 typedef Common::SharedPtr<NodeData> NodePtr;
 
 struct RoomData {
-	uint32 id;
+	uint16 id;
 	const char *name;
 };
 
 struct RoomKey {
 	uint16 ageID;
-	uint16 roomID;
+	RoomID roomID;
 
-	RoomKey(uint16 room, uint16 age) : roomID(room), ageID(age) {};
+	RoomKey(RoomID room, uint16 age) : roomID(room), ageID(age) {};
 
 	bool operator==(const RoomKey &k) const {
-		return ageID == k.ageID && roomID == k.roomID;
+		return ageID == k.ageID && static_cast<uint16>(roomID) == k.roomID;
 	}
 };
 
@@ -126,24 +129,24 @@ public:
 	/**
 	 * Loads a room's nodes into the database cache
 	 */
-	void cacheRoom(uint32 roomID, uint32 ageID);
+	void cacheRoom(RoomID roomID, uint32 ageID);
 
 	/**
 	 * Tells if a room is a common room
 	 *
 	 * Common rooms are always in the cache
 	 */
-	bool isCommonRoom(uint32 roomID, uint32 ageID) const;
+	bool isCommonRoom(RoomID roomID, uint32 ageID) const;
 
 	/**
 	 * Returns a node's hotspots and scripts from the currently loaded room
 	 */
-	NodePtr getNodeData(uint16 nodeID, uint32 roomID, uint32 ageID);
+	NodePtr getNodeData(uint16 nodeID, RoomID roomID, uint32 ageID);
 
 	/**
 	 * Returns a node's zip id, as used by savestates
 	 */
-	int32 getNodeZipBitIndex(uint16 nodeID, uint32 roomID, uint32 ageID);
+	int32 getNodeZipBitIndex(uint16 nodeID, RoomID roomID, uint32 ageID);
 
 	/**
 	 * Returns the generic node init script
@@ -153,7 +156,7 @@ public:
 	/**
 	 * Returns the name of the currently loaded room
 	 */
-	Common::String getRoomName(uint32 roomID, uint32 ageID) const;
+	Common::String getRoomName(RoomID roomID, uint32 ageID) const;
 
 	/**
 	 * Returns the id of a room from its name
@@ -163,7 +166,7 @@ public:
 	/**
 	 * Returns the list of the nodes of a room
 	 */
-	Common::Array<uint16> listRoomNodes(uint32 roomID, uint32 ageID);
+	Common::Array<uint16> listRoomNodes(RoomID roomID, uint32 ageID);
 
 	/**
 	 * Returns an age's label id, to be used with AGES 1000 metadata
@@ -211,8 +214,8 @@ private:
 	Common::Array<RoomScripts> _roomScriptsIndex;
 	int32 _roomScriptsStartOffset;
 
-	const RoomData *findRoomData(uint32 roomID, uint32 ageID) const;
-	Common::Array<NodePtr> getRoomNodes(uint32 roomID, uint32 ageID) const;
+	const RoomData *findRoomData(RoomID roomID, uint32 ageID) const;
+	Common::Array<NodePtr> getRoomNodes(RoomID roomID, uint32 ageID) const;
 
 	Common::Array<NodePtr> readRoomScripts(const RoomData *room) const;
 	void preloadCommonRooms();

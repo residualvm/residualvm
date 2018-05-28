@@ -59,6 +59,7 @@ public:
 	void setVar(uint16 var, int32 value);
 	bool evaluate(int16 condition);
 	int32 valueOrVarValue(int16 value);
+	int32 valueOrVarValue(RoomID value);
 
 	const Common::String describeVar(uint16 var);
 	const Common::String describeCondition(int16 condition);
@@ -331,8 +332,8 @@ public:
 	float getMinHeading() { return _data.minHeading; }
 	float getMaxHeading() { return _data.maxHeading; }
 
-	void markNodeAsVisited(uint16 node, uint16 room, uint32 age);
-	bool isZipDestinationAvailable(uint16 node, uint16 room, uint32 age);
+	void markNodeAsVisited(uint16 node, RoomID room, uint32 age);
+	bool isZipDestinationAvailable(uint16 node, RoomID room, uint32 age);
 
 	Common::String formatSaveTime();
 

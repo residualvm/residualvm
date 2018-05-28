@@ -372,70 +372,70 @@ NodeWalker::~NodeWalker() {
 }
 
 static const RoomData roomsXXXX[] = {
-		{ 101, "XXXX" }
+		{ kINIT, "XXXX" }
 };
 
 static const RoomData roomsINTR[] = {
-		{ 201, "INTR" }
+		{ kINTR, "INTR" }
 };
 
 static const RoomData roomsTOHO[] = {
-		{ 301, "TOHO" }
+		{ kTOHO, "TOHO" }
 };
 
 static const RoomData roomsTOHB[] = {
-		{ 401, "TOHB" }
+		{ kTOHB, "TOHB" }
 };
 
 static const RoomData roomsLE[] = {
-		{ 501, "LEIS" },
-		{ 502, "LEOS" },
-		{ 503, "LEET" },
-		{ 504, "LELT" },
-		{ 505, "LEMT" },
-		{ 506, "LEOF" }
+		{ kLEIS, "LEIS" },
+		{ kLEOS, "LEOS" },
+		{ kLEET, "LEET" },
+		{ kLELT, "LELT" },
+		{ kLEMT, "LEMT" },
+		{ kLEOF, "LEOF" }
 };
 
 static const RoomData roomsLI[] = {
-		{ 601, "LIDR" },
-		{ 602, "LISW" },
-		{ 603, "LIFO" },
-		{ 604, "LISP" },
-		{ 605, "LINE" }
+		{ kLIDR, "LIDR" },
+		{ kLISW, "LISW" },
+		{ kLIFO, "LIFO" },
+		{ kLISP, "LISP" },
+		{ kLINE, "LINE" }
 };
 
 static const RoomData roomsEN[] = {
-		{ 701, "ENSI" },
-		{ 703, "ENPP" },
-		{ 704, "ENEM" },
-		{ 705, "ENLC" },
-		{ 706, "ENDD" },
-		{ 707, "ENCH" },
-		{ 708, "ENLI" }
+		{ kENSI, "ENSI" },
+		{ kENPP, "ENPP" },
+		{ kENEM, "ENEM" },
+		{ kENLC, "ENLC" },
+		{ kENDD, "ENDD" },
+		{ kENCH, "ENCH" },
+		{ kENLI, "ENLI" }
 };
 
 static const RoomData roomsNA[] = {
-		{ 801, "NACH" }
+		{ kNACH, "NACH" }
 };
 
 static const RoomData roomsMENU[] = {
-		{ 901, "MENU" },
-		{ 902, "JRNL" },
-		{ 903, "DEMO" },
-		{ 904, "ATIX" }
+		{ kMENU, "MENU" },
+		{ kJRNL, "JRNL" },
+		{ kDEMO, "DEMO" },
+		{ kATIX, "ATIX" }
 };
 
 static const RoomData roomsMA[] = {
-		{ 1001, "MACA" },
-		{ 1002, "MAIS" },
-		{ 1003, "MALL" },
-		{ 1004, "MASS" },
-		{ 1005, "MAWW" },
-		{ 1006, "MATO" }
+		{ kMACA, "MACA" },
+		{ kMAIS, "MAIS" },
+		{ kMALL, "MALL" },
+		{ kMASS, "MASS" },
+		{ kMAWW, "MAWW" },
+		{ kMATO, "MATO" }
 };
 
 static const RoomData roomsLOGO[] = {
-		{ 1101, "LOGO" }
+		{ kLOGO, "LOGO" }
 };
 
 const AgeData Database::_ages[] = {
@@ -514,15 +514,15 @@ void Database::preloadCommonRooms() {
 		for (uint j = 0; j < age.roomCount; j++) {
 			const RoomData &room = age.rooms[j];
 
-			if (isCommonRoom(room.id, age.id)) {
+			if (isCommonRoom(static_cast<RoomID>(room.id), age.id)) {
 				Common::Array<NodePtr> nodes = readRoomScripts(&room);
-				_roomNodesCache.setVal(RoomKey(room.id, age.id), nodes);
+				_roomNodesCache.setVal(RoomKey(static_cast<RoomID>(room.id), age.id), nodes);
 			}
 		}
 	}
 }
 
-Common::Array<NodePtr> Database::getRoomNodes(uint32 roomID, uint32 ageID) const {
+Common::Array<NodePtr> Database::getRoomNodes(RoomID roomID, uint32 ageID) const {
 	Common::Array<NodePtr> nodes;
 
 	if (_roomNodesCache.contains(RoomKey(roomID, ageID))) {
@@ -535,7 +535,7 @@ Common::Array<NodePtr> Database::getRoomNodes(uint32 roomID, uint32 ageID) const
 	return nodes;
 }
 
-Common::Array<uint16> Database::listRoomNodes(uint32 roomID, uint32 ageID) {
+Common::Array<uint16> Database::listRoomNodes(RoomID roomID, uint32 ageID) {
 	Common::Array<NodePtr> nodes;
 	Common::Array<uint16> list;
 
@@ -548,7 +548,7 @@ Common::Array<uint16> Database::listRoomNodes(uint32 roomID, uint32 ageID) {
 	return list;
 }
 
-NodePtr Database::getNodeData(uint16 nodeID, uint32 roomID, uint32 ageID) {
+NodePtr Database::getNodeData(uint16 nodeID, RoomID roomID, uint32 ageID) {
 	Common::Array<NodePtr> nodes = getRoomNodes(roomID, ageID);
 
 	for (uint i = 0; i < nodes.size(); i++) {
@@ -578,7 +578,7 @@ void Database::initializeZipBitIndexTable() {
 	}
 }
 
-int32 Database::getNodeZipBitIndex(uint16 nodeID, uint32 roomID, uint32 ageID) {
+int32 Database::getNodeZipBitIndex(uint16 nodeID, RoomID roomID, uint32 ageID) {
 	if (!_roomZipBitIndex.contains(roomID)) {
 		error("Unable to find zip-bit index for room %d", roomID);
 	}
@@ -594,11 +594,11 @@ int32 Database::getNodeZipBitIndex(uint16 nodeID, uint32 roomID, uint32 ageID) {
 	error("Unable to find zip-bit index for node (%d, %d)", nodeID, roomID);
 }
 
-const RoomData *Database::findRoomData(uint32 roomID, uint32 ageID) const {
+const RoomData *Database::findRoomData(RoomID roomID, uint32 ageID) const {
 	for (uint i = 0; i < ARRAYSIZE(_ages); i++) {
 		if (_ages[i].id == ageID) {
 			for (uint j = 0; j < _ages[i].roomCount; j++) {
-				if (_ages[i].rooms[j].id == roomID) {
+				if (_ages[i].rooms[j].id == static_cast<uint16>(roomID)) {
 					return &_ages[i].rooms[j];
 				}
 			}
@@ -686,11 +686,11 @@ void Database::patchNodeScripts(const RoomData *room, Common::Array<NodePtr> &no
 	}
 }
 
-bool Database::isCommonRoom(uint32 roomID, uint32 ageID) const {
-	return roomID == 101 || roomID == 901 || roomID == 902;
+bool Database::isCommonRoom(RoomID roomID, uint32 ageID) const {
+	return roomID == kINIT || roomID == kMENU || roomID == kJRNL;
 }
 
-void Database::cacheRoom(uint32 roomID, uint32 ageID) {
+void Database::cacheRoom(RoomID roomID, uint32 ageID) {
 	if (_roomNodesCache.contains(RoomKey(roomID, ageID))) {
 		return;
 	}
@@ -710,7 +710,7 @@ void Database::cacheRoom(uint32 roomID, uint32 ageID) {
 	_roomNodesCache.setVal(RoomKey(roomID, ageID), readRoomScripts(currentRoomData));
 }
 
-Common::String Database::getRoomName(uint32 roomID, uint32 ageID) const {
+Common::String Database::getRoomName(RoomID roomID, uint32 ageID) const {
 	const RoomData *data = findRoomData(roomID, ageID);
 	return data->name;
 }
@@ -719,11 +719,11 @@ RoomKey Database::getRoomKey(const char *name) {
 	for (uint i = 0; i < ARRAYSIZE(_ages); i++)
 		for (uint j = 0; j < _ages[i].roomCount; j++) {
 			if (scumm_stricmp(_ages[i].rooms[j].name, name) == 0) {
-				return RoomKey(_ages[i].rooms[j].id, _ages[i].id);
+				return RoomKey(static_cast<RoomID>(_ages[i].rooms[j].id), _ages[i].id);
 			}
 		}
 
-	return RoomKey(0, 0);
+	return RoomKey(kNoRoom, 0);
 }
 
 uint32 Database::getAgeLabelId(uint32 ageID) {
@@ -864,7 +864,7 @@ void Database::patchLanguageMenu() {
 	//	op 194, runPuzzle1 ( 18 )
 	//	op 194, runPuzzle1 ( 19 )
 
-	NodePtr languageMenu = getNodeData(530, 901, 9);
+	NodePtr languageMenu = getNodeData(530, kMENU, 9);
 	languageMenu->hotspots[5].script[1].args[1] = getGameLanguageCode();
 }
 

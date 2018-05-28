@@ -28,12 +28,12 @@
 #include "common/rect.h"
 
 #include "engines/myst3/gfx.h"
+#include "engines/myst3/myst3.h"
 
 #include "video/bink_decoder.h"
 
 namespace Myst3 {
 
-class Myst3Engine;
 class Texture;
 
 class Inventory : public Window {
@@ -94,7 +94,7 @@ private:
 
 	bool hasItem(uint16 var);
 
-	void openBook(uint16 age, uint16 room, uint16 node);
+	void openBook(uint16 age, RoomID room, uint16 node);
 	void closeAllBooks();
 };
 

@@ -151,7 +151,7 @@ int32 HotSpot::isZipDestinationAvailable(GameState *state) {
 	assert(isZip() && script.size() != 0);
 
 	uint16 node;
-	uint16 room = state->getLocationRoom();
+	RoomID room = static_cast<RoomID>(state->getLocationRoom());
 	uint32 age = state->getLocationAge();
 
 	// Get the zip destination from the script
@@ -164,7 +164,7 @@ int32 HotSpot::isZipDestinationAvailable(GameState *state) {
 	case 141:
 	case 143:
 		node = op.args[1];
-		room = op.args[0];
+		room = static_cast<RoomID>(op.args[0]);
 		break;
 	default:
 		error("Expected zip action");

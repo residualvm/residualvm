@@ -2117,13 +2117,15 @@ void Script::changeNode(Context &c, const Opcode &cmd) {
 void Script::changeNodeRoom(Context &c, const Opcode &cmd) {
 	debugC(kDebugScript, "Opcode %d: Go to node %d room %d", cmd.op, cmd.args[0], cmd.args[1]);
 
-	_vm->loadNode(cmd.args[1], cmd.args[0]);
+	RoomID room = static_cast<RoomID>(cmd.args[0]);
+	_vm->loadNode(cmd.args[1], room);
 }
 
 void Script::changeNodeRoomAge(Context &c, const Opcode &cmd) {
 	debugC(kDebugScript, "Opcode %d: Go to node %d room %d age %d", cmd.op, cmd.args[2], cmd.args[1], cmd.args[0]);
 
-	_vm->loadNode(cmd.args[2], cmd.args[1], cmd.args[0]);
+	RoomID room = static_cast<RoomID>(cmd.args[1]);
+	_vm->loadNode(cmd.args[2], room, cmd.args[0]);
 }
 
 void Script::drawXTicks(Context &c, const Opcode &cmd) {
@@ -2438,8 +2440,9 @@ void Script::runScript(Context &c, const Opcode &cmd) {
 	debugC(kDebugScript, "Opcode %d: Run scripts from node %d", cmd.op, cmd.args[0]);
 
 	uint16 node = _vm->_state->valueOrVarValue(cmd.args[0]);
+	RoomID room = static_cast<RoomID>(_vm->_state->getLocationRoom());
 
-	_vm->runScriptsFromNode(node, _vm->_state->getLocationRoom());
+	_vm->runScriptsFromNode(node, room);
 }
 
 void Script::runScriptWithVar(Context &c, const Opcode &cmd) {
@@ -2447,14 +2450,15 @@ void Script::runScriptWithVar(Context &c, const Opcode &cmd) {
 
 	_vm->_state->setVar(26, cmd.args[1]);
 	uint16 node = _vm->_state->valueOrVarValue(cmd.args[0]);
+	RoomID room = static_cast<RoomID>(_vm->_state->getLocationRoom());
 
-	_vm->runScriptsFromNode(node, _vm->_state->getLocationRoom());
+	_vm->runScriptsFromNode(node, room);
 }
 
 void Script::runCommonScript(Context &c, const Opcode &cmd) {
 	debugC(kDebugScript, "Opcode %d: Run common script %d", cmd.op, cmd.args[0]);
 
-	_vm->runScriptsFromNode(cmd.args[0], 101, 1);
+	_vm->runScriptsFromNode(cmd.args[0], kINIT, 1);
 }
 
 void Script::runCommonScriptWithVar(Context &c, const Opcode &cmd) {
@@ -2462,7 +2466,7 @@ void Script::runCommonScriptWithVar(Context &c, const Opcode &cmd) {
 
 	_vm->_state->setVar(26, cmd.args[1]);
 
-	_vm->runScriptsFromNode(cmd.args[0], 101, 1);
+	_vm->runScriptsFromNode(cmd.args[0], kINIT, 1);
 }
 
 void Script::runPuzzle1(Context &c, const Opcode &cmd) {
@@ -2804,7 +2808,7 @@ void Script::runSoundScriptNodeRoom(Context &c, const Opcode &cmd) {
 			cmd.op, cmd.args[1], cmd.args[0]);
 
 	int32 node = _vm->_state->valueOrVarValue(cmd.args[1]);
-	int32 room = _vm->_state->valueOrVarValue(cmd.args[0]);
+	RoomID room = static_cast<RoomID>(_vm->_state->valueOrVarValue(cmd.args[0]));
 	_vm->runBackgroundSoundScriptsFromNode(node, room);
 }
 
@@ -2813,7 +2817,7 @@ void Script::runSoundScriptNodeRoomAge(Context &c, const Opcode &cmd) {
 			cmd.op, cmd.args[2], cmd.args[1], cmd.args[0]);
 
 	int32 node = _vm->_state->valueOrVarValue(cmd.args[2]);
-	int32 room = _vm->_state->valueOrVarValue(cmd.args[1]);
+	RoomID room = static_cast<RoomID>(_vm->_state->valueOrVarValue(cmd.args[1]));
 	int32 age = _vm->_state->valueOrVarValue(cmd.args[0]);
 	_vm->runBackgroundSoundScriptsFromNode(node, room, age);
 }
