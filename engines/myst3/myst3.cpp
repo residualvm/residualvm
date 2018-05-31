@@ -190,11 +190,11 @@ Common::Error Myst3Engine::run() {
 	} else {
 		if (getPlatform() == Common::kPlatformXbox) {
 			// Play the logo videos
-			loadNode(1, 1101, 11);
+			loadNode(1, kLOGO, 11);
 		}
 
 		// Game init script, loads the menu
-		loadNode(1, 101, 1);
+		loadNode(1, kINIT, 1);
 	}
 
 	while (!shouldQuit()) {
@@ -406,7 +406,8 @@ void Myst3Engine::updateCursor() {
 		return;
 	}
 
-	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), _state->getLocationRoom(), _state->getLocationAge());
+	RoomID roomID = static_cast<RoomID>(_state->getLocationRoom());
+	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), roomID, _state->getLocationAge());
 
 	_state->setHotspotIgnoreClick(true);
 	HotSpot *hovered = getHoveredHotspot(nodeData);
@@ -493,7 +494,7 @@ void Myst3Engine::processInput(bool interactive) {
 			case Common::KEYCODE_F5:
 				// Open main menu
 				if (_cursor->isVisible() && interactive) {
-					if (_state->getLocationRoom() != 901)
+					if (static_cast<RoomID>(_state->getLocationRoom()) != kMENU)
 						_menu->goToNode(100);
 				}
 				break;
@@ -552,7 +553,7 @@ void Myst3Engine::processInput(bool interactive) {
 	if (_inputEscapePressedNotConsumed && interactive) {
 		_inputEscapePressedNotConsumed = false;
 		if (_cursor->isVisible() && _state->hasVarMenuEscapePressed()) {
-			if (_state->getLocationRoom() != 901)
+			if (static_cast<RoomID>(_state->getLocationRoom()) != kMENU)
 				_menu->goToNode(100);
 			else
 				_state->setMenuEscapePressed(1);
@@ -643,7 +644,8 @@ void Myst3Engine::interactWithHoveredElement() {
 		return;
 	}
 
-	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), _state->getLocationRoom(), _state->getLocationAge());
+	RoomID roomID = static_cast<RoomID>(_state->getLocationRoom());
+	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), roomID, _state->getLocationAge());
 	HotSpot *hovered = getHoveredHotspot(nodeData);
 
 	if (hovered) {
@@ -730,7 +732,7 @@ void Myst3Engine::drawFrame(bool noSwap) {
 
 	if (getPlatform() == Common::kPlatformXbox) {
 		// The cursor is not drawn in the Xbox version menus and journals
-		cursorVisible &= !(_state->getLocationRoom() == 901 || _state->getLocationRoom() == 902);
+		cursorVisible &= !(_state->getLocationRoom() == kMENU || _state->getLocationRoom() == kJRNL);
 	}
 
 	if (cursorVisible)
@@ -784,7 +786,7 @@ void Myst3Engine::goToNode(uint16 nodeID, TransitionType transitionType) {
 	if (node == 0)
 		node = nodeID;
 
-	uint16 room = _state->getLocationNextRoom();
+	RoomID room = static_cast<RoomID>(_state->getLocationNextRoom());
 	uint16 age = _state->getLocationNextAge();
 
 	setupTransition();
@@ -811,7 +813,7 @@ void Myst3Engine::goToNode(uint16 nodeID, TransitionType transitionType) {
 	drawTransition(transitionType);
 }
 
-void Myst3Engine::loadNode(uint16 nodeID, uint32 roomID, uint32 ageID) {
+void Myst3Engine::loadNode(uint16 nodeID, RoomID roomID, uint32 ageID) {
 	unloadNode();
 
 	_scriptEngine->run(&_db->getNodeInitScript());
@@ -822,7 +824,7 @@ void Myst3Engine::loadNode(uint16 nodeID, uint32 roomID, uint32 ageID) {
 	if (roomID)
 		_state->setLocationRoom(_state->valueOrVarValue(roomID));
 	else
-		roomID = _state->getLocationRoom();
+		roomID = static_cast<RoomID>(_state->getLocationRoom());
 
 	if (ageID)
 		_state->setLocationAge(_state->valueOrVarValue(ageID));
@@ -851,7 +853,7 @@ void Myst3Engine::loadNode(uint16 nodeID, uint32 roomID, uint32 ageID) {
 	// WORKAROUND: In Narayan, the scripts in node NACH 9 test on var 39
 	// without first reinitializing it leading to Saavedro not always giving
 	// Releeshan to the player when he is trapped between both shields.
-	if (nodeID == 9 && roomID == 801)
+	if (nodeID == 9 && roomID == kNACH)
 		_state->setVar(39, 0);
 }
 
@@ -880,14 +882,15 @@ void Myst3Engine::unloadNode() {
 }
 
 void Myst3Engine::runNodeInitScripts() {
+	RoomID roomID = static_cast<RoomID>(_state->getLocationRoom());
 	NodePtr nodeData = _db->getNodeData(
 			_state->getLocationNode(),
-			_state->getLocationRoom(),
+			roomID,
 			_state->getLocationAge());
 
 	NodePtr nodeDataInit = _db->getNodeData(
 			32765,
-			_state->getLocationRoom(),
+			roomID,
 			_state->getLocationAge());
 
 	if (nodeDataInit)
@@ -905,12 +908,13 @@ void Myst3Engine::runNodeInitScripts() {
 	// Mark the node as a reachable zip destination
 	_state->markNodeAsVisited(
 			_state->getLocationNode(),
-			_state->getLocationRoom(),
+			roomID,
 			_state->getLocationAge());
 }
 
 void Myst3Engine::runNodeBackgroundScripts() {
-	NodePtr nodeDataRoom = _db->getNodeData(32765, _state->getLocationRoom(), _state->getLocationAge());
+	RoomID roomID = static_cast<RoomID>(_state->getLocationRoom());
+	NodePtr nodeDataRoom = _db->getNodeData(32765, roomID, _state->getLocationAge());
 
 	if (nodeDataRoom) {
 		for (uint j = 0; j < nodeDataRoom->hotspots.size(); j++) {
@@ -921,7 +925,7 @@ void Myst3Engine::runNodeBackgroundScripts() {
 		}
 	}
 
-	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), _state->getLocationRoom(), _state->getLocationAge());
+	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), roomID, _state->getLocationAge());
 
 	for (uint j = 0; j < nodeData->hotspots.size(); j++) {
 		if (nodeData->hotspots[j].condition == -1) {
@@ -958,9 +962,9 @@ void Myst3Engine::loadNodeMenu(uint16 nodeID) {
 	_node = new NodeFrame(this, nodeID);
 }
 
-void Myst3Engine::runScriptsFromNode(uint16 nodeID, uint32 roomID, uint32 ageID) {
-	if (roomID == 0)
-		roomID = _state->getLocationRoom();
+void Myst3Engine::runScriptsFromNode(uint16 nodeID, RoomID roomID, uint32 ageID) {
+	if (roomID == kNoRoom)
+		roomID = static_cast<RoomID>(_state->getLocationRoom());
 
 	if (ageID == 0)
 		ageID = _state->getLocationAge();
@@ -975,12 +979,12 @@ void Myst3Engine::runScriptsFromNode(uint16 nodeID, uint32 roomID, uint32 ageID)
 	}
 }
 
-void Myst3Engine::runBackgroundSoundScriptsFromNode(uint16 nodeID, uint32 roomID, uint32 ageID) {
+void Myst3Engine::runBackgroundSoundScriptsFromNode(uint16 nodeID, RoomID roomID, uint32 ageID) {
 	if (_state->getSoundScriptsSuspended())
 		return;
 
 	if (roomID == 0)
-		roomID = _state->getLocationRoom();
+		roomID = static_cast<RoomID>(_state->getLocationRoom());
 
 	if (ageID == 0)
 		ageID = _state->getLocationAge();
@@ -991,10 +995,10 @@ void Myst3Engine::runBackgroundSoundScriptsFromNode(uint16 nodeID, uint32 roomID
 
 	// Stop previous music when changing room
 	if (_backgroundSoundScriptLastRoomId != roomID) {
-		if (_backgroundSoundScriptLastRoomId != 0
-				&& _backgroundSoundScriptLastRoomId != 901
-				&& _backgroundSoundScriptLastRoomId != 902
-				&& roomID != 0 && roomID != 901 && roomID != 902) {
+		if (_backgroundSoundScriptLastRoomId != kNoRoom
+				&& _backgroundSoundScriptLastRoomId != kMENU
+				&& _backgroundSoundScriptLastRoomId != kJRNL
+				&& roomID != kNoRoom && roomID != kMENU && roomID != kJRNL) {
 			_sound->stopMusic(_state->getSoundScriptFadeOutDelay());
 
 			if (nodeData->backgroundSoundScripts.size() != 0) {
@@ -1016,11 +1020,11 @@ void Myst3Engine::runBackgroundSoundScriptsFromNode(uint16 nodeID, uint32 roomID
 }
 
 void Myst3Engine::runAmbientScripts(uint32 node) {
-	uint32 room = _ambient->_scriptRoom;
+	RoomID room = static_cast<RoomID>(_ambient->_scriptRoom);
 	uint32 age = _ambient->_scriptAge;
 
-	if (room == 0)
-		room = _state->getLocationRoom();
+	if (room == kNoRoom)
+		room = static_cast<RoomID>(_state->getLocationRoom());
 
 	if (age == 0)
 		age = _state->getLocationAge();
@@ -1286,8 +1290,9 @@ void Myst3Engine::loadNodeSubtitles(uint32 id) {
 const DirectorySubEntry *Myst3Engine::getFileDescription(const Common::String &room, uint32 index, uint16 face,
                                                          DirectorySubEntry::ResourceType type) {
 	Common::String archiveRoom = room;
+	RoomID roomID = static_cast<RoomID>(_state->getLocationRoom());
 	if (archiveRoom == "") {
-		archiveRoom = _db->getRoomName(_state->getLocationRoom(), _state->getLocationAge());
+		archiveRoom = _db->getRoomName(roomID, _state->getLocationAge());
 	}
 
 	const DirectorySubEntry *desc = 0;
@@ -1309,8 +1314,9 @@ const DirectorySubEntry *Myst3Engine::getFileDescription(const Common::String &r
 DirectorySubEntryList Myst3Engine::listFilesMatching(const Common::String &room, uint32 index, uint16 face,
                                                      DirectorySubEntry::ResourceType type) {
 	Common::String archiveRoom = room;
+	RoomID roomID = static_cast<RoomID>(_state->getLocationRoom());
 	if (archiveRoom == "") {
-		archiveRoom = _db->getRoomName(_state->getLocationRoom(), _state->getLocationAge());
+		archiveRoom = _db->getRoomName(roomID, _state->getLocationAge());
 	}
 
 	for (uint i = 0; i < _archivesCommon.size(); i++) {
@@ -1429,7 +1435,9 @@ void Myst3Engine::dragSymbol(uint16 var, uint16 id) {
 	_cursor->changeCursor(2);
 	_state->setVar(var, -1);
 
-	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), _state->getLocationRoom(), _state->getLocationAge());
+	RoomID roomID = static_cast<RoomID>(_state->getLocationRoom());
+
+	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), roomID, _state->getLocationAge());
 
 	while (inputValidatePressed() && !shouldQuit()) {
 		processInput(false);
@@ -1460,7 +1468,9 @@ void Myst3Engine::dragItem(uint16 statusVar, uint16 movie, uint16 frame, uint16 
 	_state->setVar(statusVar, 0);
 	_state->setVar(itemVar, 1);
 
-	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), _state->getLocationRoom(), _state->getLocationAge());
+	RoomID roomID = static_cast<RoomID>(_state->getLocationRoom());
+
+	NodePtr nodeData = _db->getNodeData(_state->getLocationNode(), roomID, _state->getLocationAge());
 
 	while (inputValidatePressed() && !shouldQuit()) {
 		processInput(false);
@@ -1485,7 +1495,8 @@ void Myst3Engine::dragItem(uint16 statusVar, uint16 movie, uint16 frame, uint16 
 }
 
 bool Myst3Engine::canSaveGameStateCurrently() {
-	bool inMenuWithNoGameLoaded = _state->getLocationRoom() == 901 && _state->getMenuSavedAge() == 0;
+	RoomID roomID = static_cast<RoomID>(_state->getLocationRoom());
+	bool inMenuWithNoGameLoaded = roomID == kMENU && _state->getMenuSavedAge() == 0;
 	return canLoadGameStateCurrently() && !inMenuWithNoGameLoaded && _cursor->isVisible();
 }
 
@@ -1658,7 +1669,7 @@ void Myst3Engine::getMovieLookAt(uint16 id, bool start, float &pitch, float &hea
 }
 
 void Myst3Engine::playMovieGoToNode(uint16 movie, uint16 node) {
-	uint16 room = _state->getLocationNextRoom();
+	RoomID room = static_cast<RoomID>(_state->getLocationRoom());
 	uint16 age = _state->getLocationNextAge();
 
 	if (_state->getLocationNextNode() != 0) {

@@ -267,7 +267,7 @@ void Menu::updateMainMenu(uint16 action) {
 	case 4:
 		// Settings
 		_vm->_state->setMenuOptionsBack(1);
-		_vm->runScriptsFromNode(599, 0, 0);
+		_vm->runScriptsFromNode(599, kNoRoom, 0);
 		break;
 	case 5: {
 			// Asked to quit
@@ -305,7 +305,8 @@ Graphics::Surface *Menu::captureThumbnail() {
 }
 
 void Menu::goToNode(uint16 node) {
-	if (_vm->_state->getMenuSavedAge() == 0 && _vm->_state->getLocationRoom() != 901) {
+	RoomID room = static_cast<RoomID>(_vm->_state->getLocationRoom());
+	if (_vm->_state->getMenuSavedAge() == 0 && room != kMENU) {
 		// Entering menu, save current location ...
 		_vm->_state->setMenuSavedAge(_vm->_state->getLocationAge());
 		_vm->_state->setMenuSavedRoom(_vm->_state->getLocationRoom());
@@ -336,7 +337,7 @@ void Menu::goToNode(uint16 node) {
 	}
 
 	_vm->_state->setLocationNextAge(9);
-	_vm->_state->setLocationNextRoom(901);
+	_vm->_state->setLocationNextRoom(static_cast<uint16>(kMENU));
 	_vm->goToNode(node, kTransitionNone);
 }
 
@@ -391,8 +392,8 @@ uint16 Menu::dialogSaveValue() {
 
 Common::String Menu::getAgeLabel(GameState *gameState) {
 	uint32 age = 0;
-	uint32 room = gameState->getLocationRoom();
-	if (room == 901)
+	RoomID room = static_cast<RoomID>(gameState->getLocationRoom());
+	if (room == kMENU)
 		age = gameState->getMenuSavedAge();
 	else
 		age = gameState->getLocationAge();
@@ -441,7 +442,8 @@ void Menu::setSaveLoadSpotItem(uint16 id, SpotItemFace *spotItem) {
 }
 
 bool Menu::isOpen() const {
-	return _vm->_state->getLocationAge() == 9 && _vm->_state->getLocationRoom() == 901;
+	RoomID room = static_cast<RoomID>(_vm->_state->getLocationRoom());
+	return _vm->_state->getLocationAge() == 9 && room == kMENU;
 }
 
 Graphics::Surface *Menu::borrowSaveThumbnail() {
@@ -670,10 +672,10 @@ void PagingMenu::saveLoadErase() {
 
 void PagingMenu::draw() {
 	uint16 node = _vm->_state->getLocationNode();
-	uint16 room = _vm->_state->getLocationRoom();
+	RoomID room = static_cast<RoomID>(_vm->_state->getLocationRoom());
 	uint16 age = _vm->_state->getLocationAge();
 
-	if (room != 901 || !(node == 200 || node == 300))
+	if (room != kMENU || !(node == 200 || node == 300))
 		return;
 
 	int16 page = _vm->_state->getMenuSaveLoadCurrentPage();
@@ -720,10 +722,10 @@ void PagingMenu::draw() {
 
 bool PagingMenu::handleInput(const Common::KeyState &e) {
 	uint16 node = _vm->_state->getLocationNode();
-	uint16 room = _vm->_state->getLocationRoom();
+	RoomID room = static_cast<RoomID>(_vm->_state->getLocationRoom());
 	uint16 item = _vm->_state->getMenuSaveLoadSelectedItem();
 
-	if (room != 901 || node != 300 || item != 7)
+	if (room != kMENU || node != 300 || item != 7)
 		return false;
 
 	Common::String display = prepareSaveNameForDisplay(_saveName);
@@ -783,10 +785,10 @@ AlbumMenu::~AlbumMenu() {
 
 void AlbumMenu::draw() {
 	uint16 node = _vm->_state->getLocationNode();
-	uint16 room = _vm->_state->getLocationRoom();
+	RoomID room = static_cast<RoomID>(_vm->_state->getLocationRoom());
 
 	// Load and save menus only
-	if (room != 901 || !(node == 200 || node == 300))
+	if (room != kMENU || !(node == 200 || node == 300))
 		return;
 
 	if (!_saveLoadAgeName.empty()) {
@@ -892,10 +894,10 @@ void AlbumMenu::loadMenuOpen() {
 
 void AlbumMenu::loadMenuSelect() {
 	uint16 node = _vm->_state->getLocationNode();
-	uint16 room = _vm->_state->getLocationRoom();
+	RoomID room = static_cast<RoomID>(_vm->_state->getLocationRoom());
 
 	// Details are only updated on the load menu
-	if (room != 901 || node != 200)
+	if (room != kMENU || node != 200)
 		return;
 
 	int32 selectedSave = _vm->_state->getMenuSelectedSave();
