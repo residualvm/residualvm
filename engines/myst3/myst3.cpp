@@ -31,6 +31,7 @@
 
 #include "gui/debugger.h"
 #include "gui/error.h"
+#include "gui/saveload.h"
 
 #include "engines/engine.h"
 
@@ -139,6 +140,7 @@ bool Myst3Engine::hasFeature(EngineFeature f) const {
 	return
 		(f == kSupportsRTL) ||
 		(f == kSupportsLoadingDuringRuntime) ||
+		(f == kSupportsSavingDuringRuntime) ||
 		(f == kSupportsArbitraryResolutions && !softRenderer);
 }
 
@@ -492,6 +494,7 @@ void Myst3Engine::processInput(bool interactive) {
 				break;
 			case Common::KEYCODE_F5:
 				// Open main menu
+
 				if (_cursor->isVisible() && interactive) {
 					if (_state->getLocationRoom() != 901)
 						_menu->goToNode(100);
@@ -502,7 +505,7 @@ void Myst3Engine::processInput(bool interactive) {
 					_console->attach();
 					_console->onFrame();
 				}
-				break;
+				break;				
 			default:
 				break;
 			}
@@ -1505,28 +1508,32 @@ void Myst3Engine::tryAutoSaving() {
 	_lastSaveTime = _system->getMillis();
 
 	// Get a thumbnail of the game screen
-	Common::DisposablePtr<Graphics::Surface, Graphics::SurfaceDeleter> thumbnail(nullptr, DisposeAfterUse::NO);
-	if (_menu->isOpen()) {
-		thumbnail.reset(_menu->borrowSaveThumbnail(), DisposeAfterUse::NO);
-	} else {
-		// Capture thumbnail before saving
-		thumbnail.reset(_menu->captureThumbnail(), DisposeAfterUse::YES);
-	}
+	if (!_menu->isOpen())
+		_menu->generateSaveThumbnail();
 
 	// Open the save file
 	Common::String saveName = "Autosave";
-	Common::String fileName = Saves::buildName(saveName.c_str(), getPlatform());
-	Common::OutSaveFile *save = getSaveFileManager()->openForSaving(fileName);
-	if (!save) {
-		warning("Unable to open the autosave file: %s.", fileName.c_str());
-	}
+	saveGame(saveName);
 
-	// Save the state and the thumbnail
-	if (!_state->save(save, saveName, thumbnail.get())) {
-		warning("Unable to write the autosave to '%s'.", fileName.c_str());
-	}
+}
 
-	delete save;
+void Myst3Engine::saveGame(Common::String &saveName) {
+	const Graphics::Surface *thumbnail = _menu->borrowSaveThumbnail(); // Use an already generated thumbnail
+	
+	if (thumbnail) {
+		Common::String fileName = Saves::buildName(saveName.c_str(), getPlatform());
+		Common::OutSaveFile *save = getSaveFileManager()->openForSaving(fileName);
+		if (!save) {
+			warning("Unable to open the autosave file: %s.", fileName.c_str());
+		}
+
+		// Save the state and the thumbnail
+		if (!_state->save(save, saveName, thumbnail)) {
+			warning("Unable to write the autosave to '%s'.", fileName.c_str());
+		}
+
+		delete save;
+	}
 }
 
 Common::Error Myst3Engine::loadGameState(int slot) {
@@ -1563,6 +1570,24 @@ Common::Error Myst3Engine::loadGameState(Common::String fileName, TransitionType
 
 	goToNode(0, transition);
 	return Common::kNoError;
+}
+
+Common::Error Myst3Engine::saveGameState(int slot, const Common::String &desc) {
+	assert(!desc.empty());
+	if (slot >= 0) {
+		Common::String saveName;
+		saveName = desc;
+		Common::replace(saveName,"/",""); // remove any slashes
+
+		// Strip extension
+		if (Common::matchString(desc.c_str(),"*.M3S",true) || Common::matchString(desc.c_str(),"*.M3X",true))
+			saveName.erase(desc.size()-4,desc.size());
+
+		saveGame(saveName);
+		return Common::kNoError;
+	}
+
+	return Common::kUnknownError;
 }
 
 void Myst3Engine::animateDirectionChange(float targetPitch, float targetHeading, uint16 scriptTicks) {
@@ -1876,6 +1901,12 @@ void Myst3Engine::pauseEngineIntern(bool pause) {
 	}
 
 	_state->pauseEngine(pause);
+
+	// Grab a game screen thumbnail in case we need one when writing a save file
+	if (pause) {
+		if (!_menu->isOpen()) // opening the menu generates a save thumbnail so we only generate it if the menu is not open
+			_menu->generateSaveThumbnail();
+	}
 
 	// Unlock the mouse so that the cursor is visible when the GMM opens
 	if (_state->getViewType() == kCube && _cursor->isPositionLocked()) {
