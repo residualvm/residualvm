@@ -384,6 +384,7 @@ Command     | Description
 ----------- | ------------------------------------------------------------
 *TODO*      | *TODO*
 
+
 ## 9. Bug Reports
 ResidualVM still has a few bugs, many might already have been reported,
 but should you find a new one, don't hesitate to report it.
