@@ -2,15 +2,16 @@ ResidualVM: A 3D game interpreter
 =================================
 
 
-  1. [ What is ResidualVM? ](#1-what-is-residualvm)
-  2. [ Current state       ](#2-current-state)
-  3. [ Running GrimE games ](#3-running-grime-games)
-  4. [ Running Myst III    ](#4-running-myst-iii)
-  5. [ Configuration       ](#5-configuration)
-  6. [ Troubleshooting     ](#6-troubleshooting-known-bugs-issues)
-  7. [ Debugging           ](#7-debugging)
-  8. [ Bug Reports         ](#8-bug-reports)
-  9. [ Contact             ](#9-contact)
+  1. [ What is ResidualVM?         ](#1-what-is-residualvm)
+  2. [ Current state               ](#2-current-state)
+  3. [ Running GrimE games         ](#3-running-grime-games)
+  4. [ Running Myst III            ](#4-running-myst-iii)
+  5. [ Running The Longest Journey ](#5-running-the-longest-journey)
+  6. [ Configuration               ](#6-configuration)
+  7. [ Troubleshooting             ](#7-troubleshooting-known-bugs-issues)
+  8. [ Debugging                   ](#8-debugging)
+  9. [ Bug Reports                 ](#9-bug-reports)
+ 10. [ Contact                     ](#10-contact)
 
 
 ## 1. What is ResidualVM?
@@ -149,6 +150,7 @@ of the engine needs to be enabled using one of the following two options:
   * add "joystick\_num=0" to the "[residualvm]" section of the configuration file
     (see section 5.1. how to find the file)
 
+
 ## 4. Running Myst III
 
 ### 4.1. Required files ###
@@ -204,6 +206,7 @@ Space      | Skip cutscenes, interact
 Ctrl + c   | Force Quit (from command-line)
 Ctrl + q   | Quit (ingame)
 
+
 ## 5. Running The Longest Journey
 
 ### 5.1. Required files ###
@@ -231,11 +234,10 @@ Available keyboard shortcuts:
 Key        | Binding
 ---------- | ------------------------------
 Escape     | Skip video sequence or current line of dialogue, skip time if *Time Skip* option is enabled
-Alt + x    | Quit
-Alt + q    | Quit
 Ctrl + F5  | ResidualVM Menu
 Ctrl + c   | Force Quit (from command-line)
 Ctrl + q   | Quit (ingame)
+
 
 ## 6. Configuration
 Currently, not all the settings for ResidualVM are available through the GUI,
