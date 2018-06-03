@@ -65,14 +65,15 @@ GameScreen::~GameScreen() {
 }
 
 void GameScreen::open() {
-	g_engine->_mixer->pauseAll(false);
+	if (g_engine->isPaused()) {
+		g_engine->pauseEngine(false);
+	}
 	StarkUserInterface->freeGameScreenThumbnail();
 }
 
 void GameScreen::close() {
 	_cursor->setMouseHint("");
-	g_engine->_mixer->pauseAll(true);
-	StarkUserInterface->saveGameScreenThumbnail();
+	g_engine->pauseEngine(true);
 }
 
 void GameScreen::render() {
