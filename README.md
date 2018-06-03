@@ -16,8 +16,8 @@ ResidualVM: A 3D game interpreter
 
 ## 1. What is ResidualVM?
 ResidualVM is a game engine reimplementation that allows you
-to play 3D adventure games such as Grim Fandango, Escape from Monkey Island
-and Myst III.
+to play 3D adventure games such as Grim Fandango, Escape from Monkey
+Island, Myst III and The Longest Journey.
 
 ResidualVM utilizes OpenGL for 3D graphics hardware acceleration.
 A software renderer is also included for machines without hardware OpenGL.
@@ -32,7 +32,7 @@ itself originally had a few unintentional ways to get the game stuck).
 ### 2.1. Which games does ResidualVM support? ###
 
 Currently ResidualVM supports Grim Fandango and Escape From Monkey Island,
-as well Myst III.
+as well Myst III and The Longest Journey.
 
 #### 2.1.1. GrimE-games support ####
 
@@ -211,12 +211,19 @@ Ctrl + q   | Quit (ingame)
 
 ### 5.1. Required files ###
 
-You will need these elements from your game CDs or DVD :
-  * *TODO*
-  
-For digital distributions (Steam, GOG, demo from Steam or other sources),
-you can just add the game folder to ResidualVM without any changes.
-  
+You will need to copy the data files from your The Longest Journey CDs,
+DVD or digital distributiion into one directory. Specifically, you'll
+need:
+  * 1a—79 directories (4f only for demo version)
+  * global directory
+  * static directory
+  * fonts directory (not critical, but recommended – see below)
+  * x.xarc and chapters.ini files
+
+Steam version and demo from Steam are missing the fonts folder. The
+required fonts can be copied over from demo version obtained from
+different sources or a GOG or retail version.
+
 ### 5.2. Running the game ###
 
 1. Copy the necessary files to a folder on your Hard Drive
@@ -231,12 +238,13 @@ The mouse is used to interact with objects and menu elements.
 
 Available keyboard shortcuts:
 
-Key        | Binding
----------- | ------------------------------
-Escape     | Skip video sequence or current line of dialogue, skip time if *Time Skip* option is enabled
-Ctrl + F5  | ResidualVM Menu
-Ctrl + c   | Force Quit (from command-line)
-Ctrl + q   | Quit (ingame)
+Key         | Binding
+----------- | -------------------------------------------------------------------------------------------
+Escape      | Skip video sequence or current line of dialogue, skip time if *Time Skip* option is enabled
+Ctrl + F5   | ResidualVM Menu
+Ctrl + c    | Force Quit (from command-line)
+Ctrl + q    | Quit (ingame)
+Alt + enter | Switch between windowed-mode and fullscreen
 
 
 ## 6. Configuration
@@ -380,9 +388,29 @@ display a list of the available commands.
 
 The most useful commands are:
 
-Command     | Description
------------ | ------------------------------------------------------------
-*TODO*      | *TODO*
+Command             | Description
+------------------- | ------------------------------------------------------------
+changeChapter       | Change the current chapter
+changeKnowledge     | Change the value of some knowledge
+changeLocation      | Change the current location
+chapter             | Display the current chapter
+decompileScript     | Decompile a script
+dumpArchive         | Extract a game archive
+dumpGlobal          | Print the global level's resource sub-tree to stdout
+dumpKnowledge       | Print the current knowledge to stdout
+dumpLevel           | Print the current level's resource sub-tree to stdout
+dumpLocation        | Print the current location's resource sub-tree to stdout
+dumpRoot            | Print all the locations to stdout
+dumpStatic          | Print the static level's resource sub-tree to stdout
+enableInventoryItem | Enable a specific inventory item
+enableScript        | Enable or disable script
+forceScript         | Force the execution of a script
+listInventory       | Lists all inventory items in the game
+listLocations       | Lists all the locations in the game
+listScripts         | List all the scripts in current level
+location            | Display the current location
+openlog             | Show the log of errors/warnings/information from the engine
+testDecompiler      | Tests decompilation of all the scripts in game
 
 
 ## 9. Bug Reports
