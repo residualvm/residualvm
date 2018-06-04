@@ -32,6 +32,9 @@
 #include "engines/stark/ui/world/inventorywindow.h"
 #include "engines/stark/ui/world/topmenu.h"
 
+#include "engines/engine.h"
+#include "audio/mixer.h"
+
 namespace Stark {
 
 GameScreen::GameScreen(Gfx::Driver *gfx, Cursor *cursor) :
@@ -62,12 +65,15 @@ GameScreen::~GameScreen() {
 }
 
 void GameScreen::open() {
+	if (g_engine->isPaused()) {
+		g_engine->pauseEngine(false);
+	}
 	StarkUserInterface->freeGameScreenThumbnail();
 }
 
 void GameScreen::close() {
 	_cursor->setMouseHint("");
-	StarkUserInterface->saveGameScreenThumbnail();
+	g_engine->pauseEngine(true);
 }
 
 void GameScreen::render() {
