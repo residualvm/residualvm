@@ -444,6 +444,10 @@ bool Menu::isOpen() const {
 	return _vm->_state->getLocationAge() == 9 && _vm->_state->getLocationRoom() == 901;
 }
 
+void Menu::generateSaveThumbnail() {
+	_saveThumbnail.reset(captureThumbnail());
+}
+
 Graphics::Surface *Menu::borrowSaveThumbnail() {
 	return _saveThumbnail.get();
 }
@@ -452,6 +456,7 @@ PagingMenu::PagingMenu(Myst3Engine *vm) :
 		Menu(vm),
 		_saveDrawCaret(false),
 		_saveCaretCounter(0) {
+			_saveName = "Saved Game"; // Save name in the original
 }
 
 PagingMenu::~PagingMenu() {
@@ -609,8 +614,8 @@ void PagingMenu::saveMenuChangePage() {
 void PagingMenu::saveMenuSave() {
 	if (_saveName.empty())
 		return;
-
 	Common::String fileName = _saveName;
+
 	if (!fileName.hasSuffix(".M3S") && !fileName.hasSuffix(".m3s"))
 		fileName += ".M3S";
 
