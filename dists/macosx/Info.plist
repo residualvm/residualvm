@@ -9,7 +9,7 @@
 	<key>CFBundleExecutable</key>
 	<string>residualvm</string>
 	<key>CFBundleGetInfoString</key>
-	<string>0.3.1pre, Copyright 2003-2017 The ResidualVM Team</string>
+	<string>0.3.1, Copyright 2003-2017 The ResidualVM Team</string>
 	<key>CFBundleIconFile</key>
 	<string>residualvm.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -45,9 +45,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.3.1pre</string>
+	<string>0.3.1</string>
 	<key>CFBundleVersion</key>
-	<string>0.3.1pre</string>
+	<string>0.3.1</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright 2003-2017 The ResidualVM Team</string>
 	<key>NSPrincipalClass</key>

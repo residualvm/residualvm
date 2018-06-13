@@ -85,12 +85,12 @@ BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", "residualvm.org\0"
             VALUE "FileDescription", "http://www.residualvm.org/\0"
-            VALUE "FileVersion", "0.3.1pre\0"
+            VALUE "FileVersion", "0.3.1\0"
             VALUE "InternalName", "residualvm\0"
             VALUE "LegalCopyright", "Copyrights information are in AUTHORS file\0"
             VALUE "OriginalFilename", "residualvm.exe\0"
             VALUE "ProductName", "ResidualVM\0"
-            VALUE "ProductVersion", "0.3.1pre\0"
+            VALUE "ProductVersion", "0.3.1\0"
         END
     END
 
