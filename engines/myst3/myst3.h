@@ -58,6 +58,45 @@ enum TransitionType {
 	kTransitionRightToLeft
 };
 
+enum RoomID {
+       kNoRoom = 0,
+       kInit = 101, // XXXX
+       kIntro = 201,
+       kTomahnaStart = 301,
+       kTomahnaReturn = 401,
+       kJnaninStart = 501,
+       kLeos = 502,
+       kLeet = 503,
+       kLelt = 504,
+       kLemt = 505,
+       kLeof = 506,
+       kEdannaStart = 601,
+       kLisw = 602,
+       kLifo = 603,
+       kLisp = 604,
+       kLine = 605,
+       kVoltaicStart = 701,
+       kEnpp = 703,
+       kEnem = 704,
+       kEnlc = 705,
+       kEndd = 706,
+       kEnch = 707,
+       kEnli = 708,
+       kNarayan = 801,
+       kMenuRoom = 901,
+       kJrnl = 902,
+       kDemo = 903,
+       kAtix = 904,
+       kAmateriaStart = 1001,
+       kMais = 1002, //Amateria ambient sound
+       kMall = 1003, //Amateria movie counters
+       kMass = 1004,
+       kMaww = 1005,
+       kMato = 1006,
+       kLogo = 1101
+};
+
+
 class Archive;
 class Console;
 class Drawable;
@@ -135,7 +174,7 @@ public:
 	static Graphics::Surface *decodeJpeg(const DirectorySubEntry *jpegDesc);
 
 	void goToNode(uint16 nodeID, TransitionType transition);
-	void loadNode(uint16 nodeID, uint32 roomID = 0, uint32 ageID = 0);
+	void loadNode(uint16 nodeID, uint32 roomID = kNoRoom, uint32 ageID = 0);
 	void unloadNode();
 	void loadNodeCubeFaces(uint16 nodeID);
 	void loadNodeFrame(uint16 nodeID);
@@ -150,8 +189,8 @@ public:
 
 	void runNodeInitScripts();
 	void runNodeBackgroundScripts();
-	void runScriptsFromNode(uint16 nodeID, uint32 roomID = 0, uint32 ageID = 0);
-	void runBackgroundSoundScriptsFromNode(uint16 nodeID, uint32 roomID = 0, uint32 ageID = 0);
+	void runScriptsFromNode(uint16 nodeID, uint32 roomID = kNoRoom, uint32 ageID = 0);
+	void runBackgroundSoundScriptsFromNode(uint16 nodeID, uint32 roomID = kNoRoom, uint32 ageID = 0);
 	void runAmbientScripts(uint32 node);
 
 	void loadMovie(uint16 id, uint16 condition, bool resetCond, bool loop);

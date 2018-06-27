@@ -2454,7 +2454,7 @@ void Script::runScriptWithVar(Context &c, const Opcode &cmd) {
 void Script::runCommonScript(Context &c, const Opcode &cmd) {
 	debugC(kDebugScript, "Opcode %d: Run common script %d", cmd.op, cmd.args[0]);
 
-	_vm->runScriptsFromNode(cmd.args[0], 101, 1);
+	_vm->runScriptsFromNode(cmd.args[0], kInit, 1);
 }
 
 void Script::runCommonScriptWithVar(Context &c, const Opcode &cmd) {
@@ -2462,7 +2462,7 @@ void Script::runCommonScriptWithVar(Context &c, const Opcode &cmd) {
 
 	_vm->_state->setVar(26, cmd.args[1]);
 
-	_vm->runScriptsFromNode(cmd.args[0], 101, 1);
+	_vm->runScriptsFromNode(cmd.args[0], kInit, 1);
 }
 
 void Script::runPuzzle1(Context &c, const Opcode &cmd) {

@@ -191,11 +191,11 @@ Common::Error Myst3Engine::run() {
 	} else {
 		if (getPlatform() == Common::kPlatformXbox) {
 			// Play the logo videos
-			loadNode(1, 1101, 11);
+			loadNode(1, kLogo, 11);
 		}
 
 		// Game init script, loads the menu
-		loadNode(1, 101, 1);
+		loadNode(1, kInit, 1);
 	}
 
 	while (!shouldQuit()) {
@@ -494,7 +494,7 @@ void Myst3Engine::processInput(bool interactive) {
 			case Common::KEYCODE_F5:
 				// Open main menu
 				if (_cursor->isVisible() && interactive) {
-					if (_state->getLocationRoom() != 901)
+					if (_state->getLocationRoom() != kMenuRoom)
 						_menu->goToNode(100);
 				}
 				break;
@@ -553,7 +553,7 @@ void Myst3Engine::processInput(bool interactive) {
 	if (_inputEscapePressedNotConsumed && interactive) {
 		_inputEscapePressedNotConsumed = false;
 		if (_cursor->isVisible() && _state->hasVarMenuEscapePressed()) {
-			if (_state->getLocationRoom() != 901)
+			if (_state->getLocationRoom() != kMenuRoom)
 				_menu->goToNode(100);
 			else
 				_state->setMenuEscapePressed(1);
@@ -731,7 +731,7 @@ void Myst3Engine::drawFrame(bool noSwap) {
 
 	if (getPlatform() == Common::kPlatformXbox) {
 		// The cursor is not drawn in the Xbox version menus and journals
-		cursorVisible &= !(_state->getLocationRoom() == 901 || _state->getLocationRoom() == 902);
+		cursorVisible &= !(_state->getLocationRoom() == kMenuRoom || _state->getLocationRoom() == kJrnl);
 	}
 
 	if (cursorVisible)
@@ -852,7 +852,7 @@ void Myst3Engine::loadNode(uint16 nodeID, uint32 roomID, uint32 ageID) {
 	// WORKAROUND: In Narayan, the scripts in node NACH 9 test on var 39
 	// without first reinitializing it leading to Saavedro not always giving
 	// Releeshan to the player when he is trapped between both shields.
-	if (nodeID == 9 && roomID == 801)
+	if (nodeID == 9 && roomID == kNarayan)
 		_state->setVar(39, 0);
 }
 
@@ -960,7 +960,7 @@ void Myst3Engine::loadNodeMenu(uint16 nodeID) {
 }
 
 void Myst3Engine::runScriptsFromNode(uint16 nodeID, uint32 roomID, uint32 ageID) {
-	if (roomID == 0)
+	if (roomID == kNoRoom)
 		roomID = _state->getLocationRoom();
 
 	if (ageID == 0)
@@ -980,7 +980,7 @@ void Myst3Engine::runBackgroundSoundScriptsFromNode(uint16 nodeID, uint32 roomID
 	if (_state->getSoundScriptsSuspended())
 		return;
 
-	if (roomID == 0)
+	if (roomID == kNoRoom)
 		roomID = _state->getLocationRoom();
 
 	if (ageID == 0)
@@ -992,10 +992,10 @@ void Myst3Engine::runBackgroundSoundScriptsFromNode(uint16 nodeID, uint32 roomID
 
 	// Stop previous music when changing room
 	if (_backgroundSoundScriptLastRoomId != roomID) {
-		if (_backgroundSoundScriptLastRoomId != 0
-				&& _backgroundSoundScriptLastRoomId != 901
-				&& _backgroundSoundScriptLastRoomId != 902
-				&& roomID != 0 && roomID != 901 && roomID != 902) {
+		if (_backgroundSoundScriptLastRoomId != kNoRoom
+				&& _backgroundSoundScriptLastRoomId != kMenuRoom
+				&& _backgroundSoundScriptLastRoomId != kJrnl
+				&& roomID != kNoRoom && roomID != kMenuRoom && roomID != kJrnl) {
 			_sound->stopMusic(_state->getSoundScriptFadeOutDelay());
 
 			if (nodeData->backgroundSoundScripts.size() != 0) {
@@ -1020,7 +1020,7 @@ void Myst3Engine::runAmbientScripts(uint32 node) {
 	uint32 room = _ambient->_scriptRoom;
 	uint32 age = _ambient->_scriptAge;
 
-	if (room == 0)
+	if (room == kNoRoom)
 		room = _state->getLocationRoom();
 
 	if (age == 0)
@@ -1486,7 +1486,7 @@ void Myst3Engine::dragItem(uint16 statusVar, uint16 movie, uint16 frame, uint16 
 }
 
 bool Myst3Engine::canSaveGameStateCurrently() {
-	bool inMenuWithNoGameLoaded = _state->getLocationRoom() == 901 && _state->getMenuSavedAge() == 0;
+	bool inMenuWithNoGameLoaded = _state->getLocationRoom() == kMenuRoom && _state->getMenuSavedAge() == 0;
 	return canLoadGameStateCurrently() && !inMenuWithNoGameLoaded && _cursor->isVisible();
 }
 
@@ -1540,7 +1540,7 @@ Common::Error Myst3Engine::loadGameState(Common::String fileName, TransitionType
 	_state->setLocationNextRoom(_state->getMenuSavedRoom());
 	_state->setLocationNextNode(_state->getMenuSavedNode());
 	_state->setMenuSavedAge(0);
-	_state->setMenuSavedRoom(0);
+	_state->setMenuSavedRoom(kNoRoom);
 	_state->setMenuSavedNode(0);
 
 	_sound->stopMusic(15);

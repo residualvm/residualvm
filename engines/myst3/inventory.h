@@ -28,12 +28,12 @@
 #include "common/rect.h"
 
 #include "engines/myst3/gfx.h"
+#include "engines/myst3/myst3.h" // RoomID enum
 
 #include "video/bink_decoder.h"
 
 namespace Myst3 {
 
-class Myst3Engine;
 class Texture;
 
 class Inventory : public Window {
