@@ -187,7 +187,7 @@ bool Console::Cmd_ListNodes(int argc, const char **argv) {
 
 	if (argc == 2) {
 		RoomKey roomKey = _vm->_db->getRoomKey(argv[1]);
-		if (roomKey.roomID == 0 || roomKey.ageID == 0) {
+		if (roomKey.roomID == kNoRoom || roomKey.ageID == 0) {
 			debugPrintf("Unknown room name %s\n", argv[1]);
 			return true;
 		}

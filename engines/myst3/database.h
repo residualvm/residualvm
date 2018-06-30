@@ -23,8 +23,10 @@
 #ifndef DATABASE_H_
 #define DATABASE_H_
 
-#include "common/scummsys.h"
 #include "engines/myst3/hotspot.h"
+#include "engines/myst3/myst3.h" // RoomID enum
+
+#include "common/scummsys.h"
 #include "common/str.h"
 #include "common/language.h"
 #include "common/platform.h"

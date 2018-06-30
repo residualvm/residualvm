@@ -23,11 +23,12 @@
 #ifndef SCRIPT_H_
 #define SCRIPT_H_
 
+#include "engines/myst3/myst3.h"
+
 #include "common/array.h"
 
 namespace Myst3 {
 
-class Myst3Engine;
 class Puzzles;
 struct Opcode;
 

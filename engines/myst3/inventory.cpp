@@ -210,22 +210,22 @@ void Inventory::useItem(uint16 var) {
 	case 277: // Atrus
 		closeAllBooks();
 		_vm->_state->setJournalAtrusState(2);
-		openBook(9, 902, 100);
+		openBook(9, kJrnl, 100);
 		break;
 	case 279: // Saavedro
 		closeAllBooks();
 		_vm->_state->setJournalSaavedroState(2);
-		openBook(9, 902, 200);
+		openBook(9, kJrnl, 200);
 		break;
 	case 480: // Tomahna
 		closeAllBooks();
 		_vm->_state->setBookStateTomahna(2);
-		openBook(8, 801, 220);
+		openBook(8, kNarayan, 220);
 		break;
 	case 481: // Releeshahn
 		closeAllBooks();
 		_vm->_state->setBookStateReleeshahn(2);
-		openBook(9, 902, 300);
+		openBook(9, kJrnl, 300);
 		break;
 	case 345:
 		_vm->dragSymbol(345, 1002);
@@ -269,7 +269,7 @@ void Inventory::addSaavedroChapter(uint16 var) {
 	_vm->_state->setJournalSaavedroState(2);
 	_vm->_state->setJournalSaavedroChapter(var - 285);
 	_vm->_state->setJournalSaavedroPageInChapter(0);
-	openBook(9, 902, 200);
+	openBook(9, kJrnl, 200);
 }
 
 void Inventory::loadFromState() {

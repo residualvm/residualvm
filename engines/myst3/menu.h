@@ -24,6 +24,7 @@
 #define MENU_H_
 
 #include "engines/myst3/gfx.h"
+#include "engines/myst3/myst3.h" // RoomID enum
 
 #include "common/events.h"
 #include "common/hashmap.h"
@@ -36,7 +37,6 @@
 
 namespace Myst3 {
 
-class Myst3Engine;
 class SpotItemFace;
 class GameState;
 
