@@ -273,7 +273,7 @@ bool Console::Cmd_Go(int argc, const char **argv) {
 	_vm->_state->setLocationNextRoom(roomKey.roomID);
 	_vm->_state->setLocationNextNode(nodeId);
 
-	_vm->goToNode(0, kTransitionFade);
+	_vm->goToNode(kNodeNotInit, kTransitionFade);
 
 	return false;
 }

@@ -52,6 +52,17 @@ enum MystLanguage {
 	kSpanish = 5
 };
 
+enum NodeID {
+	kNodeNotInit      = 0,
+	kNode1            = 1,
+	kNode6            = 6,
+	kNode9            = 9,
+	kNodeMenuNewGame  = 98,
+	kNodeMenuMain     = 100,
+	kNodeMenuLoadGame = 200,
+	kNodeMenuSaveGame = 300
+};
+
 enum RoomID {
 	kRoomShared        = 101,
 	kRoomIntro         = 201,
