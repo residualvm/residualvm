@@ -38,7 +38,7 @@
 #include "engines/stark/services/services.h"
 #include "engines/stark/services/staticprovider.h"
 #include "engines/stark/tools/decompiler.h"
-
+#include "limits.h"
 #include "common/file.h"
 
 namespace Stark {
@@ -599,9 +599,11 @@ bool Console::Cmd_ChangeChapter(int argc, const char **argv) {
 		return true;
 	}
 
-	uint32 value = atoi(argv[1]);
-
-	StarkGlobal->setCurrentChapter(value);
+	long value = strtol(argv[1], 0, 10);
+	if (value >= 0 && value <= INT_MAX)
+		StarkGlobal->setCurrentChapter((int32) value);
+	else
+		debugPrintf("Invalid chapter\n");
 
 	return true;
 }
