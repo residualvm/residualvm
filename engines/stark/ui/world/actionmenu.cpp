@@ -51,7 +51,7 @@ ActionMenu::ActionMenu(Gfx::Driver *gfx, Cursor *cursor) :
 		_item(nullptr),
 		_fromInventory(false) {
 
-	_unscaled = true;
+	_unscaled = false;
 
 	_background = StarkStaticProvider->getUIElement(StaticProvider::kActionMenuBg);
 
@@ -71,7 +71,7 @@ ActionMenu::~ActionMenu() {
 void ActionMenu::open(Resources::ItemVisual *item, const Common::Point &itemRelativePos) {
 	_visible = true;
 
-	Common::Point screenMousePos = _cursor->getMousePosition(true);
+	Common::Point screenMousePos = _cursor->getMousePosition(_unscaled);
 
 	_position = getPosition(screenMousePos);
 
@@ -106,7 +106,7 @@ void ActionMenu::close() {
 Common::Rect ActionMenu::getPosition(const Common::Point &mouse) const {
 	Common::Rect position = Common::Rect::center(mouse.x, mouse.y, 160, 111);
 
-	Common::Rect gameWindowRect = StarkGfx->gameViewport();
+	Common::Rect gameWindowRect = StarkGfx->gameViewport(_unscaled);
 
 	if (position.top < gameWindowRect.top)       position.translate(0, gameWindowRect.top - position.top);
 	if (position.left < gameWindowRect.left)     position.translate(gameWindowRect.left - position.left, 0);

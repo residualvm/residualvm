@@ -62,6 +62,7 @@ public:
 	/** Get the screen viewport in actual resolution */
 	Common::Rect getScreenViewport() { return _screenViewport; }
 
+	Common::Rect gameViewport(bool unscaled) const;
 	Common::Rect gameViewport() const;
 
 	virtual void clearScreen() = 0;
