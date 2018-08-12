@@ -69,7 +69,7 @@ void Driver::toggleFullscreen() const {
 void Driver::computeScreenViewport() {
 	int32 screenWidth = g_system->getWidth();
 	int32 screenHeight = g_system->getHeight();
-	
+
 	if (g_system->getFeatureState(OSystem::kFeatureAspectRatioCorrection)) {
 		// Aspect ratio correction
 		int32 viewportWidth = MIN<int32>(screenWidth, screenHeight * kOriginalWidth / kOriginalHeight);
@@ -89,16 +89,16 @@ Common::Rect Driver::gameViewport(bool unscaled) const {
 	uint32 width = 640;
 	uint32 height = 480;
 	uint32 left = 0;
-	
-	if(unscaled){
+
+	if(unscaled) {
 		width = _screenViewport.width();
 		height = _screenViewport.height();
 		left = _screenViewport.left;
 	}
-	
+
 	Common::Rect game = Common::Rect(width, height * kGameViewportHeight / kOriginalHeight);
 	game.translate(left, _screenViewport.top + height * kTopBorderHeight / kOriginalHeight);
-	
+
 	return game;
 }
 

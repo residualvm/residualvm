@@ -122,10 +122,10 @@ void Cursor::render() {
 	}
 
 	if (_cursorImage) {
-		_gfx->setScreenViewport(false); // The cursor is drawn scaled
+		_gfx->setScreenViewport(true); // Unscaled viewport so that cursor is drawn on native pixel space, thus no 'skipping', perform scaling below instead
 
 		_cursorImage->setFadeLevel(_fadeLevel);
-		_cursorImage->render(_gfx->convertCoordinateCurrentToOriginal(_mousePos), true);
+		_cursorImage->render(_mousePos, true, false); // Draws image (scaled)
 	}
 }
 

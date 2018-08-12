@@ -52,6 +52,7 @@ public:
 
 	void load(Common::ReadStream *stream);
 	void render(const Common::Point &position, bool useOffset);
+	void render(const Common::Point &position, bool useOffset, bool unscaled);
 
 	/** Set an offset used when rendering */
 	void setHotSpot(const Common::Point &hotspot);
