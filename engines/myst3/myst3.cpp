@@ -193,11 +193,11 @@ Common::Error Myst3Engine::run() {
 	} else {
 		if (getPlatform() == Common::kPlatformXbox) {
 			// Play the logo videos
-			loadNode(1, kLogo, 11);
+			loadNode(kNode1, kLogo, 11);
 		}
 
 		// Game init script, loads the menu
-		loadNode(1, kRoomShared, 1);
+		loadNode(kNode1, kRoomShared, 1);
 	}
 
 	while (!shouldQuit()) {
@@ -505,7 +505,7 @@ void Myst3Engine::processInput(bool interactive) {
 				// Open main menu
 				if (_cursor->isVisible() && interactive) {
 					if (_state->getLocationRoom() != kRoomMenu)
-						_menu->goToNode(100);
+						_menu->goToNode(kNodeMenuMain);
 				}
 				break;
 			case Common::KEYCODE_d:
@@ -564,7 +564,7 @@ void Myst3Engine::processInput(bool interactive) {
 		_inputEscapePressedNotConsumed = false;
 		if (_cursor->isVisible() && _state->hasVarMenuEscapePressed()) {
 			if (_state->getLocationRoom() != kRoomMenu)
-				_menu->goToNode(100);
+				_menu->goToNode(kNodeMenuMain);
 			else
 				_state->setMenuEscapePressed(1);
 		}
@@ -792,7 +792,7 @@ void Myst3Engine::drawTransition(TransitionType transitionType) {
 
 void Myst3Engine::goToNode(uint16 nodeID, TransitionType transitionType) {
 	uint16 node = _state->getLocationNextNode();
-	if (node == 0)
+	if (node == kNodeNotInit)
 		node = nodeID;
 
 	uint16 room = _state->getLocationNextRoom();
@@ -811,7 +811,7 @@ void Myst3Engine::goToNode(uint16 nodeID, TransitionType transitionType) {
 
 	loadNode(node, room, age);
 
-	_state->setLocationNextNode(0);
+	_state->setLocationNextNode(kNodeNotInit);
 	_state->setLocationNextRoom(0);
 	_state->setLocationNextAge(0);
 
@@ -863,7 +863,7 @@ void Myst3Engine::loadNode(uint16 nodeID, uint32 roomID, uint32 ageID) {
 	// WORKAROUND: In Narayan, the scripts in node NACH 9 test on var 39
 	// without first reinitializing it leading to Saavedro not always giving
 	// Releeshan to the player when he is trapped between both shields.
-	if (nodeID == 9 && roomID == kRoomNarayan)
+	if (nodeID == kNode9 && roomID == kRoomNarayan)
 		_state->setVar(39, 0);
 }
 
@@ -1563,13 +1563,13 @@ Common::Error Myst3Engine::loadGameState(Common::String fileName, TransitionType
 	_state->setLocationNextNode(_state->getMenuSavedNode());
 	_state->setMenuSavedAge(0);
 	_state->setMenuSavedRoom(0);
-	_state->setMenuSavedNode(0);
+	_state->setMenuSavedNode(kNodeNotInit);
 
 	_sound->stopMusic(15);
 	_state->setSoundScriptsSuspended(0);
 	_sound->playEffect(696, 60);
 
-	goToNode(0, transition);
+	goToNode(kNodeNotInit, transition);
 	return Common::kNoError;
 }
 
@@ -1715,7 +1715,7 @@ void Myst3Engine::playMovieGoToNode(uint16 movie, uint16 node) {
 	uint16 room = _state->getLocationNextRoom();
 	uint16 age = _state->getLocationNextAge();
 
-	if (_state->getLocationNextNode() != 0) {
+	if (_state->getLocationNextNode() != kNodeNotInit) {
 		node = _state->getLocationNextNode();
 	}
 
@@ -1730,7 +1730,7 @@ void Myst3Engine::playMovieGoToNode(uint16 movie, uint16 node) {
 
 	playSimpleMovie(movie, true, true);
 
-	_state->setLocationNextNode(0);
+	_state->setLocationNextNode(kNodeNotInit);
 	_state->setLocationNextRoom(0);
 	_state->setLocationNextAge(0);
 
