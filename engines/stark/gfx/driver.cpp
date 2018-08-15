@@ -85,11 +85,25 @@ void Driver::computeScreenViewport() {
 	}
 }
 
-Common::Rect Driver::gameViewport() const {
-	Common::Rect game = Common::Rect(_screenViewport.width(), _screenViewport.height() * kGameViewportHeight / kOriginalHeight);
-	game.translate(_screenViewport.left, _screenViewport.top + _screenViewport.height() * kTopBorderHeight / kOriginalHeight);
+Common::Rect Driver::gameViewport(bool unscaled) const {
+	uint32 width = 640;
+	uint32 height = 480;
+	uint32 left = 0;
+
+	if(unscaled) {
+		width = _screenViewport.width();
+		height = _screenViewport.height();
+		left = _screenViewport.left;
+	}
+
+	Common::Rect game = Common::Rect(width, height * kGameViewportHeight / kOriginalHeight);
+	game.translate(left, _screenViewport.top + height * kTopBorderHeight / kOriginalHeight);
 
 	return game;
+}
+
+Common::Rect Driver::gameViewport() const {
+	return gameViewport(true);
 }
 
 Common::Point Driver::convertCoordinateCurrentToOriginal(const Common::Point &point) const {
