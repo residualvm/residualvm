@@ -488,7 +488,7 @@ bool MagnetEffect::update() {
 
 		if (ampl != _lastAmpl) {
 			for (uint i = 0; i < 256; i++) {
-				_verticalDisplacement[i] = sin(i * 2 * M_PI / 255.0) * ampl;
+				_verticalDisplacement[i] = sin(i * 2 * M_PI / 256.0) * ampl;
 			}
 
 			_lastAmpl = ampl;
@@ -759,7 +759,7 @@ bool ShieldEffect::update() {
 
 	// Update the displacement offsets
 	for (uint i = 0; i < 256; i++) {
-		_displacement[i] = (sin(i * 2 * M_PI / 255.0) + 1.0) * _amplitude;
+		_displacement[i] = (sin(i * 2 * M_PI / 256.0) + 1.0) * _amplitude;
 	}
 
 	return true;
