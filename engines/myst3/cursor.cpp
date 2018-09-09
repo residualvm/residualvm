@@ -37,8 +37,8 @@ struct CursorData {
 	uint32 nodeID;
 	uint16 hotspotX;
 	uint16 hotspotY;
-	double transparency;
-	double transparencyXbox;
+	float transparency;
+	float transparencyXbox;
 };
 
 static const CursorData availableCursors[] = {
@@ -63,7 +63,7 @@ Cursor::Cursor(Myst3Engine *vm) :
 	_hideLevel(0),
 	_lockedAtCenter(false) {
 
-	// The cursor is drawn unscaled
+	// The cursor is manually scaled
 	_scaled = false;
 	_isConstrainedToWindow = false;
 
@@ -143,7 +143,7 @@ void Cursor::changeCursor(uint32 index) {
 	_currentCursorID = index;
 }
 
-double Cursor::getTransparencyForId(uint32 cursorId) {
+float Cursor::getTransparencyForId(uint32 cursorId) {
 	assert(cursorId < ARRAYSIZE(availableCursors));
 	if (_vm->getPlatform() == Common::kPlatformXbox) {
 		return availableCursors[cursorId].transparencyXbox;
@@ -208,18 +208,24 @@ void Cursor::draw() {
 	}
 
 	// Rect where to draw the cursor
-	Common::Rect screenRect = Common::Rect(texture->width, texture->height);
-	screenRect.translate(_position.x - cursor.hotspotX, _position.y - cursor.hotspotY);
+	Common::Rect viewport = _vm->_gfx->viewport();
+	float scale = MIN(
+			viewport.width()  / (float) Renderer::kOriginalWidth,
+			viewport.height() / (float) Renderer::kOriginalHeight
+	);
 
-	// Rect where to draw the cursor
+	Common::Rect screenRect = Common::Rect(texture->width * scale, texture->height * scale);
+	screenRect.translate(_position.x - cursor.hotspotX * scale, _position.y - cursor.hotspotY * scale);
+
+	// Texture rect
 	Common::Rect textureRect = Common::Rect(texture->width, texture->height);
 
-	float transparency = 1.0;
+	float transparency = 1.0f;
 
 	int32 varTransparency = _vm->_state->getCursorTransparency();
 	if (_lockedAtCenter || varTransparency == 0) {
 		if (varTransparency >= 0)
-			transparency = varTransparency / 100.0;
+			transparency = varTransparency / 100.0f;
 		else
 			transparency = getTransparencyForId(_currentCursorID);
 	}
