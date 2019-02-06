@@ -190,6 +190,8 @@ protected:
 	void handleChars(Common::EventType type, const Common::KeyState &key);
 	void handleJoyAxis(byte axis, int16 position);
 	void handleJoyButton(Common::EventType type, byte button);
+	void handleControllerAxis(byte axis, int16 position);
+	void handleControllerButton(Common::EventType type, byte button);
 	void handleExit();
 	void handlePause();
 	void handleUserPaint();

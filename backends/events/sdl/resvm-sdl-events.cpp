@@ -28,6 +28,11 @@
 #include "backends/graphics/sdl/resvm-sdl-graphics.h"
 #include "engines/engine.h"
 #include "gui/gui-manager.h"
+#include "graphics/cursorman.h"
+
+#if defined(ENABLE_VKEYBD) && SDL_VERSION_ATLEAST(2, 0, 0)
+#define CONTROLLER_BUT_VKEYBOARD SDL_CONTROLLER_BUTTON_BACK
+#endif
 
 bool ResVmSdlEventSource::handleJoyButtonDown(SDL_Event &ev, Common::Event &event) {
 	if (shouldGenerateMouseEvents()) {
@@ -65,7 +70,16 @@ bool ResVmSdlEventSource::handleControllerButton(const SDL_Event &ev, Common::Ev
 	if (shouldGenerateMouseEvents()) {
 		return SdlEventSource::handleControllerButton(ev, event, buttonUp);
 	} else {
-		event.type = buttonUp ? Common::EVENT_JOYBUTTON_UP : Common::EVENT_JOYBUTTON_DOWN;
+#ifdef ENABLE_VKEYBD
+		if (ev.cbutton.button == CONTROLLER_BUT_VKEYBOARD) {
+			if (!buttonUp) {
+				event.type = Common::EVENT_VIRTUAL_KEYBOARD;
+				return true;
+			}
+			return false;
+		}
+#endif
+		event.type = buttonUp ? Common::EVENT_CONTROLLERBUTTON_UP : Common::EVENT_CONTROLLERBUTTON_DOWN;
 		event.joystick.button = ev.cbutton.button;
 		return true;
 	}
@@ -75,7 +89,7 @@ bool ResVmSdlEventSource::handleControllerAxisMotion(const SDL_Event &ev, Common
 	if (shouldGenerateMouseEvents()) {
 		return SdlEventSource::handleControllerAxisMotion(ev, event);
 	} else {
-		event.type = Common::EVENT_JOYAXIS_MOTION;
+		event.type = Common::EVENT_CONTROLLERAXIS_MOTION;
 		event.joystick.axis = ev.caxis.axis;
 		event.joystick.position = ev.caxis.value;
 		return true;
@@ -89,7 +103,8 @@ bool ResVmSdlEventSource::shouldGenerateMouseEvents() {
 		return true;
 	}
 
-	if (g_gui.isActive()) {
+	// FIXME: call to CursorMan.isVisible is not clean ! But don't know how to do better
+	if (g_gui.isActive() || CursorMan.isVisible()) {
 		return true;
 	}
 
@@ -115,7 +130,7 @@ bool ResVmSdlEventSource::handleKbdMouse(Common::Event &event) {
 			_km.x = oldKmX;
 			_km.y = oldKmY;
 		}
-
+		else
 		if (graphicsManager) {
 			graphicsManager->getWindow()->warpMouseInWindow((Uint16)(_km.x / MULTIPLIER), (Uint16)(_km.y / MULTIPLIER));
 		}

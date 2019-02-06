@@ -268,6 +268,25 @@ const ControlDescriptor controls[] = {
 	{ nullptr, 0 }
 };
 
+// Mapping between controller and joystick buttons
+const int controllerMapping[] = {
+	KEYCODE_JOY1_B1, // SDL_CONTROLLER_BUTTON_A
+	KEYCODE_JOY1_B2, // SDL_CONTROLLER_BUTTON_B
+	KEYCODE_JOY1_B3, // SDL_CONTROLLER_BUTTON_X
+	KEYCODE_JOY1_B4, // SDL_CONTROLLER_BUTTON_Y
+	KEYCODE_JOY1_B10, // SDL_CONTROLLER_BUTTON_BACK
+	0, // SDL_CONTROLLER_BUTTON_GUIDE
+	KEYCODE_JOY1_B9, // SDL_CONTROLLER_BUTTON_START
+	KEYCODE_JOY1_B8, // SDL_CONTROLLER_BUTTON_LEFTSTICK
+	KEYCODE_JOY1_B7, // SDL_CONTROLLER_BUTTON_RIGHTSTICK
+	KEYCODE_JOY1_B6, // SDL_CONTROLLER_BUTTON_LEFTSHOULDER
+	KEYCODE_JOY1_B5, // SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
+	KEYCODE_JOY1_B11, // SDL_CONTROLLER_BUTTON_DPAD_UP
+	KEYCODE_JOY1_B12, // SDL_CONTROLLER_BUTTON_DPAD_DOWN
+	KEYCODE_JOY1_B13, // SDL_CONTROLLER_BUTTON_DPAD_LEFT
+	KEYCODE_JOY1_B14 // SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+};
+
 // CHAR_KEY tests to see whether a keycode is for
 // a "character" handler or a "button" handler
 #define CHAR_KEY(k) ((k >= 'a' && k <= 'z') || (k >= 'A' && k <= 'Z') || (k >= '0' && k <= '9') || k == ' ')
@@ -378,6 +397,36 @@ void GrimEngine::handleJoyButton(Common::EventType operation, byte button) {
 		_controlsState[keycode] = true;
 	else if (operation == Common::EVENT_JOYBUTTON_UP)
 		_controlsState[keycode] = false;
+}
+
+void GrimEngine::handleControllerAxis(byte axis, int16 position) {
+	// No difference between controller and joystick for motion
+	handleJoyAxis(axis, position);
+}
+
+void GrimEngine::handleControllerButton(Common::EventType operation, byte button) {
+	int keycode = controllerMapping[button];
+        if (!_controlsEnabled[keycode])
+                return;
+
+        LuaObjects objects;
+        objects.add(keycode);
+        if (operation == Common::EVENT_CONTROLLERBUTTON_DOWN) {
+                objects.add(1);
+                objects.add(1);
+        } else if (operation == Common::EVENT_CONTROLLERBUTTON_UP) {
+                objects.addNil();
+                objects.add(0);
+        }
+        objects.add(0);
+        if (!LuaBase::instance()->callback("buttonHandler", objects)) {
+                error("handleControls: invalid keys handler");
+        }
+
+        if (operation == Common::EVENT_CONTROLLERBUTTON_DOWN)
+                _controlsState[keycode] = true;
+        else if (operation == Common::EVENT_CONTROLLERBUTTON_UP)
+                _controlsState[keycode] = false;
 }
 
 } // end of namespace Grim

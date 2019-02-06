@@ -874,6 +874,10 @@ void GrimEngine::mainLoop() {
 				handleJoyAxis(event.joystick.axis, event.joystick.position);
 			if (type == Common::EVENT_JOYBUTTON_DOWN || type == Common::EVENT_JOYBUTTON_UP)
 				handleJoyButton(type, event.joystick.button);
+			if (type == Common::EVENT_CONTROLLERAXIS_MOTION)
+				handleControllerAxis(event.joystick.axis, event.joystick.position);
+			if (type == Common::EVENT_CONTROLLERBUTTON_DOWN || type == Common::EVENT_CONTROLLERBUTTON_UP)
+				handleControllerButton(type, event.joystick.button);
 			if (type == Common::EVENT_SCREEN_CHANGED) {
 				handleUserPaint();
 			}
