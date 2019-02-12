@@ -126,6 +126,12 @@ public:
 	 */
 	bool isMouseLocked() const;
 
+	/**
+	 * Public method for saving a screenshot.
+	 * The method of capturing is based on the actual type of the graphics manager.
+	 */
+	void saveScreenshot() const;
+
 protected:
 	const Capabilities &_capabilities;
 
@@ -145,6 +151,11 @@ protected:
 
 	/** Obtain the user configured fullscreen resolution, or default to the desktop resolution */
 	Common::Rect getPreferredFullscreenResolution();
+
+	/** Save a screenshot to the specified file */
+	virtual bool saveScreenshot(const Common::String &file) const {
+		return false;
+	}
 };
 
 #endif
