@@ -129,6 +129,9 @@ protected:
 	OpenGL::FrameBuffer *createFramebuffer(uint width, uint height);
 
 	bool isVSyncEnabled() const;
+
+	// ResVmSdlGraphicsManager API
+	virtual bool saveScreenshot(const Common::String &file) const override;
 };
 
 #endif
