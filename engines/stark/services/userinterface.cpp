@@ -58,6 +58,9 @@
 
 #include "gui/message.h"
 
+#include "backends/platform/sdl/sdl.h"
+#include "backends/graphics/sdl/resvm-sdl-graphics.h"
+
 namespace Stark {
 
 UserInterface::UserInterface(Gfx::Driver *gfx) :
@@ -489,7 +492,13 @@ void UserInterface::handleKeyPress(const Common::KeyState &keyState) {
 	} else if (keyState.keycode == Common::KEYCODE_F7) {
 		toggleScreen(Screen::kScreenSettingsMenu);
 	} else if (keyState.keycode == Common::KEYCODE_F8) {
-		warning("TODO: Implement the screenshot saving to local game directory");
+		OSystem_SDL *g_systemSdl = dynamic_cast<OSystem_SDL*>(g_system);
+		if (g_systemSdl) {
+			ResVmSdlGraphicsManager *graphicsMan = dynamic_cast<ResVmSdlGraphicsManager*>(g_systemSdl->getGraphicsManager());
+			if (graphicsMan) {
+				graphicsMan->saveScreenshot();
+			}
+		}
 	} else if (keyState.keycode == Common::KEYCODE_F9) {
 		if (isInGameScreen()) {
 			_shouldToggleSubtitle = !_shouldToggleSubtitle;

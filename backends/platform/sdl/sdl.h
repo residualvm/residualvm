@@ -91,6 +91,10 @@ public:
 	virtual void setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) override;
 	// ResidualVM specific code
 	virtual void launcherInitSize(uint w, uint h) override;
+	// ResidualVM specific code
+	GraphicsManager *getGraphicsManager() {
+		return _graphicsManager;
+	}
 
 protected:
 	bool _inited;
