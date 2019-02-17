@@ -169,19 +169,19 @@ const ControlDescriptor controls[] = {
 	{ "KEY_PAUSE", Common::KEYCODE_PAUSE },
 	{ "KEY_CLEAR", Common::KEYCODE_CLEAR },
 
-	{ "KEY_JOY1_B1", KEYCODE_JOY1_B1 },
-	{ "KEY_JOY1_B2", KEYCODE_JOY1_B2 },
-	{ "KEY_JOY1_B3", KEYCODE_JOY1_B3 },
-	{ "KEY_JOY1_B4", KEYCODE_JOY1_B4 },
-	{ "KEY_JOY1_B5", KEYCODE_JOY1_B5 },
-	{ "KEY_JOY1_B6", KEYCODE_JOY1_B6 },
-	{ "KEY_JOY1_B7", KEYCODE_JOY1_B7 },
-	{ "KEY_JOY1_B8", KEYCODE_JOY1_B8 },
-	{ "KEY_JOY1_B9", KEYCODE_JOY1_B9 },
-	{ "KEY_JOY1_B10", KEYCODE_JOY1_B10 },
-	{ "KEY_JOY1_B11", KEYCODE_JOY1_B11 },
-	{ "KEY_JOY1_B12", KEYCODE_JOY1_B12 },
-	{ "KEY_JOY1_B13", KEYCODE_JOY1_B13 },
+	{ "KEY_JOY1_B1", KEYCODE_JOY1_A },
+	{ "KEY_JOY1_B2", KEYCODE_JOY1_B },
+	{ "KEY_JOY1_B3", KEYCODE_JOY1_X },
+	{ "KEY_JOY1_B4", KEYCODE_JOY1_Y },
+	{ "KEY_JOY1_B5", KEYCODE_JOY1_R1 },
+	{ "KEY_JOY1_B6", KEYCODE_JOY1_L1 },
+	{ "KEY_JOY1_B7", KEYCODE_JOY1_R2 },
+	{ "KEY_JOY1_B8", KEYCODE_JOY1_L2 },
+	{ "KEY_JOY1_B9", KEYCODE_JOY1_START },
+	{ "KEY_JOY1_B10", KEYCODE_JOY1_BACK },
+	{ "KEY_JOY1_B11", KEYCODE_JOY1_RIGHTSTICK },
+	{ "KEY_JOY1_B12", KEYCODE_JOY1_LEFTSTICK },
+	{ "KEY_JOY1_B13", KEYCODE_JOY1_GUIDE },
 	{ "KEY_JOY1_B14", KEYCODE_JOY1_B14 },
 	{ "KEY_JOY1_B15", KEYCODE_JOY1_B15 },
 	{ "KEY_JOY1_B16", KEYCODE_JOY1_B16 },
@@ -193,16 +193,16 @@ const ControlDescriptor controls[] = {
 	{ "KEY_JOY1_HUP", KEYCODE_JOY1_HUP },
 	{ "KEY_JOY1_HRIGHT", KEYCODE_JOY1_HRIGHT },
 	{ "KEY_JOY1_HDOWN", KEYCODE_JOY1_HDOWN },
-	{ "KEY_JOY2_B1", KEYCODE_JOY2_B1 },
-	{ "KEY_JOY2_B2", KEYCODE_JOY2_B2 },
-	{ "KEY_JOY2_B3", KEYCODE_JOY2_B3 },
-	{ "KEY_JOY2_B4", KEYCODE_JOY2_B4 },
-	{ "KEY_JOY2_B5", KEYCODE_JOY2_B5 },
-	{ "KEY_JOY2_B6", KEYCODE_JOY2_B6 },
-	{ "KEY_JOY2_B7", KEYCODE_JOY2_B7 },
-	{ "KEY_JOY2_B8", KEYCODE_JOY2_B8 },
-	{ "KEY_JOY2_B9", KEYCODE_JOY2_B9 },
-	{ "KEY_JOY2_B10", KEYCODE_JOY2_B10 },
+	{ "KEY_JOY2_B1", KEYCODE_JOY2_A },
+	{ "KEY_JOY2_B2", KEYCODE_JOY2_B },
+	{ "KEY_JOY2_B3", KEYCODE_JOY2_X },
+	{ "KEY_JOY2_B4", KEYCODE_JOY2_Y },
+	{ "KEY_JOY2_B5", KEYCODE_JOY2_R1 },
+	{ "KEY_JOY2_B6", KEYCODE_JOY2_L1 },
+	{ "KEY_JOY2_B7", KEYCODE_JOY2_R2 },
+	{ "KEY_JOY2_B8", KEYCODE_JOY2_L2 },
+	{ "KEY_JOY2_B9", KEYCODE_JOY2_START },
+	{ "KEY_JOY2_B10", KEYCODE_JOY2_BACK },
 	{ "KEY_JOY2_HLEFT", KEYCODE_JOY2_HLEFT },
 	{ "KEY_JOY2_HUP", KEYCODE_JOY2_HUP },
 	{ "KEY_JOY2_HRIGHT", KEYCODE_JOY2_HRIGHT },
@@ -228,63 +228,44 @@ const ControlDescriptor controls[] = {
 	{ "AXIS_MOUSE_Z", KEYCODE_AXIS_MOUSE_Z },
 
 //PS2
-	{ "KEY_JOY1_SQUARE", KEYCODE_JOY1_B1 },
-	{ "KEY_JOY1_TRIANGLE", KEYCODE_JOY1_B2 },
-	{ "KEY_JOY1_CIRCLE", KEYCODE_JOY1_B3 },
-	{ "KEY_JOY1_X", KEYCODE_JOY1_B4 },
-	{ "KEY_JOY1_R1", KEYCODE_JOY1_B5 },
-	{ "KEY_JOY1_L1", KEYCODE_JOY1_B6 },
-	{ "KEY_JOY1_R2", KEYCODE_JOY1_B7 },
-	{ "KEY_JOY1_L2", KEYCODE_JOY1_B8 },
-	{ "KEY_JOY1_START", KEYCODE_JOY1_B9 },
-	{ "KEY_JOY1_SELECT", KEYCODE_JOY1_B10 },
-	{ "KEY_JOY1_DPAD_U", KEYCODE_JOY1_B11 },
-	{ "KEY_JOY1_DPAD_D", KEYCODE_JOY1_B12 },
-	{ "KEY_JOY1_DPAD_L", KEYCODE_JOY1_B13 },
-	{ "KEY_JOY1_DPAD_R", KEYCODE_JOY1_B14 },
-	{ "KEY_JOY1_LMUSHROOM", KEYCODE_JOY1_B15 },
-	{ "KEY_JOY1_RMUSHROOM", KEYCODE_JOY1_B16 },
+	{ "KEY_JOY1_SQUARE", KEYCODE_JOY1_X },
+	{ "KEY_JOY1_TRIANGLE", KEYCODE_JOY1_Y },
+	{ "KEY_JOY1_CIRCLE", KEYCODE_JOY1_B },
+	{ "KEY_JOY1_X", KEYCODE_JOY1_A },
+	{ "KEY_JOY1_R1", KEYCODE_JOY1_R1 },
+	{ "KEY_JOY1_L1", KEYCODE_JOY1_L1 },
+	{ "KEY_JOY1_R2", KEYCODE_JOY1_R2 },
+	{ "KEY_JOY1_L2", KEYCODE_JOY1_L2 },
+	{ "KEY_JOY1_START", KEYCODE_JOY1_START },
+	{ "KEY_JOY1_SELECT", KEYCODE_JOY1_BACK },
+	{ "KEY_JOY1_DPAD_U", KEYCODE_JOY1_HUP },
+	{ "KEY_JOY1_DPAD_D", KEYCODE_JOY1_HDOWN },
+	{ "KEY_JOY1_DPAD_L", KEYCODE_JOY1_HLEFT },
+	{ "KEY_JOY1_DPAD_R", KEYCODE_JOY1_HRIGHT },
+	{ "KEY_JOY1_LMUSHROOM", KEYCODE_JOY1_LEFTSTICK },
+	{ "KEY_JOY1_RMUSHROOM", KEYCODE_JOY1_RIGHTSTICK },
 // Joy2
-	{ "KEY_JOY2_SQUARE", KEYCODE_JOY2_B1 },
-	{ "KEY_JOY2_TRIANGLE", KEYCODE_JOY2_B2 },
-	{ "KEY_JOY2_CIRCLE", KEYCODE_JOY2_B3 },
-	{ "KEY_JOY2_X", KEYCODE_JOY2_B4 },
-	{ "KEY_JOY2_R1", KEYCODE_JOY2_B5 },
-	{ "KEY_JOY2_L1", KEYCODE_JOY2_B6 },
-	{ "KEY_JOY2_R2", KEYCODE_JOY2_B7 },
-	{ "KEY_JOY2_L2", KEYCODE_JOY2_B8 },
-	{ "KEY_JOY2_START", KEYCODE_JOY2_B9 },
-	{ "KEY_JOY2_SELECT", KEYCODE_JOY2_B10 },
-	{ "KEY_JOY2_DPAD_U", KEYCODE_JOY2_B11 },
-	{ "KEY_JOY2_DPAD_D", KEYCODE_JOY2_B12 },
-	{ "KEY_JOY2_DPAD_L", KEYCODE_JOY2_B13 },
-	{ "KEY_JOY2_DPAD_R", KEYCODE_JOY2_B14 },
-	{ "KEY_JOY2_LMUSHROOM", KEYCODE_JOY2_B15 },
-	{ "KEY_JOY2_RMUSHROOM", KEYCODE_JOY2_B16 },
+	{ "KEY_JOY2_SQUARE", KEYCODE_JOY2_X },
+	{ "KEY_JOY2_TRIANGLE", KEYCODE_JOY2_Y },
+	{ "KEY_JOY2_CIRCLE", KEYCODE_JOY2_B },
+	{ "KEY_JOY2_X", KEYCODE_JOY2_A },
+	{ "KEY_JOY2_R1", KEYCODE_JOY2_R1 },
+	{ "KEY_JOY2_L1", KEYCODE_JOY2_L1 },
+	{ "KEY_JOY2_R2", KEYCODE_JOY2_R2 },
+	{ "KEY_JOY2_L2", KEYCODE_JOY2_L2 },
+	{ "KEY_JOY2_START", KEYCODE_JOY2_START },
+	{ "KEY_JOY2_SELECT", KEYCODE_JOY2_BACK },
+	{ "KEY_JOY2_DPAD_U", KEYCODE_JOY2_HUP },
+	{ "KEY_JOY2_DPAD_D", KEYCODE_JOY2_HDOWN },
+	{ "KEY_JOY2_DPAD_L", KEYCODE_JOY2_HLEFT },
+	{ "KEY_JOY2_DPAD_R", KEYCODE_JOY2_HRIGHT },
+	{ "KEY_JOY2_LMUSHROOM", KEYCODE_JOY2_LEFTSTICK },
+	{ "KEY_JOY2_RMUSHROOM", KEYCODE_JOY2_RIGHTSTICK },
 
 // tell EMI that the joystick can be used
 	{ "joy_selected", 1 },
 
 	{ nullptr, 0 }
-};
-
-// Mapping between controller and joystick buttons
-const int controllerMapping[] = {
-	KEYCODE_JOY1_B1, // SDL_CONTROLLER_BUTTON_A
-	KEYCODE_JOY1_B2, // SDL_CONTROLLER_BUTTON_B
-	KEYCODE_JOY1_B3, // SDL_CONTROLLER_BUTTON_X
-	KEYCODE_JOY1_B4, // SDL_CONTROLLER_BUTTON_Y
-	KEYCODE_JOY1_B10, // SDL_CONTROLLER_BUTTON_BACK
-	0, // SDL_CONTROLLER_BUTTON_GUIDE
-	KEYCODE_JOY1_B9, // SDL_CONTROLLER_BUTTON_START
-	KEYCODE_JOY1_B8, // SDL_CONTROLLER_BUTTON_LEFTSTICK
-	KEYCODE_JOY1_B7, // SDL_CONTROLLER_BUTTON_RIGHTSTICK
-	KEYCODE_JOY1_B6, // SDL_CONTROLLER_BUTTON_LEFTSHOULDER
-	KEYCODE_JOY1_B5, // SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
-	KEYCODE_JOY1_B11, // SDL_CONTROLLER_BUTTON_DPAD_UP
-	KEYCODE_JOY1_B12, // SDL_CONTROLLER_BUTTON_DPAD_DOWN
-	KEYCODE_JOY1_B13, // SDL_CONTROLLER_BUTTON_DPAD_LEFT
-	KEYCODE_JOY1_B14 // SDL_CONTROLLER_BUTTON_DPAD_RIGHT
 };
 
 // CHAR_KEY tests to see whether a keycode is for
@@ -375,7 +356,7 @@ void GrimEngine::handleJoyButton(Common::EventType operation, byte button) {
 	if (button > NUM_JOY_BUTTONS)
 		return;
 
-	int keycode = KEYCODE_JOY1_B1 + button;
+	int keycode = KEYCODE_JOY1_A + button;
 	if (!_controlsEnabled[keycode])
 		return;
 
@@ -397,36 +378,6 @@ void GrimEngine::handleJoyButton(Common::EventType operation, byte button) {
 		_controlsState[keycode] = true;
 	else if (operation == Common::EVENT_JOYBUTTON_UP)
 		_controlsState[keycode] = false;
-}
-
-void GrimEngine::handleControllerAxis(byte axis, int16 position) {
-	// No difference between controller and joystick for motion
-	handleJoyAxis(axis, position);
-}
-
-void GrimEngine::handleControllerButton(Common::EventType operation, byte button) {
-	int keycode = controllerMapping[button];
-        if (!_controlsEnabled[keycode])
-                return;
-
-        LuaObjects objects;
-        objects.add(keycode);
-        if (operation == Common::EVENT_CONTROLLERBUTTON_DOWN) {
-                objects.add(1);
-                objects.add(1);
-        } else if (operation == Common::EVENT_CONTROLLERBUTTON_UP) {
-                objects.addNil();
-                objects.add(0);
-        }
-        objects.add(0);
-        if (!LuaBase::instance()->callback("buttonHandler", objects)) {
-                error("handleControls: invalid keys handler");
-        }
-
-        if (operation == Common::EVENT_CONTROLLERBUTTON_DOWN)
-                _controlsState[keycode] = true;
-        else if (operation == Common::EVENT_CONTROLLERBUTTON_UP)
-                _controlsState[keycode] = false;
 }
 
 } // end of namespace Grim

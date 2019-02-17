@@ -91,10 +91,7 @@ enum EventType {
 	,
 	EVENT_JOYAXIS_MOTION = 23,
 	EVENT_JOYBUTTON_DOWN = 24,
-	EVENT_JOYBUTTON_UP = 25,
-	EVENT_CONTROLLERAXIS_MOTION = 26,
-	EVENT_CONTROLLERBUTTON_DOWN = 27,
-	EVENT_CONTROLLERBUTTON_UP = 28
+	EVENT_JOYBUTTON_UP = 25
 };
 
 const int16 JOYAXIS_MIN = -32768;
@@ -104,11 +101,11 @@ const int16 JOYAXIS_MAX = 32767;
  * Data structure for joystick events
  */
 struct JoystickState {
-	/** The axis for EVENT_JOYAXIS_MOTION/EVENT_CONTROLLERAXIS_MOTION events */
+	/** The axis for EVENT_JOYAXIS_MOTION events */
 	byte axis;
-	/** The new axis position for EVENT_JOYAXIS_MOTION/EVENT_CONTROLLERAXIS_MOTION events */
+	/** The new axis position for EVENT_JOYAXIS_MOTION events */
 	int16 position;
-	/** The button index for EVENT_JOYBUTTON_DOWN/UP/EVENT_CONTROLLERBUTTON_DOWN/UP events */
+	/** The button index for EVENT_JOYBUTTON_DOWN/UP events */
 	byte button;
 };
 /* END of ResidualVM-specific code */
