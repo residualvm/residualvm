@@ -22,6 +22,8 @@
 
 #include "common/scummsys.h"
 
+// #define SDL_BACKEND
+
 #if defined(SDL_BACKEND)
 
 #include "backends/graphics/openglsdl/openglsdl-graphics.h"
@@ -657,8 +659,8 @@ void OpenGLSdlGraphicsManager::deinitializeRenderer() {
 
 bool OpenGLSdlGraphicsManager::saveScreenshot(const Common::String &file) const {
 	// Largely based on the implementation from ScummVM
-	uint width = getWidth();
-	uint height = getHeight();
+	uint width = _overlayScreen->getWidth();
+	uint height = _overlayScreen->getHeight();
 
 	uint linePaddingSize = width % 4;
 	uint lineSize = width * 3 + linePaddingSize;
@@ -670,7 +672,14 @@ bool OpenGLSdlGraphicsManager::saveScreenshot(const Common::String &file) const 
 
 	Common::Array<uint8> pixels;
 	pixels.resize(lineSize * height);
+
+	if (_frameBuffer) {
+		_frameBuffer->detach();
+	}
 	glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, &pixels.front());
+	if (_frameBuffer) {
+		_frameBuffer->attach();
+	}
 
 #ifdef USE_PNG
 	Graphics::PixelFormat format(3, 8, 8, 8, 0, 16, 8, 0, 0);
