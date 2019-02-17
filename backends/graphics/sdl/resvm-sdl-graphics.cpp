@@ -243,6 +243,7 @@ bool ResVmSdlGraphicsManager::notifyEvent(const Common::Event &event) {
 		case Common::EVENT_KEYDOWN:
 			if (event.kbd.hasFlags(Common::KBD_ALT) && event.kbd.keycode == Common::KEYCODE_s) {
 				saveScreenshot();
+				return true;
 			}
 			break;
 		case Common::EVENT_KEYUP:
