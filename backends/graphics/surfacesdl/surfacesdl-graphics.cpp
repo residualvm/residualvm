@@ -477,8 +477,10 @@ bool SurfaceSdlGraphicsManager::saveScreenshot(const Common::String &file) const
 	bool success;
 	SDL_Surface *screen = nullptr;
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
+	// To keep it SDL1 backward compatible, this needs to be outside the SDL2 #if clause
 	int width, height;
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_GetRendererOutputSize(_renderer, &width, &height);
 
 	screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
