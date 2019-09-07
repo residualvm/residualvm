@@ -382,7 +382,7 @@ bool OpenGLSdlGraphicsManager::createOrUpdateGLContext(uint gameWidth, uint game
 		// AmigaOS4 will pick up SDL_WINDOW_RESIZEABLE flag and use it once we switch to window
 		// allowing it to become resizable.
 		// Though, since the native resolutions of the games are fixed, there is no reason to
-		// allow resizing and as such it should be permittede.
+		// allow resizing and as such it should be permitted.
 		#ifdef __amigaos4__
 			uint32 sdlflags = SDL_WINDOW_OPENGL;
 		#else
