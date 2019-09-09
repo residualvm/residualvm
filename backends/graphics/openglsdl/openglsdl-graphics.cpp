@@ -379,15 +379,7 @@ bool OpenGLSdlGraphicsManager::createOrUpdateGLContext(uint gameWidth, uint game
 #endif
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-		// AmigaOS4 will pick up SDL_WINDOW_RESIZEABLE flag and use it once we switch to window
-		// allowing it to become resizable.
-		// Though, since the native resolutions of the games are fixed, there is no reason to
-		// allow resizing and as such it should be permitted.
-		#ifdef __amigaos4__
-			uint32 sdlflags = SDL_WINDOW_OPENGL;
-		#else
-			uint32 sdlflags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
-		#endif
+		uint32 sdlflags = SDL_WINDOW_OPENGL;
 		if (_fullscreen) {
 			// On Linux/X11, when toggling to fullscreen, the window manager saves
 			// the window size to be able to restore it when going back to windowed mode.
