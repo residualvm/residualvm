@@ -177,7 +177,10 @@ endif
 # Location of static libs for the iPhone
 ifneq ($(BACKEND), iphone)
 # Static libaries, used for the residualvm-static and iphone targets
-OSX_STATIC_LIBS := `$(SDLCONFIG) --static-libs`
+OSX_STATIC_LIBS := $(shell $(SDLCONFIG) --static-libs)
+ifdef USE_SDL2
+OSX_STATIC_LIBS := $(subst -lSDL2,$(STATICLIBPATH)/lib/libSDL2.a,$(OSX_STATIC_LIBS))
+endif
 ifdef USE_SDL_NET
 ifdef USE_SDL2
 OSX_STATIC_LIBS += $(STATICLIBPATH)/lib/libSDL2_net.a
