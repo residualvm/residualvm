@@ -313,7 +313,7 @@ osxsnap: bundle
 	mkdir ResidualVM-snapshot/doc
 	cp $(srcdir)/doc/QuickStart ./ResidualVM-snapshot/doc/QuickStart
 	$(XCODETOOLSPATH)/SetFile -t ttro -c ttxt ./ResidualVM-snapshot/doc/QuickStart
-	$(XCODETOOLSPATH)/CpMac -r $(bundle_name) ./ResidualVM-snapshot/
+	cp -r $(bundle_name) ./ResidualVM-snapshot/
 # ResidualVM missing background file:
 #	cp $(srcdir)/dists/macosx/DS_Store ./ResidualVM-snapshot/.DS_Store
 #	cp $(srcdir)/dists/macosx/background.jpg ./ResidualVM-snapshot/background.jpg
