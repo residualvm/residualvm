@@ -95,8 +95,8 @@ ScummVMDockTilePlugin64.o:
 ScummVMDockTilePlugin64: ScummVMDockTilePlugin64.o
 	$(CXX) -mmacosx-version-min=10.6 -arch x86_64 -bundle -framework Foundation -framework AppKit -fobjc-link-runtime ScummVMDockTilePlugin64.o -o ScummVMDockTilePlugin64
 
-ResidualVMDockTilePlugin: ScummVMDockTilePlugin32 ScummVMDockTilePlugin64
-	lipo -create ScummVMDockTilePlugin32 ScummVMDockTilePlugin64 -output ResidualVMDockTilePlugin
+ResidualVMDockTilePlugin: ScummVMDockTilePlugin64
+	cp $^ $@
 
 residualvm.docktileplugin: ResidualVMDockTilePlugin
 	mkdir -p residualvm.docktileplugin/Contents
