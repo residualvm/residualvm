@@ -36,10 +36,10 @@
 namespace Grim {
 
 struct Vector3int {
-	int _x;
-	int _y;
-	int _z;
-	void setVal(int x, int y, int z) {
+	uint16 _x;
+	uint16 _y;
+	uint16 _z;
+	void setVal(uint16 x, uint16 y, uint16 z) {
 		_x = x; _y = y; _z = z;
 	}
 };
@@ -79,9 +79,9 @@ void EMIMeshFace::loadFace(Common::SeekableReadStream *data) {
 			y = data->readSint32LE();
 			z = data->readSint32LE();
 		} else {
-			x = data->readSint16LE();
-			y = data->readSint16LE();
-			z = data->readSint16LE();
+			x = data->readUint16LE();
+			y = data->readUint16LE();
+			z = data->readUint16LE();
 		}
 		_indexes[j++].setVal(x, y, z);
 	}

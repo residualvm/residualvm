@@ -226,6 +226,7 @@ private:
 
 	OpenGL::Shader* _backgroundProgram;
 	OpenGL::Shader* _actorProgram;
+	OpenGL::Shader* _actorLightsProgram;
 	OpenGL::Shader* _spriteProgram;
 	OpenGL::Shader* _dimProgram;
 	OpenGL::Shader* _dimPlaneProgram;
