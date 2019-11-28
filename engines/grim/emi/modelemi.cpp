@@ -75,9 +75,9 @@ void EMIMeshFace::loadFace(Common::SeekableReadStream *data) {
 	for (uint32 i = 0; i < _faceLength; i ++) {
 		// FIXME: Are these ever going to be < 0 ?
 		if (g_grim->getGamePlatform() == Common::kPlatformPS2) {
-			x = data->readSint32LE();
-			y = data->readSint32LE();
-			z = data->readSint32LE();
+			x = data->readUint32LE();
+			y = data->readUint32LE();
+			z = data->readUint32LE();
 		} else {
 			x = data->readUint16LE();
 			y = data->readUint16LE();
