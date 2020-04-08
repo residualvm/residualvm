@@ -285,7 +285,13 @@ void Myst3Engine::openArchives() {
 	}
 
 	if (getGameLocalizationType() == kLocMulti6) {
-		switch (ConfMan.getInt("text_language")) {
+		int defaultLanguage = _db->getGameLanguageCode();
+
+		if (ConfMan.hasKey("text_language")) {
+			defaultLanguage = ConfMan.getInt("text_language");
+		}
+
+		switch (defaultLanguage) {
 		case kDutch:
 			textLanguage = "DUTCH";
 			break;
