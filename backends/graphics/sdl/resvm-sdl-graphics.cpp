@@ -32,16 +32,8 @@
 
 ResVmSdlGraphicsManager::ResVmSdlGraphicsManager(SdlEventSource *source, SdlWindow *window, const Capabilities &capabilities) :
 		SdlGraphicsManager(source, window),
-		_fullscreen(false),
-		_lockAspectRatio(true),
-		_overlayVisible(false),
-		_screenChangeCount(0),
-		_capabilities(capabilities),
-		_engineRequestedWidth(0),
-		_engineRequestedHeight(0)  {
+		_capabilities(capabilities)  {
 	ConfMan.registerDefault("fullscreen_res", "desktop");
-	ConfMan.registerDefault("aspect_ratio", true);
-	ConfMan.registerDefault("vsync", true);
 }
 
 ResVmSdlGraphicsManager::~ResVmSdlGraphicsManager() {
@@ -78,27 +70,6 @@ Common::Rect ResVmSdlGraphicsManager::getPreferredFullscreenResolution() {
 	}
 
 	return _window->getDesktopResolution();
-}
-
-void ResVmSdlGraphicsManager::setFeatureState(OSystem::Feature f, bool enable) {
-	switch (f) {
-		case OSystem::kFeatureAspectRatioCorrection:
-			_lockAspectRatio = enable;
-			break;
-		default:
-			break;
-	}
-}
-
-bool ResVmSdlGraphicsManager::getFeatureState(OSystem::Feature f) const {
-	switch (f) {
-		case OSystem::kFeatureFullscreenMode:
-			return _fullscreen;
-		case OSystem::kFeatureAspectRatioCorrection:
-			return _lockAspectRatio;
-		default:
-			return false;
-	}
 }
 
 #pragma mark -

@@ -48,6 +48,10 @@ public:
 	virtual void setFeatureState(OSystem::Feature f, bool enable) override;
 
 	// GraphicsManager API - Graphics mode
+#ifdef USE_RGB_COLOR
+	virtual Graphics::PixelFormat getScreenFormat() const override { return _screenFormat; }
+#endif
+	virtual int getScreenChangeID() const override { return _screenChangeCount; }
 	virtual void setupScreen(uint gameWidth, uint gameHeight, bool fullscreen, bool accel3d) override;
 	virtual Graphics::PixelBuffer getScreenPixelBuffer() override;
 	virtual int16 getHeight() const override;
@@ -59,6 +63,7 @@ public:
 	// GraphicsManager API - Overlay
 	virtual void showOverlay() override;
 	virtual void hideOverlay() override;
+	virtual Graphics::PixelFormat getOverlayFormat() const override { return _overlayFormat; }
 	virtual void clearOverlay() override;
 	virtual void grabOverlay(void *buf, int pitch) const override;
 	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h) override;
@@ -116,13 +121,24 @@ protected:
 	// ResVmSdlGraphicsManager API
 	bool saveScreenshot(const Common::String &file) const override;
 
+	uint _engineRequestedWidth, _engineRequestedHeight;
+
+	int _screenChangeCount;
 	int _antialiasing;
 	bool _vsync;
+	bool _fullscreen;
+	bool _lockAspectRatio;
+	bool _overlayVisible;
 
 	OpenGL::TiledSurface *_overlayScreen;
 	OpenGL::TiledSurface *_overlayBackground;
 	OpenGL::Texture *_sideTextures[2];
 	OpenGL::SurfaceRenderer *_surfaceRenderer;
+
+	Graphics::PixelFormat _overlayFormat;
+#ifdef USE_RGB_COLOR
+	Graphics::PixelFormat _screenFormat;
+#endif
 
 	void initializeOpenGLContext() const;
 	void drawOverlay();

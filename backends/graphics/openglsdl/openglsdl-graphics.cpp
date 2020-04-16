@@ -50,12 +50,19 @@ OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(SdlEventSource *sdlEventSourc
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	_glContext(nullptr),
 #endif
+	_overlayVisible(false),
 	_overlayScreen(nullptr),
 	_overlayBackground(nullptr),
 	_gameRect(),
+	_fullscreen(false),
+	_lockAspectRatio(true),
 	_frameBuffer(nullptr),
-	_surfaceRenderer(nullptr) {
+	_surfaceRenderer(nullptr),
+	_engineRequestedWidth(0),
+	_engineRequestedHeight(0) {
 	ConfMan.registerDefault("antialiasing", 0);
+	ConfMan.registerDefault("aspect_ratio", true);
+	ConfMan.registerDefault("vsync", true);
 
 	_sideTextures[0] = _sideTextures[1] = nullptr;
 
@@ -86,8 +93,12 @@ bool OpenGLSdlGraphicsManager::getFeatureState(OSystem::Feature f) const {
 	switch (f) {
 		case OSystem::kFeatureVSync:
 			return isVSyncEnabled();
+		case OSystem::kFeatureFullscreenMode:
+			return _fullscreen;
+		case OSystem::kFeatureAspectRatioCorrection:
+			return _lockAspectRatio;
 		default:
-			return ResVmSdlGraphicsManager::getFeatureState(f);
+			return false;
 	}
 }
 
@@ -99,8 +110,10 @@ void OpenGLSdlGraphicsManager::setFeatureState(OSystem::Feature f, bool enable) 
 				createOrUpdateScreen();
 			}
 			break;
+		case OSystem::kFeatureAspectRatioCorrection:
+			_lockAspectRatio = enable;
+			break;
 		default:
-			ResVmSdlGraphicsManager::setFeatureState(f, enable);
 			break;
 	}
 }

@@ -63,22 +63,9 @@ public:
 	void notifyVideoExpose() override;
 	bool notifyMousePosition(Common::Point &mouse) override;
 
-	// GraphicsManager API - Features
-	void setFeatureState(OSystem::Feature f, bool enable) override;
-	bool getFeatureState(OSystem::Feature f) const override;
-
-	// GraphicsManager API - Graphics mode
-#ifdef USE_RGB_COLOR
-	Graphics::PixelFormat getScreenFormat() const override { return _screenFormat; }
-#endif
-	int getScreenChangeID() const override { return _screenChangeCount; }
-
 public:
 	// GraphicsManager API - Draw methods
 	void saveScreenshot() override;
-
-	// GraphicsManager API - Overlay
-	Graphics::PixelFormat getOverlayFormat() const override { return _overlayFormat; }
 
 	// GraphicsManager API - Mouse
 	bool showMouse(bool visible) override;
@@ -95,19 +82,6 @@ public:
 
 protected:
 	const Capabilities &_capabilities;
-
-	bool _fullscreen;
-	bool _lockAspectRatio;
-	uint _engineRequestedWidth, _engineRequestedHeight;
-
-	int _screenChangeCount;
-
-	bool _overlayVisible;
-	Graphics::PixelFormat _overlayFormat;
-
-#ifdef USE_RGB_COLOR
-	Graphics::PixelFormat _screenFormat;
-#endif
 
 	/** Obtain the user configured fullscreen resolution, or default to the desktop resolution */
 	Common::Rect getPreferredFullscreenResolution();
