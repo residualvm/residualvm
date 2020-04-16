@@ -68,37 +68,14 @@ public:
 	bool getFeatureState(OSystem::Feature f) const override;
 
 	// GraphicsManager API - Graphics mode
-	const OSystem::GraphicsMode *getSupportedGraphicsModes() const override;
-	int getDefaultGraphicsMode() const override;
-	bool setGraphicsMode(int mode) override;
-	int getGraphicsMode() const override;
-	void resetGraphicsScale() override;
 #ifdef USE_RGB_COLOR
 	Graphics::PixelFormat getScreenFormat() const override { return _screenFormat; }
-	Common::List<Graphics::PixelFormat> getSupportedFormats() const override;
 #endif
-	void initSize(uint w, uint h, const Graphics::PixelFormat *format = nullptr) override;
 	int getScreenChangeID() const override { return _screenChangeCount; }
-	void beginGFXTransaction() override;
-	OSystem::TransactionError endGFXTransaction() override;
-
-protected:
-	// PaletteManager API
-	void setPalette(const byte *colors, uint start, uint num) override;
-	void grabPalette(byte *colors, uint start, uint num) const override;
 
 public:
 	// GraphicsManager API - Draw methods
-	void copyRectToScreen(const void *buf, int pitch, int x, int y, int w, int h) override;
-	Graphics::Surface *lockScreen() override;
-	void unlockScreen() override;
-	void fillScreen(uint32 col) override;
-	void setShakePos(int shakeOffset) override;
 	void saveScreenshot() override;
-
-	// GraphicsManager API - Focus Rectangle
-	void setFocusRectangle(const Common::Rect& rect) override;
-	void clearFocusRectangle() override;
 
 	// GraphicsManager API - Overlay
 	Graphics::PixelFormat getOverlayFormat() const override { return _overlayFormat; }
@@ -106,12 +83,6 @@ public:
 	// GraphicsManager API - Mouse
 	bool showMouse(bool visible) override;
 	bool lockMouse(bool lock) override; // ResidualVM specific method
-	void setMouseCursor(const void *buf, uint w, uint h, int hotspotX, int hotspotY, uint32 keycolor, bool dontScale = false, const Graphics::PixelFormat *format = nullptr) override;
-	void setCursorPalette(const byte *colors, uint start, uint num) override;
-
-#ifdef USE_OSD
-	void displayMessageOnOSD(const char *msg) override;
-#endif
 
 	// Common::EventObserver API
 	bool notifyEvent(const Common::Event &event) override;
@@ -136,7 +107,6 @@ protected:
 
 #ifdef USE_RGB_COLOR
 	Graphics::PixelFormat _screenFormat;
-	Common::List<Graphics::PixelFormat> _supportedFormats;
 #endif
 
 	/** Obtain the user configured fullscreen resolution, or default to the desktop resolution */

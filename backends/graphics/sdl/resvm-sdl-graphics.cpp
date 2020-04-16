@@ -30,10 +30,6 @@
 #include "common/textconsole.h"
 #include "common/file.h"
 
-static const OSystem::GraphicsMode s_supportedGraphicsModes[] = {
-		{0, 0, 0}
-};
-
 ResVmSdlGraphicsManager::ResVmSdlGraphicsManager(SdlEventSource *source, SdlWindow *window, const Capabilities &capabilities) :
 		SdlGraphicsManager(source, window),
 		_fullscreen(false),
@@ -84,10 +80,6 @@ Common::Rect ResVmSdlGraphicsManager::getPreferredFullscreenResolution() {
 	return _window->getDesktopResolution();
 }
 
-void ResVmSdlGraphicsManager::resetGraphicsScale() {
-	setGraphicsMode(0);
-}
-
 void ResVmSdlGraphicsManager::setFeatureState(OSystem::Feature f, bool enable) {
 	switch (f) {
 		case OSystem::kFeatureAspectRatioCorrection:
@@ -107,84 +99,6 @@ bool ResVmSdlGraphicsManager::getFeatureState(OSystem::Feature f) const {
 		default:
 			return false;
 	}
-}
-
-const OSystem::GraphicsMode *ResVmSdlGraphicsManager::getSupportedGraphicsModes() const {
-	return s_supportedGraphicsModes;
-}
-
-int ResVmSdlGraphicsManager::getDefaultGraphicsMode() const {
-	return 0;// ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::beginGFXTransaction() {
-	// ResidualVM: not use it
-}
-
-OSystem::TransactionError ResVmSdlGraphicsManager::endGFXTransaction() {
-	// ResidualVM: not use it
-	return OSystem::kTransactionSuccess;
-}
-
-#ifdef USE_RGB_COLOR
-Common::List<Graphics::PixelFormat> ResVmSdlGraphicsManager::getSupportedFormats() const {
-	// ResidualVM: not use it
-	return _supportedFormats;
-}
-#endif
-
-bool ResVmSdlGraphicsManager::setGraphicsMode(int mode) {
-	// ResidualVM: not use it
-	return true;
-}
-
-int ResVmSdlGraphicsManager::getGraphicsMode() const {
-	// ResidualVM: not use it
-	return 0;
-}
-
-void ResVmSdlGraphicsManager::initSize(uint w, uint h, const Graphics::PixelFormat *format) {
-	// ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::copyRectToScreen(const void *src, int pitch, int x, int y, int w, int h) {
-	// ResidualVM: not use it
-}
-
-Graphics::Surface *ResVmSdlGraphicsManager::lockScreen() {
-	return NULL; // ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::unlockScreen() {
-	// ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::fillScreen(uint32 col) {
-	// ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::setPalette(const byte *colors, uint start, uint num) {
-	// ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::grabPalette(byte *colors, uint start, uint num) const {
-	// ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::setCursorPalette(const byte *colors, uint start, uint num) {
-	// ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::setShakePos(int shake_pos) {
-	// ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::setFocusRectangle(const Common::Rect &rect) {
-	// ResidualVM: not use it
-}
-
-void ResVmSdlGraphicsManager::clearFocusRectangle() {
-	// ResidualVM: not use it
 }
 
 #pragma mark -
@@ -218,20 +132,6 @@ bool ResVmSdlGraphicsManager::isMouseLocked() const {
 	return SDL_GrabMode() == SDL_GRAB_ON;
 #endif
 }
-
-void ResVmSdlGraphicsManager::setMouseCursor(const void *buf, uint w, uint h, int hotspot_x, int hotspot_y, uint32 keycolor, bool dontScale, const Graphics::PixelFormat *format) {
-	// ResidualVM: not use it
-}
-
-#pragma mark -
-#pragma mark --- On Screen Display ---
-#pragma mark -
-
-#ifdef USE_OSD
-void OpenGLResVmSdlGraphicsManager::displayMessageOnOSD(const char *msg) {
-	// ResidualVM: not use it
-}
-#endif
 
 bool ResVmSdlGraphicsManager::notifyEvent(const Common::Event &event) {
 	//ResidualVM specific:

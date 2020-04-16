@@ -42,11 +42,14 @@ public:
 	virtual void setFeatureState(OSystem::Feature f, bool enable) = 0;
 	virtual bool getFeatureState(OSystem::Feature f) const = 0;
 
-	virtual const OSystem::GraphicsMode *getSupportedGraphicsModes() const = 0;
-	virtual int getDefaultGraphicsMode() const = 0;
-	virtual bool setGraphicsMode(int mode) = 0;
-	virtual void resetGraphicsScale() = 0;
-	virtual int getGraphicsMode() const = 0;
+	virtual const OSystem::GraphicsMode *getSupportedGraphicsModes() const {
+		static const OSystem::GraphicsMode noGraphicsModes[] = {{"NONE", "Normal", 0}, {nullptr, nullptr, 0 }};
+		return noGraphicsModes;
+	};
+	virtual int getDefaultGraphicsMode() const { return 0; }
+	virtual bool setGraphicsMode(int mode) { return (mode == 0); }
+	virtual void resetGraphicsScale() {}
+	virtual int getGraphicsMode() const { return 0; }
 	virtual const OSystem::GraphicsMode *getSupportedShaders() const {
 		static const OSystem::GraphicsMode no_shader[2] = {{"NONE", "Normal (no shader)", 0}, {0, 0, 0}};
 		return no_shader;
@@ -71,15 +74,6 @@ public:
 
 	virtual void beginGFXTransaction() = 0;
 	virtual OSystem::TransactionError endGFXTransaction() = 0;
-
-	// ResidualVM specific method
-	virtual void setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) = 0;
-	// ResidualVM specific method
-	virtual Graphics::PixelBuffer getScreenPixelBuffer() = 0;
-	// ResidualVM specific method
-	virtual void suggestSideTextures(Graphics::Surface *left, Graphics::Surface *right) = 0;
-	// ResidualVM specific method
-	virtual void saveScreenshot() {}
 
 	virtual int16 getHeight() const = 0;
 	virtual int16 getWidth() const = 0;
@@ -107,9 +101,6 @@ public:
 	virtual void warpMouse(int x, int y) = 0;
 	virtual void setMouseCursor(const void *buf, uint w, uint h, int hotspotX, int hotspotY, uint32 keycolor, bool dontScale = false, const Graphics::PixelFormat *format = NULL) = 0;
 	virtual void setCursorPalette(const byte *colors, uint start, uint num) = 0;
-
-	// ResidualVM specific method
-	virtual bool lockMouse(bool lock) = 0;
 
 	virtual void displayMessageOnOSD(const char *msg) {}
 	virtual void displayActivityIconOnOSD(const Graphics::Surface *icon) {}

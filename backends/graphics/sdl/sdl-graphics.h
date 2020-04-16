@@ -23,7 +23,7 @@
 #ifndef BACKENDS_GRAPHICS_SDL_SDLGRAPHICS_H
 #define BACKENDS_GRAPHICS_SDL_SDLGRAPHICS_H
 
-#include "backends/graphics/graphics.h"
+#include "backends/graphics/resvm-graphics.h"
 #include "backends/platform/sdl/sdl-window.h"
 
 #include "common/rect.h"
@@ -35,7 +35,7 @@ class SdlEventSource;
  *
  * It features a few extra a few extra features required by SdlEventSource.
  */
-class SdlGraphicsManager : virtual public GraphicsManager {
+class SdlGraphicsManager : virtual public ResVmGraphicsManager {
 public:
 	SdlGraphicsManager(SdlEventSource *source, SdlWindow *window);
 	virtual ~SdlGraphicsManager();
