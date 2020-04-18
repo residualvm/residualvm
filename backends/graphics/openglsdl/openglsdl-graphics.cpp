@@ -46,10 +46,11 @@
 
 OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(SdlEventSource *sdlEventSource, SdlWindow *window, const Capabilities &capabilities)
 	:
-	ResVmSdlGraphicsManager(sdlEventSource, window, capabilities),
+	ResVmSdlGraphicsManager(sdlEventSource, window),
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	_glContext(nullptr),
 #endif
+	_capabilities(capabilities),
 	_overlayVisible(false),
 	_overlayScreen(nullptr),
 	_overlayBackground(nullptr),

@@ -35,9 +35,9 @@
 #include "image/png.h"
 #endif
 
-SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSource, SdlWindow *window, const Capabilities &capabilities)
+SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSource, SdlWindow *window)
 	:
-	ResVmSdlGraphicsManager(sdlEventSource, window, capabilities),
+	ResVmSdlGraphicsManager(sdlEventSource, window),
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	_renderer(nullptr), _screenTexture(nullptr),
 #endif

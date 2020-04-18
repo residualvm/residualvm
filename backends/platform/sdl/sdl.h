@@ -30,7 +30,9 @@
 #include "backends/events/sdl/sdl-events.h"
 #include "backends/log/log.h"
 #include "backends/platform/sdl/sdl-window.h"
-#include "backends/graphics/sdl/resvm-sdl-graphics.h"
+#ifdef USE_OPENGL
+#include "backends/graphics/openglsdl/openglsdl-graphics.h"
+#endif
 
 #include "common/array.h"
 
@@ -89,12 +91,14 @@ public:
 	//Screenshots
 	virtual Common::String getScreenshotsPath();
 
+#ifdef USE_OPENGL
 	// ResidualVM specific code
 	virtual void setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) override;
 	// ResidualVM specific code
-	virtual void launcherInitSize(uint w, uint h) override;
-	// ResidualVM specific code
 	Common::Array<uint> getSupportedAntiAliasingLevels() const;
+#endif
+	// ResidualVM specific code
+	virtual void launcherInitSize(uint w, uint h) override;
 
 protected:
 	bool _inited;
@@ -130,10 +134,12 @@ protected:
 	SdlWindow *_window;
 
 	// ResidualVM specific code
+#ifdef USE_OPENGL
 	// Graphics capabilities
 	void detectFramebufferSupport();
 	void detectAntiAliasingSupport();
-	ResVmSdlGraphicsManager::Capabilities _capabilities;
+	OpenGLSdlGraphicsManager::Capabilities _capabilities;
+#endif
 	// End of ResidualVM specific code
 
 	virtual Common::EventSource *getDefaultEventSource() { return _eventSource; }

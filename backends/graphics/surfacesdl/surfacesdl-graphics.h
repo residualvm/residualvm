@@ -32,7 +32,7 @@
  */
 class SurfaceSdlGraphicsManager : public ResVmSdlGraphicsManager {
 public:
-	SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSource, SdlWindow *window, const Capabilities &capabilities);
+	SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSource, SdlWindow *window);
 	virtual ~SurfaceSdlGraphicsManager();
 
 	// GraphicsManager API - Features

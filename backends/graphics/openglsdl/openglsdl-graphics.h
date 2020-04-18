@@ -39,6 +39,21 @@ namespace OpenGL {
  */
 class OpenGLSdlGraphicsManager : public ResVmSdlGraphicsManager {
 public:
+	/**
+	 * Capabilities of the current device
+	 */
+	struct Capabilities {
+		/**
+		 * Is the device capable of rendering to OpenGL framebuffers
+		 */
+		bool openGLFrameBuffer;
+
+		/** Supported levels of MSAA when using the OpenGL renderers */
+		Common::Array<uint> openGLAntiAliasLevels;
+
+		Capabilities() : openGLFrameBuffer(false) {}
+	};
+
 	OpenGLSdlGraphicsManager(SdlEventSource *sdlEventSource, SdlWindow *window, const Capabilities &capabilities);
 	virtual ~OpenGLSdlGraphicsManager();
 
@@ -89,6 +104,8 @@ protected:
 	SDL_GLContext _glContext;
 	void deinitializeRenderer();
 #endif
+
+	const Capabilities &_capabilities;
 
 	Math::Rect2d _gameRect;
 

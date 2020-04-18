@@ -39,22 +39,7 @@ class SdlEventSource;
  */
 class ResVmSdlGraphicsManager : public SdlGraphicsManager, public Common::EventObserver {
 public:
-	/**
-	 * Capabilities of the current device
-	 */
-	struct Capabilities {
-		/**
-		 * Is the device capable of rendering to OpenGL framebuffers
-		 */
-		bool openGLFrameBuffer;
-
-		/** Supported levels of MSAA when using the OpenGL renderers */
-		Common::Array<uint> openGLAntiAliasLevels;
-
-		Capabilities() : openGLFrameBuffer(false) {}
-	};
-
-	ResVmSdlGraphicsManager(SdlEventSource *source, SdlWindow *window, const Capabilities &capabilities);
+	ResVmSdlGraphicsManager(SdlEventSource *source, SdlWindow *window);
 	~ResVmSdlGraphicsManager() override;
 
 	// SdlGraphicsManager API
@@ -81,8 +66,6 @@ public:
 	bool isMouseLocked() const;
 
 protected:
-	const Capabilities &_capabilities;
-
 	/** Obtain the user configured fullscreen resolution, or default to the desktop resolution */
 	Common::Rect getPreferredFullscreenResolution();
 

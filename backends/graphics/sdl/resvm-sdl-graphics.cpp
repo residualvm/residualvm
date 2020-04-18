@@ -30,9 +30,8 @@
 #include "common/textconsole.h"
 #include "common/file.h"
 
-ResVmSdlGraphicsManager::ResVmSdlGraphicsManager(SdlEventSource *source, SdlWindow *window, const Capabilities &capabilities) :
-		SdlGraphicsManager(source, window),
-		_capabilities(capabilities)  {
+ResVmSdlGraphicsManager::ResVmSdlGraphicsManager(SdlEventSource *source, SdlWindow *window) :
+		SdlGraphicsManager(source, window)  {
 	ConfMan.registerDefault("fullscreen_res", "desktop");
 }
 

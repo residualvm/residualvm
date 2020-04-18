@@ -216,7 +216,7 @@ void OSystem_SDL::initBackend() {
 
 	if (_graphicsManager == 0) {
 		if (_graphicsManager == 0) {
-			_graphicsManager = new SurfaceSdlGraphicsManager(_eventSource, _window, _capabilities);
+			_graphicsManager = new SurfaceSdlGraphicsManager(_eventSource, _window);
 		}
 	}
 
@@ -414,8 +414,8 @@ void OSystem_SDL::setWindowCaption(const char *caption) {
 }
 
 // ResidualVM specific code
-void OSystem_SDL::setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) {
 #ifdef USE_OPENGL
+void OSystem_SDL::setupScreen(uint screenW, uint screenH, bool fullscreen, bool accel3d) {
 	bool switchedManager = false;
 	if (accel3d && !dynamic_cast<OpenGLSdlGraphicsManager *>(_graphicsManager)) {
 		switchedManager = true;
@@ -431,14 +431,18 @@ void OSystem_SDL::setupScreen(uint screenW, uint screenH, bool fullscreen, bool 
 		if (accel3d) {
 			_graphicsManager = sdlGraphicsManager = new OpenGLSdlGraphicsManager(_eventSource, _window, _capabilities);
 		} else {
-			_graphicsManager = sdlGraphicsManager = new SurfaceSdlGraphicsManager(_eventSource, _window, _capabilities);
+			_graphicsManager = sdlGraphicsManager = new SurfaceSdlGraphicsManager(_eventSource, _window);
 		}
 		sdlGraphicsManager->activateManager();
 	}
-#endif
 
 	ModularBackend::setupScreen(screenW, screenH, fullscreen, accel3d);
 }
+
+Common::Array<uint> OSystem_SDL::getSupportedAntiAliasingLevels() const {
+	return _capabilities.openGLAntiAliasLevels;
+}
+#endif
 
 void OSystem_SDL::launcherInitSize(uint w, uint h) {
 	Common::String rendererConfig = ConfMan.get("renderer");
@@ -450,9 +454,6 @@ void OSystem_SDL::launcherInitSize(uint w, uint h) {
 	setupScreen(w, h, fullscreen, matchingRendererType != Graphics::kRendererTypeTinyGL);
 }
 
-Common::Array<uint> OSystem_SDL::getSupportedAntiAliasingLevels() const {
-	return _capabilities.openGLAntiAliasLevels;
-}
 // End of ResidualVM specific code
 
 void OSystem_SDL::quit() {
