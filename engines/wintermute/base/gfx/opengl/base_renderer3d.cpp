@@ -54,7 +54,7 @@ void BaseRenderer3D::project(const Math::Matrix4 &worldMatrix, const Math::Vecto
 	Math::gluMathProject(point, modelMatrix.getData(), _projectionMatrix3d.getData(), viewport, windowCoords);
 	x = windowCoords.x();
 	// The Wintermute script code will expect a Direct3D viewport
-	y = viewport[3] - windowCoords.y();
+	y = viewport[3] - windowCoords.y() + viewport[1];
 }
 
 Rect32 BaseRenderer3D::getViewPort() {
