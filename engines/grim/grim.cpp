@@ -238,7 +238,11 @@ GfxBase *GrimEngine::createRenderer(int screenW, int screenH, bool fullscreen) {
 	Graphics::RendererType matchingRendererType = Graphics::getBestMatchingAvailableRendererType(desiredRendererType);
 
 	_softRenderer = matchingRendererType == Graphics::kRendererTypeTinyGL;
-	initGraphics3d(screenW, screenH, fullscreen, !_softRenderer);
+	if (!_softRenderer) {
+		initGraphics3d(screenW, screenH, fullscreen, true);
+	} else {
+		initGraphics(screenW, screenH, nullptr);
+	}
 
 #if defined(USE_OPENGL)
 	// Check the OpenGL context actually supports shaders
