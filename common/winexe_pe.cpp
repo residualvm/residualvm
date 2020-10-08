@@ -212,8 +212,17 @@ SeekableReadStream *PEResources::getResource(const WinResourceID &type, const Wi
 		return nullptr;
 
 	const Resource &resource = _resources[type][id][langList[0]];
-	_exe->seek(resource.offset);
-	return _exe->readStream(resource.size);
+	if (!_exe->seek(resource.offset)) {
+		warning("Cannot seek to offset of resource");
+		return nullptr;
+	}
+	SeekableReadStream *stream = _exe->readStream(resource.size);
+	if (_exe->eos() || _exe->err()) {
+		warning("Error or premature end of stream while reading resource");
+		delete stream;
+		return nullptr;
+	}
+	return stream;
 }
 
 SeekableReadStream *PEResources::getResource(const WinResourceID &type, const WinResourceID &id, const WinResourceID &lang) {
