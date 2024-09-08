@@ -55,10 +55,10 @@ The Longest Journey              | Untested
 The Longest Journey (demo)       | Untested
 
 Specifics can be found at
-https://www.residualvm.org/compatibility/
+https://www.scummvm.org/compatibility/
 
 For more information, see the page on ResidualVM at the wiki page:
-https://wiki.residualvm.org/
+https://wiki.scummvm.org/
 
 
 ## 3. Running GrimE games
@@ -75,7 +75,7 @@ directory. Specifically, you'll need:
   * All of the `LAB` files from both CDs.
   * A copy of the Grim Fandango 1.01 update EXE.
         The patch can be downloaded from:
-        https://demos.residualvm.org/patches/gfupd101.exe
+        https://downloads.scummvm.org/frs/extras/patches/gfupd101.exe
 
 #### 3.1.2. Escape from Monkey Island ####
 
@@ -96,12 +96,12 @@ CDs into one directory. Specifically, you'll need:
 
 Language   | URL
 ---------- |---------------------------------------------------------
-English    | https://demos.residualvm.org/patches/MonkeyUpdate.exe
-Portuguese | https://demos.residualvm.org/patches/MonkeyUpdate_BRZ.exe
-German     | https://demos.residualvm.org/patches/MonkeyUpdate_DEU.exe
-Spanish    | https://demos.residualvm.org/patches/MonkeyUpdate_ESP.exe
-French     | https://demos.residualvm.org/patches/MonkeyUpdate_FRA.exe
-Italian    | https://demos.residualvm.org/patches/MonkeyUpdate_ITA.exe
+English    | https://downloads.scummvm.org/frs/extras/patches/MonkeyUpdate.exe
+Portuguese | https://downloads.scummvm.org/frs/extras/patches/MonkeyUpdate_BRZ.exe
+German     | https://downloads.scummvm.org/frs/extras/patches/MonkeyUpdate_DEU.exe
+Spanish    | https://downloads.scummvm.org/frs/extras/patches/MonkeyUpdate_ESP.exe
+French     | https://downloads.scummvm.org/frs/extras/patches/MonkeyUpdate_FRA.exe
+Italian    | https://downloads.scummvm.org/frs/extras/patches/MonkeyUpdate_ITA.exe
 
   * "EFMI Installer" if you have the Mac version of EMI.
 
@@ -175,7 +175,7 @@ update is already applied on the installation media and no action is
 required.
 Otherwise, ResidualVM asks for the update to be installed and refuses to
 run the game. The updates can be downloaded from
-https://demos.residualvm.org/patches/
+https://downloads.scummvm.org/frs/extras/patches/
 
 The DVD version is multilingual, you can change the in-game language from
 the game menu. However, you must choose the language of the menus by
@@ -398,8 +398,8 @@ Command        | Description
 `set_renderer` | Select a renderer (software, OpenGL or OpenGL with shaders)
 
 The `jump` targets can be found at:
-  * https://wiki.residualvm.org/index.php/Grim_Fandango_Debug_Mode#Jump_targets
-  * https://wiki.residualvm.org/index.php/Escape_From_Monkey_Island_Debug_Mode#Jump_targets
+  * https://wiki.scummvm.org/index.php?title=GrimE/Grim_Fandango_Debug_Mode#Jump_targets
+  * https://wiki.scummvm.org/index.php?title=GrimE/Escape_From_Monkey_Island_Debug_Mode#Jump_targets
 
 ### 8.2. Debugging Grim Fandango ###
 
@@ -533,11 +533,8 @@ but should you find a new one, don't hesitate to report it.
 
 ### 9.1. How and where do I report bugs? ###
 
-You can report bugs at our GitHub issue tracker:
-https://github.com/residualvm/residualvm/issues
-
-Please read the Wiki regarding how to report bugs properly first though:
-https://wiki.residualvm.org/index.php?title=Reporting_Bugs
+You can report bugs at our issue tracker:
+https://bugs.scummvm.org
 
 Remember to always provide the following information in your bug reports:
   * Information about the game (e.g. *Escape from Monkey Island, PS2
@@ -557,8 +554,7 @@ Please refer to our extensive Changelog [here](NEWS.md).
 Please refer to our extensive Credits list [here](AUTHORS).
 
 ## 12. Contact
-  * Homepage: https://www.residualvm.org/
-  * Wiki: https://wiki.residualvm.org/
-  * Discord: https://discord.gg/VFQjRfa
-  * Forums: https://forums.residualvm.org/
-  * IRC: #residualvm on freenode
+  * Homepage: https://www.scummvm.org/
+  * Wiki: https://wiki.scummvm.org/
+  * Discord: https://discord.gg/4cDsMNtcpG
+  * Forums: https://forums.scummvm.org/
